@@ -99,6 +99,8 @@ export default function Demand() {
 		WB_DRAWAL: "West Bengal DRAWAL",
 		"WB_DRAWAL( ER END)": "West Bengal DRAWAL (ER END)",
 		WB_END_DRAWAL: "West Bengal End DRAWAL",
+		'CESC DEMAND': 'CESC DEMAND',
+		'ALL INDIA DEMAND': 'ALL INDIA DEMAND'
 	};
 
 	useEffect(() => {
