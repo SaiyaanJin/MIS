@@ -200,6 +200,7 @@ export default function Demand() {
 					)
 					.then((response) => {
 						setdemand_data(response.data);
+						
 						setexportColumns({
 							"Date Time": response.data[1].Date_Time,
 							Data: response.data[0].output,
@@ -238,6 +239,7 @@ export default function Demand() {
 					)
 					.then((response) => {
 						setdemand_data(response.data);
+						console.log(response.data)
 						setenable(false);
 						setgraphenable(false);
 						setBlocked(false);

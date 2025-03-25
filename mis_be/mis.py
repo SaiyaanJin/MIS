@@ -5070,7 +5070,9 @@ def GetDemandMinData():
             temp_station = station
             temp_station = temp_station.split("_")
 
-            if (temp_station[-1] == "DEMAND" or station == "REG DEMAND"):
+            exempt_list= ['CESC DEMAND', 'ALL INDIA DEMAND', 'REG DEMAND']
+
+            if (temp_station[-1] == "DEMAND" or station in exempt_list):
 
                 demand_result = demand_collection.find(
                     filter=filter,
