@@ -107,7 +107,7 @@ export default function Demand() {
 		if (start_date && end_date) {
 			axios
 				.post(
-					"http://10.3.200.63:5010/DemandMinNames?startDate=" +
+					"http://10.3.230.62:5010/DemandMinNames?startDate=" +
 						moment(start_date).format("YYYY-MM-DD HH:mm") +
 						"&endDate=" +
 						moment(end_date).format("YYYY-MM-DD HH:mm"),
@@ -135,7 +135,7 @@ export default function Demand() {
 			if (i === multiple_date.length) {
 				axios
 					.post(
-						"http://10.3.200.63:5010/MultiDemandMinNames?MultistartDate=" +
+						"http://10.3.230.62:5010/MultiDemandMinNames?MultistartDate=" +
 							temp_multi_date,
 						{}
 					)
@@ -164,7 +164,7 @@ export default function Demand() {
 			if (j === multiple_month.length) {
 				axios
 					.post(
-						"http://10.3.200.63:5010/MultiDemandMinNames?MultistartDate=" +
+						"http://10.3.230.62:5010/MultiDemandMinNames?MultistartDate=" +
 							temp_multi_month,
 						{}
 					)
@@ -188,7 +188,7 @@ export default function Demand() {
 			if (minutes && checked3) {
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetDemandMinData?startDate=" +
+						"http://10.3.230.62:5010/GetDemandMinData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -213,7 +213,7 @@ export default function Demand() {
 
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetFrequencyData?startDate=" +
+						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -228,7 +228,7 @@ export default function Demand() {
 			} else {
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetDemandMinData?startDate=" +
+						"http://10.3.230.62:5010/GetDemandMinData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -252,7 +252,7 @@ export default function Demand() {
 
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetFrequencyData?startDate=" +
+						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -280,7 +280,7 @@ export default function Demand() {
 				if (temp1 && multiple_Selected_demand_states) {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiDemandMinData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiDemandMinData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_demand_states +
@@ -300,7 +300,7 @@ export default function Demand() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -323,7 +323,7 @@ export default function Demand() {
 				if (temp1 && multiple_Selected_demand_states) {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiDemandMinData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiDemandMinData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_demand_states +
@@ -342,7 +342,7 @@ export default function Demand() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -368,7 +368,7 @@ export default function Demand() {
 				if (temp2 && multiple_Selected_demand_states) {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiDemandMinData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiDemandMinData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_demand_states +
@@ -388,7 +388,7 @@ export default function Demand() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -411,7 +411,7 @@ export default function Demand() {
 				if (temp2 && multiple_Selected_demand_states) {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiDemandMinData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiDemandMinData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_demand_states +
@@ -430,7 +430,7 @@ export default function Demand() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -716,7 +716,7 @@ export default function Demand() {
 						<a
 							hidden={enable}
 							href={
-								"http://10.3.200.63:5010/GetDemandMinDataExcel?startDate=" +
+								"http://10.3.230.62:5010/GetDemandMinDataExcel?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

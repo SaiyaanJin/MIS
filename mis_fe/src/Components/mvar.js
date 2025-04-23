@@ -73,7 +73,7 @@ export default function Mvar() {
     if (start_date && end_date) {
       axios
         .post(
-          "http://10.3.200.63:5010/MVARNames?startDate=" +
+          "http://10.3.230.62:5010/MVARNames?startDate=" +
             moment(start_date).format("YYYY-MM-DD") +
             "&endDate=" +
             moment(end_date).format("YYYY-MM-DD"),
@@ -93,7 +93,7 @@ export default function Mvar() {
       if (i === multiple_date.length) {
         axios
           .post(
-            "http://10.3.200.63:5010/MultiMVARNames?MultistartDate=" +
+            "http://10.3.230.62:5010/MultiMVARNames?MultistartDate=" +
               temp_multi_date,
             {}
           )
@@ -115,7 +115,7 @@ export default function Mvar() {
       if (j === multiple_month.length) {
         axios
           .post(
-            "http://10.3.200.63:5010/MultiMVARNames?MultistartDate=" +
+            "http://10.3.230.62:5010/MultiMVARNames?MultistartDate=" +
               temp_multi_month,
             {}
           )
@@ -132,7 +132,7 @@ export default function Mvar() {
       if (minutes && checked3) {
         axios
           .post(
-            "http://10.3.200.63:5010/GetMVARData?startDate=" +
+            "http://10.3.230.62:5010/GetMVARData?startDate=" +
               moment(start_date).format("YYYY-MM-DD") +
               "&endDate=" +
               moment(end_date).format("YYYY-MM-DD") +
@@ -149,7 +149,7 @@ export default function Mvar() {
           });
         axios
           .post(
-            "http://10.3.200.63:5010/GetFrequencyData?startDate=" +
+            "http://10.3.230.62:5010/GetFrequencyData?startDate=" +
               moment(start_date).format("YYYY-MM-DD") +
               "&endDate=" +
               moment(end_date).format("YYYY-MM-DD") +
@@ -164,7 +164,7 @@ export default function Mvar() {
       } else {
         axios
           .post(
-            "http://10.3.200.63:5010/GetMVARData?startDate=" +
+            "http://10.3.230.62:5010/GetMVARData?startDate=" +
               moment(start_date).format("YYYY-MM-DD") +
               "&endDate=" +
               moment(end_date).format("YYYY-MM-DD") +
@@ -180,7 +180,7 @@ export default function Mvar() {
           });
         axios
           .post(
-            "http://10.3.200.63:5010/GetFrequencyData?startDate=" +
+            "http://10.3.230.62:5010/GetFrequencyData?startDate=" +
               moment(start_date).format("YYYY-MM-DD") +
               "&endDate=" +
               moment(end_date).format("YYYY-MM-DD") +
@@ -208,7 +208,7 @@ export default function Mvar() {
         if (temp1 && multiple_Selected_mvar_states) {
           axios
             .post(
-              "http://10.3.200.63:5010/GetMultiMVARData?MultistartDate=" +
+              "http://10.3.230.62:5010/GetMultiMVARData?MultistartDate=" +
                 temp1 +
                 "&MultistationName=" +
                 multiple_Selected_mvar_states +
@@ -225,7 +225,7 @@ export default function Mvar() {
             });
           axios
             .post(
-              "http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+              "http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
                 temp1 +
                 "&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
                 "&Type=Date" +
@@ -248,7 +248,7 @@ export default function Mvar() {
         if (temp1 && multiple_Selected_mvar_states) {
           axios
             .post(
-              "http://10.3.200.63:5010/GetMultiMVARData?MultistartDate=" +
+              "http://10.3.230.62:5010/GetMultiMVARData?MultistartDate=" +
                 temp1 +
                 "&MultistationName=" +
                 multiple_Selected_mvar_states +
@@ -264,7 +264,7 @@ export default function Mvar() {
             });
           axios
             .post(
-              "http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+              "http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
                 temp1 +
                 "&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
                 "&Type=Date" +
@@ -290,7 +290,7 @@ export default function Mvar() {
         if (temp2 && multiple_Selected_mvar_states) {
           axios
             .post(
-              "http://10.3.200.63:5010/GetMultiMVARData?MultistartDate=" +
+              "http://10.3.230.62:5010/GetMultiMVARData?MultistartDate=" +
                 temp2 +
                 "&MultistationName=" +
                 multiple_Selected_mvar_states +
@@ -308,7 +308,7 @@ export default function Mvar() {
 
           axios
             .post(
-              "http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+              "http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
                 temp2 +
                 "&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
                 "&Type=Month" +
@@ -331,7 +331,7 @@ export default function Mvar() {
         if (temp2 && multiple_Selected_mvar_states) {
           axios
             .post(
-              "http://10.3.200.63:5010/GetMultiMVARData?MultistartDate=" +
+              "http://10.3.230.62:5010/GetMultiMVARData?MultistartDate=" +
                 temp2 +
                 "&MultistationName=" +
                 multiple_Selected_mvar_states +
@@ -348,7 +348,7 @@ export default function Mvar() {
 
           axios
             .post(
-              "http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+              "http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
                 temp2 +
                 "&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
                 "&Type=Month" +
@@ -485,7 +485,7 @@ export default function Mvar() {
               <a
                 hidden={enable}
                 href={
-                  "http://10.3.200.63:5010/GetMVARDataExcel?startDate=" +
+                  "http://10.3.230.62:5010/GetMVARDataExcel?startDate=" +
                   moment(start_date).format("YYYY-MM-DD") +
                   "&endDate=" +
                   moment(end_date).format("YYYY-MM-DD") +

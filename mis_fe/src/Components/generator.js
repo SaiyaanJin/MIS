@@ -76,7 +76,7 @@ export default function Generator() {
 		if (start_date && end_date) {
 			axios
 				.post(
-					"http://10.3.200.63:5010/GeneratorNames?startDate=" +
+					"http://10.3.230.62:5010/GeneratorNames?startDate=" +
 						moment(start_date).format("YYYY-MM-DD HH:mm") +
 						"&endDate=" +
 						moment(end_date).format("YYYY-MM-DD HH:mm"),
@@ -97,7 +97,7 @@ export default function Generator() {
 			if (i === multiple_date.length) {
 				axios
 					.post(
-						"http://10.3.200.63:5010/MultiGeneratorNames?MultistartDate=" +
+						"http://10.3.230.62:5010/MultiGeneratorNames?MultistartDate=" +
 							temp_multi_date,
 						{}
 					)
@@ -119,7 +119,7 @@ export default function Generator() {
 			if (j === multiple_month.length) {
 				axios
 					.post(
-						"http://10.3.200.63:5010/MultiGeneratorNames?MultistartDate=" +
+						"http://10.3.230.62:5010/MultiGeneratorNames?MultistartDate=" +
 							temp_multi_month,
 						{}
 					)
@@ -136,7 +136,7 @@ export default function Generator() {
 			if (minutes && checked3) {
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetGeneratorData?startDate=" +
+						"http://10.3.230.62:5010/GetGeneratorData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -156,7 +156,7 @@ export default function Generator() {
 
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetFrequencyData?startDate=" +
+						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -171,7 +171,7 @@ export default function Generator() {
 			} else {
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetGeneratorData?startDate=" +
+						"http://10.3.230.62:5010/GetGeneratorData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -190,7 +190,7 @@ export default function Generator() {
 
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetFrequencyData?startDate=" +
+						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -218,7 +218,7 @@ export default function Generator() {
 				if (temp1 && multiple_Selected_generator_states) {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiGeneratorData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiGeneratorData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_generator_states +
@@ -238,7 +238,7 @@ export default function Generator() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -261,7 +261,7 @@ export default function Generator() {
 				if (temp1 && multiple_Selected_generator_states) {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiGeneratorData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiGeneratorData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_generator_states +
@@ -280,7 +280,7 @@ export default function Generator() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -306,7 +306,7 @@ export default function Generator() {
 				if (temp2 && multiple_Selected_generator_states) {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiGeneratorData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiGeneratorData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_generator_states +
@@ -326,7 +326,7 @@ export default function Generator() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -349,7 +349,7 @@ export default function Generator() {
 				if (temp2 && multiple_Selected_generator_states) {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiGeneratorData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiGeneratorData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_generator_states +
@@ -368,7 +368,7 @@ export default function Generator() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/GetMultiFrequencyData?MultistartDate=" +
+							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -564,7 +564,7 @@ export default function Generator() {
 						<a
 							hidden={enable}
 							href={
-								"http://10.3.200.63:5010/GetGeneratorDataExcel?startDate=" +
+								"http://10.3.230.62:5010/GetGeneratorDataExcel?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

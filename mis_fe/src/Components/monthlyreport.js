@@ -80,7 +80,7 @@ function MonthlyReports() {
 		if (date_range && date_range[1]) {
 			axios
 				.post(
-					"http://10.3.200.63:5010/meter_names?startDate=" +
+					"http://10.3.230.62:5010/meter_names?startDate=" +
 						moment(date_range[0]).format("YYYY-MM-DD") +
 						"&endDate=" +
 						moment(date_range[1]).format("YYYY-MM-DD") +
@@ -96,7 +96,7 @@ function MonthlyReports() {
 					if (response.data.length === 0) {
 						axios
 							.post(
-								"http://10.3.200.63:5010/meter_names?startDate=" +
+								"http://10.3.230.62:5010/meter_names?startDate=" +
 									moment(date_range[0]).format("YYYY-MM-DD") +
 									"&endDate=" +
 									moment(date_range[1]).format("YYYY-MM-DD") +
@@ -139,7 +139,7 @@ function MonthlyReports() {
 			if (!folder_files) {
 				axios
 					.post(
-						"http://10.3.200.63:5010/Report_Meter_Data?startDate=" +
+						"http://10.3.230.62:5010/Report_Meter_Data?startDate=" +
 							moment(start_date).format("YYYY-MM-DD") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD") +
@@ -169,7 +169,7 @@ function MonthlyReports() {
 			} else {
 				axios
 					.post(
-						"http://10.3.200.63:5010/Report_Meter_Data?startDate=" +
+						"http://10.3.230.62:5010/Report_Meter_Data?startDate=" +
 							moment(start_date).format("YYYY-MM-DD") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD") +
@@ -242,7 +242,7 @@ function MonthlyReports() {
 			if (!folder_files) {
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetMeterData?startDate=" +
+						"http://10.3.230.62:5010/GetMeterData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD") +
@@ -330,7 +330,7 @@ function MonthlyReports() {
 			} else {
 				axios
 					.post(
-						"http://10.3.200.63:5010/GetMeterData?startDate=" +
+						"http://10.3.230.62:5010/GetMeterData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD") +
@@ -944,7 +944,7 @@ function MonthlyReports() {
 						name="demo[]"
 						onUpload={file_name}
 						onError={upload_error}
-						url="http://10.3.200.63:5003/file_upload"
+						url="http://10.3.230.62:5003/file_upload"
 						accept="zip/*"
 						maxFileSize={50000000}
 						emptyTemplate={

@@ -45,7 +45,7 @@ export default function Upload() {
 				if (Selected_lines_states[i] === "Voltage") {
 					axios
 						.post(
-							"http://10.3.200.63:5010/VoltageFileInsert?startDate=" +
+							"http://10.3.230.62:5010/VoltageFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD")
@@ -57,7 +57,7 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Lines") {
 					axios
 						.post(
-							"http://10.3.200.63:5010/LinesFileInsert?startDate=" +
+							"http://10.3.230.62:5010/LinesFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD"),
@@ -68,7 +68,7 @@ export default function Upload() {
 
 					axios
 						.post(
-							"http://10.3.200.63:5010/MVARFileInsert?startDate=" +
+							"http://10.3.230.62:5010/MVARFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD")
@@ -80,7 +80,7 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "ICT") {
 					axios
 						.post(
-							"http://10.3.200.63:5010/ICTFileInsert?startDate=" +
+							"http://10.3.230.62:5010/ICTFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD"),
@@ -93,7 +93,7 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Demand") {
 					axios
 						.post(
-							"http://10.3.200.63:5010/DemandFileInsert?startDate=" +
+							"http://10.3.230.62:5010/DemandFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD")
@@ -105,7 +105,7 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Generator") {
 					axios
 						.post(
-							"http://10.3.200.63:5010/GeneratorFileInsert?startDate=" +
+							"http://10.3.230.62:5010/GeneratorFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD")
@@ -117,7 +117,7 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "ISGS") {
 					axios
 						.post(
-							"http://10.3.200.63:5010/ISGSFileInsert?startDate=" +
+							"http://10.3.230.62:5010/ISGSFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD")
@@ -129,7 +129,7 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Frequency") {
 					axios
 						.post(
-							"http://10.3.200.63:5010/FrequencyFileInsert?startDate=" +
+							"http://10.3.230.62:5010/FrequencyFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD")

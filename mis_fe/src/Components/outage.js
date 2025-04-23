@@ -60,7 +60,7 @@ export default function Outage() {
 			setreportdate1(moment(reportdate).format("DD-MM-YYYY"))
 
 			axios
-				.post("http://10.3.200.63:5010/outage?daterange=" + r_date, {})
+				.post("http://10.3.230.62:5010/outage?daterange=" + r_date, {})
 				.then((response) => {
 					// console.log(response.data);
 					setreportcoaldata(response.data.COAL[1]);
@@ -84,7 +84,7 @@ export default function Outage() {
 			}
 
 			axios
-				.post("http://10.3.200.63:5010/outage?daterange=" + date_range, {})
+				.post("http://10.3.230.62:5010/outage?daterange=" + date_range, {})
 				.then((response) => {
 					setdata(response.data);
 					setcoaldata(response.data.COAL[0]);
