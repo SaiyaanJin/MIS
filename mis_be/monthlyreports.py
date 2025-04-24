@@ -155,7 +155,7 @@ def meternames(startDate,endDate,folder):
 
     elif folder == "yes":
 
-        path = "D:/test/SEMvsSCADA/svs_be/Meter_Files/"
+        path = "E:/test/SEMvsSCADA/svs_be/Meter_Files/"
 
         startDate_obj = datetime.strptime(startDate, '%Y-%m-%d')
         endDate_obj = datetime.strptime(endDate, '%Y-%m-%d')
@@ -216,7 +216,7 @@ def meter_check(startDate_obj,endDate_obj):
     db_dates=[]
     meter_folder_dates=[]
     non_meter_folder_dates=[]
-    path = "D:/test/SEMvsSCADA/svs_be/Meter_Files/"
+    path = "E:/test/SEMvsSCADA/svs_be/Meter_Files/"
 
     CONNECTION_STRING = "mongodb://10.3.101.179:1434"
     client = MongoClient(CONNECTION_STRING)
@@ -350,7 +350,7 @@ def MeterData(startDate,endDate,time,meter_list,folder):
 
     elif folder == "yes":
 
-        path = "D:/test/SEMvsSCADA/svs_be/Meter_Files/"
+        path = "E:/test/SEMvsSCADA/svs_be/Meter_Files/"
 
         startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
         endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
@@ -674,7 +674,7 @@ def ReportMeterData(startDate,endDate,time,folder):
                "132KV-GELEPHU-SALAKATI","132kV RANGIA-MOTANGA","400 kV BERHAMPORE-BHERAMARA-1","400 kV BERHAMPORE-BHERAMARA-2","400 kV BERHAMPORE-BHERAMARA-3","401 kV BERHAMPORE-BHERAMARA-4",
                "400kV MUZAFFARPUR-DHALKEBAR-1","400kV MUZAFFARPUR-DHALKEBAR-2","From Bihar Source"]
 
-        path = "D:/test/SEMvsSCADA/svs_be/Meter_Files/"
+        path = "E:/test/SEMvsSCADA/svs_be/Meter_Files/"
 
         data_to_send = []
 
