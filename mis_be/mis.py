@@ -102,7 +102,7 @@ def divide_chunks(l, n):
 
 def GetVoltageCollection():
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     voltage_data_collection = db['voltage_data']
@@ -150,7 +150,7 @@ def UpdateVoltageDfIntoDBtest(voltage_data_collection, df, for_date):
 
 def InsertVoltageDfIntoDB(voltage_data_collection, df, for_date):
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     voltage_data_collection = db['voltage_data']
@@ -188,7 +188,7 @@ def VoltageFileInsert():
 
     def getDf220P1(file, for_date):
 
-        CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+        CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
         client = MongoClient(CONNECTION_STRING)
         db = client['mis']
         voltage_data_collection = db['voltage_data']
@@ -210,7 +210,7 @@ def VoltageFileInsert():
 
     def getDf220P2(file, for_date):
 
-        CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+        CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
         client = MongoClient(CONNECTION_STRING)
         db = client['mis']
         voltage_data_collection = db['voltage_data']
@@ -233,7 +233,7 @@ def VoltageFileInsert():
 
     def getDf400(file, for_date):
 
-        CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+        CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
         client = MongoClient(CONNECTION_STRING)
         db = client['mis']
         voltage_data_collection = db['voltage_data']
@@ -252,7 +252,7 @@ def VoltageFileInsert():
             print("VoltageFileInsert Length Mismatch")
         return df
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     voltage_data_collection = db['voltage_data']
@@ -1020,7 +1020,7 @@ def VoltageUpload():
 
 def GetLinesCollection():
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     line_mw_data_collection = db['line_mw_data_p1']
@@ -1982,7 +1982,7 @@ def lines_upload():
 
 def GetMVARCollection():
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     MVAR_P1 = db['MVAR_p1']
@@ -2192,7 +2192,7 @@ def MVARFileInsert():
 
 def GetICTCollection():
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
 
     client = MongoClient(CONNECTION_STRING)
 
@@ -3059,7 +3059,7 @@ def ICTUpload():
 
 def GetFrequencyCollection():
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     frequency_data_collection = db['frequency_data']
@@ -4768,7 +4768,7 @@ def MultiLinesMWMVARData():
 
 def GetDemandCollection():
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     demand_collection = db['Demand_minutes']
@@ -5540,7 +5540,7 @@ def GetDemandMinDataExcel():
 
 def GetGeneratorCollection():
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     Generator_DB = db['Generator_Data']
@@ -6181,7 +6181,7 @@ def GetGeneratorDataExcel():
 
 def GetISGSCollection():
 
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     ISGS_DB = db['ISGS_Data']
