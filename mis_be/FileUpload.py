@@ -2,96 +2,28 @@ import pandas as pd
 from pymongo import MongoClient, errors
 from flask import jsonify
 import pandas as pd
-from datetime import date, timedelta, datetime
-
-
-
-def my_max_min_function(somelist):
-
-    try:
-        max_value = max(somelist)
-        min_value = min(somelist)
-        avg_value = 0 if len(somelist) == 0 else sum(somelist)/len(somelist)
-
-        max_index = [i for i, val in enumerate(somelist) if val == max_value]
-        min_index = [i for i, val in enumerate(somelist) if val == min_value]
-
-        avg_value = round(avg_value, 3)
-        max_value = round(max_value, 3)
-        min_value = round(min_value, 3)
-
-        max_index.insert(0, max_value)
-        min_index.insert(0, min_value)
-
-    except:
-
-        max_index = [0, 0]
-        min_index = [0, 0]
-        avg_value = 0
-
-    return max_index, min_index, avg_value
-
-
-def datetime_range(start, end, delta):
-    end = end + timedelta(days=1)
-    current = start
-    while current < end:
-        yield current
-        current += delta
-
-    return current
-
-
-def divide_chunks(l, n):
-
-    # looping till length l
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
-
+from datetime import date, timedelta
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////Collections/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 def GetCollection():
-
     CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
-    x1 = db['voltage_data']
-    x2  = db['line_mw_data_p1']
-    x3  = db['line_mw_data_p2']
-    x4  = db['line_mw_data_400_above']
-    x5  = db['MVAR_p1']
-    x6  = db['MVAR_p2']
-    x7  = db['Lines_MVAR_400_above']
-    x8  = db['ICT_data']
-    x9  = db['ICT_data_MW']
-    x10  = db['frequency_data']
-    x11  = db['Demand_minutes']
-    x12  = db['Drawal_minutes']
-    x13  = db['Generator_Data']
-    x14  = db['ISGS_Data']
+    collections = [
+        'voltage_data', 'line_mw_data_p1', 'line_mw_data_p2', 'line_mw_data_400_above',
+        'MVAR_p1', 'MVAR_p2', 'Lines_MVAR_400_above', 'ICT_data', 'ICT_data_MW',
+        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'ISGS_Data'
+    ]
+    return [db[collection] for collection in collections]
 
-    return [x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14]
-
-
-tables = GetCollection()
-voltage_data_collection = tables[0]
-line_mw_data_collection = tables[1]
-line_mw_data_collection1 = tables[2]
-line_mw_data_collection2 = tables[3]
-MVAR_P1 = tables[4]
-MVAR_P2 = tables[5]
-Lines_MVAR_400_above = tables[6]
-ICT_data1 = tables[7]
-ICT_data2 = tables[8]
-frequency_data_collection = tables[9]
-demand_collection = tables[10]
-drawal_collection = tables[11]
-Generator_DB = tables[12]
-ISGS_DB = tables[13]
-
+(
+    voltage_data_collection, line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2,
+    MVAR_P1, MVAR_P2, Lines_MVAR_400_above, ICT_data1, ICT_data2,
+    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, ISGS_DB
+) = GetCollection()
 
 # /////////////////////////////////////////////////////////////////////////////Voltage////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
