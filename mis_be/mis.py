@@ -27,6 +27,7 @@ from monthlyreports import ReportMeterData
 
 from FileUpload import *
 from names import *
+from outage import *
 
 app = Flask(__name__)
 CORS(app)
@@ -96,17 +97,23 @@ def divide_chunks(l, n):
 # //////////////////////////////////////////////////////////////////////////////////////////voltage/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-def GetVoltageCollection():
-
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
-    client = MongoClient(CONNECTION_STRING)
+def GetCollection():
+    client = MongoClient("mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV")
     db = client['mis']
-    voltage_data_collection = db['voltage_data']
+    collection_names = [
+        'voltage_data', 'line_mw_data_p1', 'line_mw_data_p2', 'line_mw_data_400_above',
+        'MVAR_p1', 'MVAR_p2', 'Lines_MVAR_400_above', 'ICT_data', 'ICT_data_MW',
+        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'ISGS_Data'
+    ]
+    return [db[name] for name in collection_names]
 
-    return voltage_data_collection
 
+(
+    voltage_data_collection, line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2,
+    MVAR_P1, MVAR_P2, Lines_MVAR_400_above, ICT_data1, ICT_data2,
+    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, ISGS_DB
+) = GetCollection()
 
-voltage_data_collection = GetVoltageCollection()
 
 
 @app.route('/VoltageFileInsert', methods=['GET', 'POST'])
@@ -761,21 +768,6 @@ def GetVoltageDataExcel():
 # //////////////////////////////////////////////////////////////////////////////////////////line/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-def GetLinesCollection():
-
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
-    client = MongoClient(CONNECTION_STRING)
-    db = client['mis']
-    line_mw_data_collection = db['line_mw_data_p1']
-    line_mw_data_collection1 = db['line_mw_data_p2']
-    line_mw_data_collection2 = db['line_mw_data_400_above']
-
-    return line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2
-
-
-line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2 = GetLinesCollection()
-
-
 @app.route('/LinesFileInsert', methods=['GET', 'POST'])
 def LinesFileInsert():
 
@@ -1349,21 +1341,6 @@ def GetLinesDataExcel():
 # //////////////////////////////////////////////////////////////////////////////////////////lines-mvar/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-def GetMVARCollection():
-
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
-    client = MongoClient(CONNECTION_STRING)
-    db = client['mis']
-    MVAR_P1 = db['MVAR_p1']
-    MVAR_P2 = db['MVAR_p2']
-    Lines_MVAR_400_above = db['Lines_MVAR_400_above']
-
-    return MVAR_P1, MVAR_P2, Lines_MVAR_400_above
-
-
-MVAR_P1, MVAR_P2, Lines_MVAR_400_above = GetMVARCollection()
-
-
 @app.route('/MVARFileInsert', methods=['GET', 'POST'])
 def MVARFileInsert():
 
@@ -1383,22 +1360,6 @@ def MVARFileInsert():
 # //////////////////////////////////////////////////////////////////////////////////////////mvar/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 # //////////////////////////////////////////////////////////////////////////////////////////ict/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-def GetICTCollection():
-
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
-
-    client = MongoClient(CONNECTION_STRING)
-
-    db = client['mis']
-    ICT_data1 = db['ICT_data']
-    ICT_data2 = db['ICT_data_MW']
-
-    return ICT_data1, ICT_data2
-
-
-ICT_data1, ICT_data2 = GetICTCollection()
 
 
 @app.route('/ICTFileInsert', methods=['GET', 'POST'])
@@ -1921,24 +1882,6 @@ def GetICTDataExcel():
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////frequency/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-def GetFrequencyCollection():
-
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
-    client = MongoClient(CONNECTION_STRING)
-    db = client['mis']
-    frequency_data_collection = db['frequency_data']
-
-    # frequency_data_collection.create_index(
-    # [("d", ASCENDING), ("n", ASCENDING)],
-    # unique=True
-    # )
-
-    return frequency_data_collection
-
-
-frequency_data_collection = GetFrequencyCollection()
 
 
 @app.route('/FrequencyFileInsert', methods=['GET', 'POST'])
@@ -3281,21 +3224,6 @@ def MultiLinesMWMVARData():
 
 # ///////////////////////////////////////////////////////////////////////////////////Demand/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-def GetDemandCollection():
-
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
-    client = MongoClient(CONNECTION_STRING)
-    db = client['mis']
-    demand_collection = db['Demand_minutes']
-    drawal_collection = db['Drawal_minutes']
-
-    return demand_collection, drawal_collection
-
-
-demand_collection, drawal_collection = GetDemandCollection()
-
-
 @app.route('/DemandFileInsert', methods=['GET', 'POST'])
 def DemandFileInsert():
 
@@ -3893,28 +3821,6 @@ def GetDemandMinDataExcel():
 
 # ///////////////////////////////////////////////////////////////////////////////////Generator/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-def GetGeneratorCollection():
-
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
-    client = MongoClient(CONNECTION_STRING)
-    db = client['mis']
-    Generator_DB = db['Generator_Data']
-
-    # Generator_DB.create_index(
-    #     [("d", ASCENDING), ("n", ASCENDING)],
-    #     unique=True
-    # )
-    # Generator_MVAR.create_index(
-    #     [("d", ASCENDING), ("n", ASCENDING)],
-    #     unique=True
-    # )
-    return Generator_DB
-
-
-Generator_DB = GetGeneratorCollection()
-
-
 @app.route('/GeneratorFileInsert', methods=['GET', 'POST'])
 def GeneratorFileInsert():
 
@@ -4439,27 +4345,6 @@ def GetGeneratorDataExcel():
 # ///////////////////////////////////////////////////////////////////////////////////ISGS/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-def GetISGSCollection():
-
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
-    client = MongoClient(CONNECTION_STRING)
-    db = client['mis']
-    ISGS_DB = db['ISGS_Data']
-
-    # ISGS_DB.create_index(
-    #     [("d", ASCENDING), ("n", ASCENDING)],
-    #     unique=True
-    # )
-    # Generator_MVAR.create_index(
-    #     [("d", ASCENDING), ("n", ASCENDING)],
-    #     unique=True
-    # )
-    return ISGS_DB
-
-
-ISGS_DB = GetISGSCollection()
-
-
 @app.route('/ISGSFileInsert', methods=['GET', 'POST'])
 def ISGSFileInsert():
 
@@ -4706,232 +4591,105 @@ def GetISGSData():
 
     return jsonify(reply)
 
-
 @app.route('/GetMultiISGSData', methods=['GET', 'POST'])
 def GetMultiISGSData():
-
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
-    Type = request.args['Type']
-
-    time1 = int(request.args['time'])
+    # Parse request arguments
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationNames = request.args['MultistationName'].split(',')
+    query_type = request.args['Type']
+    time_interval = int(request.args['time'])
 
     listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
 
-    if Type == "Date":
+    def fetch_data(station, start_date, end_date):
+        """Fetch ISGS data from DB for a station and date range"""
+        filter_query = {
+            'd': {
+                '$gte': datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0, tzinfo=timezone.utc),
+                '$lte': datetime(end_date.year, end_date.month, end_date.day, 0, 0, 0, tzinfo=timezone.utc)
+            },
+            'n': station
+        }
+        projection = {'_id': 0, 'p': 1}
+        return list(ISGS_DB.find(filter=filter_query, projection=projection))
 
+    def clean_output(raw_output):
+        """Replace NaNs with zero"""
+        for i in range(1, len(raw_output)):
+            try:
+                if math.isnan(float(raw_output[i])):
+                    raw_output[i] = 0
+            except:
+                raw_output[i] = 0
+        return raw_output
+
+    def process_output(station, output, date_obj):
+        """Aggregate and compute stats for the output"""
+        if time_interval == 1:
+            return {'stationName': station, 'output': output, 'Date_Time': date_obj}
+        else:
+            chunks = list(divide_chunks(output, time_interval))
+            avg_output = [my_max_min_function(chunk)[2] for chunk in chunks]
+            return {'stationName': station, 'output': avg_output, 'Date_Time': date_obj}
+
+    if query_type == "Date":
         startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
         endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time_interval))]
 
-        # date_range= [startDateObj+timedelta(days=x) for x in range((endDateObj-startDateObj).days+1)]
+        for station in stationNames:
+            for date_str in MultistartDate:
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                result = fetch_data(station, date_obj, date_obj)
 
-        reply = []
+                output = result[0]['p'] if result else listofzeros
+                output = clean_output(output)
+                reply.append(process_output(station, output, date_obj))
 
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
+    elif query_type == "Month":
+        for station in stationNames:
+            for date_str in MultistartDate:
+                startDateObj = datetime.strptime(date_str, "%Y-%m-%d")
+                endDateObj = pd.Timestamp(date_str) + MonthEnd(1)
 
-        allDateTime = dts
-
-        for station in stationName:
-
-            for dateval in MultistartDate:
-
-                DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
-                output = []
-
-                filter = {
-                    'd': {
-                        '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
-                    },
-                    'n': station
-                }
-                project = {
-                    '_id': 0,
-                    'p': 1,
-
-                }
-
-                ISGS_result = ISGS_DB.find(
-                    filter=filter,
-                    projection=project
-                )
-
-                ISGS_list = list(ISGS_result)
-
-                if len(ISGS_list) == 0:
-                    output = output + listofzeros
-
-                else:
-
-                    output = output + ISGS_list[0]['p']
-
-                for i in range(1, len(output)):
-                    x = float(output[i])
-                    math.isnan(x)
-                    if math.isnan(x):
-                        output[i] = 0
-
-                if time1 == 1:
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': DateObj}
-                    reply.append(data)
-
-                else:
-                    temp_output = []
-
-                    x = list(divide_chunks(output, time1))
-
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_output.append(avg_1)
-
-                    data = {'stationName': station, 'output': temp_output,
-                            'Date_Time': DateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
-
-    elif Type == "Month":
-
-        reply = []
-
-        allDateTime = []
-
-        # listofzeros = [0] * 96
-
-        for station in stationName:
-
-            for dateval in MultistartDate:
-
-                startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
-                endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
-
-                # temp_allDateTime = []
-
-                # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-                #     temp_allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
-
-                # if (len(temp_allDateTime)>=len(allDateTime)):
-                #     allDateTime= temp_allDateTime
-
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                       datetime_range(startDateObj, endDateObj,
-                                      timedelta(minutes=time1))]
-
-                if len(allDateTime) < len(dts):
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time_interval))]
+                if len(dts) > len(allDateTime):
                     allDateTime = dts
 
-                output = []
+                result = fetch_data(station, startDateObj, endDateObj)
+                output = [val for entry in result for val in entry['p']]
+                output = clean_output(output)
+                reply.append(process_output(station, output, startDateObj))
 
-                filter = {
-                    'd': {
-                        '$gte': datetime(startDateObj.year, startDateObj.month, startDateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(endDateObj.year, endDateObj.month, endDateObj.day, 0, 0, 0, tzinfo=timezone.utc)
-                    },
-                    'n': station
-                }
-                project = {
-                    '_id': 0,
-                    'p': 1,
+    # Append Date_Time metadata
+    reply.append({'Date_Time': allDateTime})
 
-                }
+    # Post-process: compute max, min, avg, duration
+    for i in range(len(reply) - 1):  # Skip the last one (Date_Time)
+        stats_max, stats_min, stats_avg = my_max_min_function(reply[i]['output'])
 
-                ISGS_result = ISGS_DB.find(
-                    filter=filter,
-                    projection=project
-                )
-
-                ISGS_list = list(ISGS_result)
-
-                for item in ISGS_list:
-
-                    output = output + item['p']
-                # print('ISGS ',len(ISGS))
-
-                for i in range(1, len(output)):
-                    x = float(output[i])
-                    math.isnan(x)
-                    if math.isnan(x):
-                        output[i] = 0
-
-                if time1 == 1:
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': startDateObj}
-                    reply.append(data)
-
-                else:
-                    temp_output = []
-
-                    x = list(divide_chunks(output, time1))
-
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_output.append(avg_1)
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': startDateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
-
-    for i in range(len(reply)-1):
-
-        max, min, avg = my_max_min_function(reply[i]['output'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if stats_max[0] == 0 and stats_min[0] == 0:
+            stats_max = [[0], []]
+            stats_min = [[0], []]
+        elif len(stats_max) > 50 and len(stats_min) > 50:
+            stats_max = [[stats_max[0]], []]
+            stats_min = [[stats_min[0]], []]
         else:
-            l1 = []
-            l2 = []
+            stats_max = [[stats_max[0]] * (len(allDateTime) - 1), allDateTime[1:]]
+            stats_min = [[stats_min[0]] * (len(allDateTime) - 1), allDateTime[1:]]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+        reply[i]['max'] = stats_max
+        reply[i]['min'] = stats_min
+        reply[i]['avg'] = stats_avg
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["output"].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        sorted_output = sorted(reply[i]['output'], reverse=True)
+        percentile = list(np.linspace(0, 100, len(sorted_output)))
+        reply[i]['Duration'] = [sorted_output, percentile]
 
     return jsonify(reply)
+
 
 
 @app.route('/GetISGSDataExcel', methods=['GET', 'POST'])
@@ -5088,442 +4846,16 @@ def Report_Meter_Data2():
 
     return (response)
 
-# @app.route('/SCED_Data', methods=['GET', 'POST'])
-# def SCED_Data():
-
-#     startDate = request.args['startDate']
-#     startDate = datetime.strptime(startDate, "%d-%m-%Y")
-#     endDate = request.args['endDate']
-#     endDate = datetime.strptime(endDate, "%d-%m-%Y")
-
-#     date_val = [startDate+timedelta(days=x)
-#                 for x in range((endDate-startDate).days+1)]
-    
-#     for item in date_val:
-
-#         item = item.strftime("%d-%m-%Y")
-
-#         res1 = requests.get(
-#                 'https://scedpublic.posoco.in/marginalcost/getTodayCost?selectedDate%5B%5D:='+item)
-#         response1 = json.loads(res1.text)
-
-#     return jsonify(response1)
-
-
 
 @app.route('/outage', methods=['GET', 'POST'])
 def outage():
-
+    
     daterange = request.args['daterange']
     daterange= daterange.split(",")
 
-    startDateObj = datetime.strptime(daterange[0], "%d-%m-%Y")
-    endDateObj = datetime.strptime(daterange[1], "%d-%m-%Y")
-    date_range= [date.strftime(startDateObj+timedelta(days=x),"%d-%m-%Y") for x in range((endDateObj-startDateObj).days+1)]
+    response= outagedata(daterange)
 
-    hydro1=[]
-    coal1=[]
-    nuclear1=[]
-
-    def blank_check(value):
-
-        blank_val= {'Date': dates,
-                'ELEMENT_NAME':'',
-                'UNIT_NUMBER':'',
-                'INSTALLED_CAPACITY':'',
-                'LOCATION':'',
-                'OUT_REASON':'',
-                'EXPECTED_REVIVAL_DATE':'',
-                'FUEL':'',
-                'OUTAGE_DATE':'',
-                'OWNER_NAME':'',
-                'SECTOR':'',
-                'OUTAGE_TIME':'',
-                'OUTAGE_TYPE':''}
-
-        if len(value)==0:
-            return ([blank_val])
-        else: 
-            return (value)
-
-
-    for dates in date_range:
-        units_api = "https://report.erldc.in/POSOCO_API/api/Outage/GetQueryNpmcReportData/"+dates
-        units_api_res = requests.get(units_api).json()
-
-        blank= {'Date': dates,
-                'ELEMENT_NAME':'',
-                'INSTALLED_CAPACITY':'',
-                'EXPECTED_REVIVAL_DATE':'',
-                'FUEL':'',
-                'LOCATION':'',
-                'OUTAGE_DATE':'',
-                'OUT_REASON':'',
-                'OWNER_NAME':'',
-                'SECTOR':'',
-                'UNIT_NUMBER':'',
-                'OUTAGE_TIME':'',
-                'OUTAGE_TYPE':''}
-
-        if len(units_api_res)!=0:
-
-            hydro_planned_rev=[]
-            coal_planned_rev=[]
-            nuclear_planned_rev=[]
-
-            hydro_forced_rev=[]
-            coal_forced_rev=[]
-            nuclear_forced_rev=[]
-
-            hydro_planned_out=[]
-            coal_planned_out=[]
-            nuclear_planned_out=[]
-
-            hydro_forced_out=[]
-            coal_forced_out=[]
-            nuclear_forced_out=[]
-
-            coal_short_rev=[]
-            coal_short_out=[]
-
-            for item in units_api_res:
-
-                if item['FUEL']== 'HYDRO':
-                    hydro1.append({'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':str(item['INSTALLED_CAPACITY'])+" MW",
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION/OWNER_NAME':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':item['OUTAGE_DATE'],
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    # 'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']})
-
-                    if item['OUTAGE_TYPE'] is None or item['OUTAGE_TYPE']=="PLANNED OUTAGE":
-                        report_date= daterange[0].replace("-","/")
-
-                        if item['EXPECTED_REVIVAL_DATE']==report_date:
-
-                            if item['REVIVAL_TIME'] is None:
-                                remark= ""
-                            else:
-                                remark= "Synchronized at "+str(item['REVIVAL_TIME'])
-
-                            hydro_planned_rev.append(
-                                {'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':remark,
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                            )
-                        else:
-                            hydro_planned_out.append(
-                                {'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':item['OUTAGE_DATE'],
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                            )
-
-                    else:
-                        report_date= daterange[0].replace("-","/")
-
-                        if item['EXPECTED_REVIVAL_DATE']==report_date:
-
-                            if item['REVIVAL_TIME'] is None:
-                                remark= ""
-                            else:
-                                remark= "Synchronized at "+str(item['REVIVAL_TIME'])
-
-                            hydro_forced_rev.append(
-                                {'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':remark,
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                            )
-                        else:
-                            hydro_forced_out.append(
-                                {'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':item['OUTAGE_DATE'],
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                            )
-
-
-                if item['FUEL']== 'COAL':
-                    coal1.append({'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':str(item['INSTALLED_CAPACITY'])+" MW",
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION/OWNER_NAME':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':item['OUTAGE_DATE'],
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    # 'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']})
-
-                    if "Coal Shortage" not in item['OUT_REASON']: 
-
-                        if item['OUTAGE_TYPE'] is None or item['OUTAGE_TYPE']=="PLANNED OUTAGE":
-                            report_date= daterange[0].replace("-","/")
-
-                            if item['EXPECTED_REVIVAL_DATE']==report_date:
-
-                                if item['REVIVAL_TIME'] is None:
-                                    remark= ""
-                                else:
-                                    remark= "Synchronized at "+str(item['REVIVAL_TIME'])
-
-                                coal_planned_rev.append(
-                                    {'Date': dates,
-                                        'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                        'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                        'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                        'FUEL':item['FUEL'],
-                                        'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                        'OUTAGE_DATE':remark,
-                                        'OUT_REASON':item['OUT_REASON'],
-                                        'OWNER_NAME':item['OWNER_NAME'],
-                                        'SECTOR':item['SECTOR'],
-                                        'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                        'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                        'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                                )
-                            else:
-                                coal_planned_out.append(
-                                    {'Date': dates,
-                                        'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                        'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                        'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                        'FUEL':item['FUEL'],
-                                        'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                        'OUTAGE_DATE':item['OUTAGE_DATE'],
-                                        'OUT_REASON':item['OUT_REASON'],
-                                        'OWNER_NAME':item['OWNER_NAME'],
-                                        'SECTOR':item['SECTOR'],
-                                        'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                        'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                        'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                                )
-                            
-                        else:
-                            report_date= daterange[0].replace("-","/")
-
-                            if item['EXPECTED_REVIVAL_DATE']==report_date:
-
-                                if item['REVIVAL_TIME'] is None:
-                                    remark= ""
-                                else:
-                                    remark= "Synchronized at "+str(item['REVIVAL_TIME'])
-
-                                coal_forced_rev.append(
-                                    {'Date': dates,
-                                        'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                        'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                        'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                        'FUEL':item['FUEL'],
-                                        'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                        'OUTAGE_DATE':remark,
-                                        'OUT_REASON':item['OUT_REASON'],
-                                        'OWNER_NAME':item['OWNER_NAME'],
-                                        'SECTOR':item['SECTOR'],
-                                        'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                        'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                        'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                                )
-                            else:
-                                coal_forced_out.append(
-                                    {'Date': dates,
-                                        'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                        'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                        'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                        'FUEL':item['FUEL'],
-                                        'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                        'OUTAGE_DATE':item['OUTAGE_DATE'],
-                                        'OUT_REASON':item['OUT_REASON'],
-                                        'OWNER_NAME':item['OWNER_NAME'],
-                                        'SECTOR':item['SECTOR'],
-                                        'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                        'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                        'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                                )
-                        
-                    else:
-                        report_date= daterange[0].replace("-","/")
-
-                        if item['EXPECTED_REVIVAL_DATE']==report_date:
-
-                            if item['REVIVAL_TIME'] is None:
-                                remark= ""
-                            else:
-                                remark= "Synchronized at "+str(item['REVIVAL_TIME'])
-
-                            coal_short_rev.append(
-                                {'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':remark,
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                            )
-                        else:
-                            coal_short_out.append(
-                                {'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':item['INSTALLED_CAPACITY'],
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':item['OUTAGE_DATE'],
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']}
-                            )
-
-
-                if item['FUEL']== 'NUCLEAR':
-                    nuclear1.append({'Date': dates,
-                                    'ELEMENT_NAME':item['ELEMENT_NAME'],
-                                    'INSTALLED_CAPACITY':str(item['INSTALLED_CAPACITY'])+" MW",
-                                    'EXPECTED_REVIVAL_DATE':item['EXPECTED_REVIVAL_DATE'],
-                                    'FUEL':item['FUEL'],
-                                    'LOCATION/OWNER_NAME':item['LOCATION']+"/"+item['OWNER_NAME'],
-                                    'OUTAGE_DATE':item['OUTAGE_DATE'],
-                                    'OUT_REASON':item['OUT_REASON'],
-                                    # 'OWNER_NAME':item['OWNER_NAME'],
-                                    'SECTOR':item['SECTOR'],
-                                    'UNIT_NUMBER':item['UNIT_NUMBER'],
-                                    'OUTAGE_TIME':item['OUTAGE_TIME'],
-                                    'OUTAGE_TYPE':item['OUTAGE_TYPE']})
-
-            hydro_report={
-                'Planned': {
-                    'Revived': blank_check(hydro_planned_rev),
-                    'Out': blank_check(hydro_planned_out)
-                },
-                'Forced': {
-                    'Revived': blank_check(hydro_forced_rev),
-                    'Out': blank_check(hydro_forced_out)
-                }
-            }
-            coal_report={
-                'Planned': {
-                    'Revived': blank_check(coal_planned_rev),
-                    'Out': blank_check(coal_planned_out)
-                },
-                'Forced': {
-                    'Revived': blank_check(coal_forced_rev),
-                    'Out': blank_check(coal_forced_out)
-                },
-                'Shortage': {
-                    'Revived': blank_check(coal_short_rev),
-                    'Out': blank_check(coal_short_out)
-                }
-            }
-            nuclear_report={
-                'Planned': {
-                    'Revived': blank_check(nuclear_planned_rev),
-                    'Out': blank_check(nuclear_planned_out)
-                },
-                'Forced': {
-                    'Revived': blank_check(nuclear_forced_rev),
-                    'Out': blank_check(nuclear_forced_out)
-                }
-            }
-
-        else:
-            
-            hydro1.append(blank)
-            coal1.append(blank)
-            nuclear1.append(blank)
-
-            hydro_report={
-                'Planned': {
-                    'Revived': [blank],
-                    'Out': [blank]
-                },
-                'Forced': {
-                    'Revived': [blank],
-                    'Out': [blank]
-                }
-            }
-            coal_report={
-                'Planned': {
-                    'Revived': [blank],
-                    'Out': [blank]
-                },
-                'Forced': {
-                    'Revived': [blank],
-                    'Out': [blank]
-                },
-                'Shortage': {
-                    'Revived': [blank],
-                    'Out': [blank]
-                }
-            }
-            nuclear_report={
-                'Planned': {
-                    'Revived': [blank],
-                    'Out': [blank]
-                },
-                'Forced': {
-                    'Revived': [blank],
-                    'Out': [blank]
-                }
-            }
-
-    return ({'HYDRO':[hydro1,hydro_report],'COAL':[coal1,coal_report],'NUCLEAR':[nuclear1,nuclear_report]})
+    return response
 
 if __name__ == '__main__':
 
