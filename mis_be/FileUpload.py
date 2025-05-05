@@ -1,24 +1,9 @@
-from cmath import nan
 import pandas as pd
-import os
-from pymongo import MongoClient, ASCENDING, DESCENDING, errors
-from datetime import date, timedelta, datetime, timezone
-from flask import Flask, jsonify, request, redirect, Response, send_file
-from flask_cors import CORS
-import json
-import math
-
-from flask_cors import CORS, cross_origin
-from flask import send_from_directory
-from pandas.tseries.offsets import MonthEnd
-import numpy as np
+from pymongo import MongoClient, errors
+from flask import jsonify
 import pandas as pd
-import urllib.request
-import datetime
-import xmltodict, json
 from datetime import date, timedelta, datetime
-import requests
-from io import StringIO
+
 
 
 def my_max_min_function(somelist):
@@ -108,8 +93,35 @@ Generator_DB = tables[12]
 ISGS_DB = tables[13]
 
 
+# /////////////////////////////////////////////////////////////////////////////Voltage////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 def Voltage(startDateObj,endDateObj,PATH):
+
+    
+    def InsertVoltageDfIntoDB(voltage_data_collection, df, for_date):
+
+        doc_list = []
+        df = df.astype('double').reset_index(drop=True)
+        df.index = df.index.astype('str')
+        if (len(df) != 1440):
+
+            raise Exception("Error")
+        for col in set(df.columns.get_level_values(0)):
+            a = {
+                "vol": df[col]['Bus-1 Voltage (kV)'].round(3).to_list(),
+                "vol2": df[col]['Bus-2 Voltage (kV)'].round(3).to_list(),
+                "d": pd.to_datetime(for_date),
+                "ym": for_date.strftime("%Y%m"),
+                "n": col}
+            doc_list.append(a)
+
+        try:
+            res = voltage_data_collection.insert_many(doc_list)
+            # print("Successfully inserted Voltage data for ", for_date)
+        except:
+            print("Voltage Database file insert not done")
+
+        return res
 
 
     def getDf220P1(file, for_date):
@@ -152,8 +164,6 @@ def Voltage(startDateObj,endDateObj,PATH):
         return df
 
 
-
-
     res = []
     for for_date in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
 
@@ -183,7 +193,7 @@ def Voltage(startDateObj,endDateObj,PATH):
 
     return jsonify(res)
 
-
+# /////////////////////////////////////////////////////////////////////////////Frequency////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 def Frequency(startDateObj,endDateObj,PATH):
 
@@ -242,6 +252,7 @@ def Frequency(startDateObj,endDateObj,PATH):
 
     return jsonify(op)
 
+# /////////////////////////////////////////////////////////////////////////////Lines////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 def Lines(startDateObj,endDateObj,PATH):
 
@@ -502,6 +513,7 @@ def Lines(startDateObj,endDateObj,PATH):
 
     return jsonify(op)
 
+# /////////////////////////////////////////////////////////////////////////////LinesMVAR////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 def LinesMVARFileInsert(startDateObj,endDateObj,PATH):
@@ -673,129 +685,11 @@ def LinesMVARFileInsert(startDateObj,endDateObj,PATH):
             print('Lines MVAR File read problem for ', for_date1)
     return jsonify(op)
 
+# /////////////////////////////////////////////////////////////////////////////ICT////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 def ICT(startDateObj,endDateObj,PATH):
 
-    def ICTFileInsertMW_132_220(startDateObj,endDateObj,PATH):
-
-
-        for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
-            try:
-                FILE = PATH+"220_132_ICT_MW_{}.xlsx".format(
-                    for_date1.strftime("%d%m%Y"))
-
-                df = pd.read_excel(FILE, sheet_name='Sheet1', header=[2,3])[:1444]
-                df = df.drop(columns=['Unnamed: 0_level_0'], level=0)
-                df = df.drop(columns=['Date'], level=0)
-                col_list= list(df.columns)
-
-                for i in range(len(col_list)):
-                    if i%2==0:
-                        col_list[i]= col_list[i][0]+": 220 KV Side MW"
-                    else:
-                        col_list[i]= col_list[i][0]+": 132 KV Side MW"
-
-                df.columns = col_list
-
-                for item in col_list:
-                    a = {
-                        "p": list(df[item]),
-                        "d": pd.to_datetime(for_date1),
-                        "ym": for_date1.strftime("%Y%m"),
-                        "n": item}
-
-                    try:
-                        res = ICT_data2.insert_one(a)
-                    except:
-                        pass
-            
-            except:
-                pass
-
-    def ICTFileInsertMW(startDateObj,endDateObj,PATH):
-
-        def insertFlowDfIntoDB(df, for_date):
-
-            data_list1 = []
-
-            for item in df:
-
-                try:
-                    name = item.name
-                    data = (item.to_list())
-
-                    if data[0] != data[0] and data[-1] != data[-1]:
-                        data = [0]*1440
-
-                    if (len(data) != 1440):
-                        print("Error", len(data))
-                        raise Exception("Error")
-
-                    a = {
-                        "p": data,
-                        "d": pd.to_datetime(for_date),
-                        "ym": for_date.strftime("%Y%m"),
-                        "n": name}
-
-                    try:
-
-                        res = ICT_data2.insert_one(a)
-
-                    except errors.DuplicateKeyError as e:
-                        print('ICT File Insert for MW problem in DB', for_date)
-                        continue
-
-                    except:
-
-                        continue
-
-                except:
-                    continue
-
-            return 'res'
-
-
-        op = []
-        for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
-
-            try:
-
-                FILE = PATH+"765_400_400_220_ICT_MW_{}.xlsx".format(
-                    for_date1.strftime("%d%m%Y"))
-
-                df = pd.read_excel(FILE, sheet_name='Sheet1', header=[3, 4])[:1441]
-
-                df = df.drop(columns=['Unnamed: 0_level_0'], level=0)
-
-                
-
-                columns_list = []
-                data_list = []
-
-                for col in df.columns:
-
-                    sub_df = df[col][:-1]
-
-                    if (sub_df.name[0] not in columns_list):
-                        columns_list.append(sub_df.name[0])
-                        new_col_name = sub_df.name[0] + " : " + \
-                            sub_df.name[0][:3] + " KV Side MW"
-                    else:
-                        new_col_name = sub_df.name[0] + " : " + \
-                            sub_df.name[0][4:7] + " KV Side MW"
-
-                    sub_df.name = new_col_name
-                    data_list.append(sub_df)
-
-                insertFlowDfIntoDB(data_list, for_date1)
-
-                op.append(for_date1)
-
-            except:
-                print('ICT File Insert for MW not found', for_date1)
-        return jsonify(op)
-
-    def insertFlowDfIntoDB(df, for_date):
+    def insertFlowDfIntoDB(ICT_data, df, for_date):
 
         data_list1 = []
 
@@ -819,18 +713,13 @@ def ICT(startDateObj,endDateObj,PATH):
             data_list1.append(a)
 
         try:
-            res = ICT_data1.insert_many(data_list1)
-            print("Successfully inserted ICT Files (MVAR)", for_date)
+            res = ICT_data.insert_many(data_list1)
+            # print("Successfully inserted ICT Files (MVAR)", for_date)
 
         except:
             print("ICT File (MVAR) Insert problem in Database ", for_date)
 
         return 'res'
-
-    
-    ICTFileInsertMW(startDateObj,endDateObj,PATH)
-    ICTFileInsertMW_132_220(startDateObj,endDateObj,PATH)
-    
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -871,15 +760,139 @@ def ICT(startDateObj,endDateObj,PATH):
 
         except:
             print('ICT File read problem for ', for_date1)
+
+    
+    def ICTFileInsertMW(startDateObj, endDateObj, PATH):
+
+        def insertFlowDfIntoDB(ICT_data, df, for_date):
+
+            data_list1 = []
+
+            for item in df:
+
+                try:
+                    name = item.name
+                    data = (item.to_list())
+
+                    if data[0] != data[0] and data[-1] != data[-1]:
+                        data = [0]*1440
+
+                    if (len(data) != 1440):
+                        # print("Error", len(data))
+                        raise Exception("Error")
+
+                    a = {
+                        "p": data,
+                        "d": pd.to_datetime(for_date),
+                        "ym": for_date.strftime("%Y%m"),
+                        "n": name}
+
+                    try:
+
+                        res = ICT_data.insert_one(a)
+
+                    except errors.DuplicateKeyError as e:
+                        # print('ICT File Insert for MW problem in DB', for_date)
+                        continue
+
+                    except:
+
+                        continue
+
+                except:
+                    continue
+
+            return 'res'
+
+
+        op = []
+        for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
+
+            try:
+
+                FILE = PATH+"765_400_400_220_ICT_MW_{}.xlsx".format(
+                    for_date1.strftime("%d%m%Y"))
+
+                df = pd.read_excel(FILE, sheet_name='Sheet1', header=[3, 4])[:1441]
+
+                df = df.drop(columns=['Unnamed: 0_level_0'], level=0)
+
+                # print(df)
+
+                # df.index = pd.date_range(
+                #     for_date1, for_date1 + timedelta(days=1), freq='1T')
+
+                columns_list = []
+                data_list = []
+
+                for col in df.columns:
+
+                    sub_df = df[col][:-1]
+
+                    if (sub_df.name[0] not in columns_list):
+                        columns_list.append(sub_df.name[0])
+                        new_col_name = sub_df.name[0] + " : " + \
+                            sub_df.name[0][:3] + " KV Side MW"
+                    else:
+                        new_col_name = sub_df.name[0] + " : " + \
+                            sub_df.name[0][4:7] + " KV Side MW"
+
+                    sub_df.name = new_col_name
+                    data_list.append(sub_df)
+
+                insertFlowDfIntoDB(ICT_data2, data_list, for_date1)
+
+                op.append(for_date1)
+
+            except:
+                print('ICT File Insert for MW not found', for_date1)
+                
+        return jsonify(op)
+    
+    def ICTFileInsertMW_132_220(startDateObj, endDateObj, PATH):
+
+        for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
+
+            FILE = PATH+"220_132_ICT_MW_{}.xlsx".format(
+                for_date1.strftime("%d%m%Y"))
+
+            df = pd.read_excel(FILE, sheet_name='Sheet1', header=[2,3])[:1444]
+            df = df.drop(columns=['Unnamed: 0_level_0'], level=0)
+            df = df.drop(columns=['Date'], level=0)
+            col_list= list(df.columns)
+
+            for i in range(len(col_list)):
+                if i%2==0:
+                    col_list[i]= col_list[i][0]+": 220 KV Side MW"
+                else:
+                    col_list[i]= col_list[i][0]+": 132 KV Side MW"
+
+            df.columns = col_list
+
+            for item in col_list:
+                a = {
+                    "p": list(df[item]),
+                    "d": pd.to_datetime(for_date1),
+                    "ym": for_date1.strftime("%Y%m"),
+                    "n": item}
+
+                try:
+                    res = ICT_data2.insert_one(a)
+                except:
+                    pass
+    
+    x= ICTFileInsertMW(startDateObj, endDateObj, PATH)
+    y= ICTFileInsertMW_132_220(startDateObj, endDateObj, PATH)
+
     return jsonify(op)
 
 
-
+# /////////////////////////////////////////////////////////////////////////////Demand////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 def Demand(startDateObj,endDateObj,PATH):
 
-    def insertFlowDfIntoDB(df, df1, for_date):
+    def insertFlowDfIntoDB(demand_collection, drawal_collection, df, df1, for_date):
 
         doc_list = []
         doc_list1 = []
@@ -915,18 +928,18 @@ def Demand(startDateObj,endDateObj,PATH):
         try:
             try:
                 res = drawal_collection.insert_many(doc_list1)
-                print("Successfully inserted Demand drawal Files", for_date)
+                # print("Successfully inserted Demand drawal Files", for_date)
 
             except:
-                print("Demand drawal Files insert problem in Database", for_date)
+                # print("Demand drawal Files insert problem in Database", for_date)
                 pass
 
             try:
                 res = demand_collection.insert_many(doc_list)
-                print("Successfully inserted Demand rest Files", for_date)
+                # print("Successfully inserted Demand rest Files", for_date)
 
             except:
-                print("Demand rest Files insert problem in Database", for_date)
+                # print("Demand rest Files insert problem in Database", for_date)
                 pass
 
         except:
@@ -940,7 +953,7 @@ def Demand(startDateObj,endDateObj,PATH):
 
         try:
 
-            FILE = "http://10.3.100.24/ScadaData/er_web/Er_web_state_demand_{}.xlsx".format(
+            FILE = PATH+"Er_web_state_demand_{}.xlsx".format(
                 for_date1.strftime("%d%m%Y"))
 
             df = pd.read_excel(FILE, sheet_name='Sheet1')
@@ -951,7 +964,7 @@ def Demand(startDateObj,endDateObj,PATH):
             df.index = pd.date_range(
                 for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
 
-            FILE1 = "http://10.3.100.24/ScadaData/er_web/Er_web_state_exchange_{}.xlsx".format(
+            FILE1 = PATH+"Er_web_state_exchange_{}.xlsx".format(
                 for_date1.strftime("%d%m%Y"))
 
             df1 = pd.read_excel(FILE1, sheet_name='Sheet1')
@@ -965,7 +978,8 @@ def Demand(startDateObj,endDateObj,PATH):
             # df.columns = df.columns.map(
             #     lambda x: x[0]+": " + x[1] if 'Unnamed' not in x[1] else x[0]+': '+((x[0].split('-'))[0].split(' '))[-1] + ' end')
 
-            insertFlowDfIntoDB(df, df1, for_date1)
+            insertFlowDfIntoDB(demand_collection,
+                               drawal_collection, df, df1, for_date1)
 
             op.append(for_date1)
 
@@ -974,11 +988,12 @@ def Demand(startDateObj,endDateObj,PATH):
 
     return jsonify(op)
 
+# /////////////////////////////////////////////////////////////////////////////Generator////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 def Generator(startDateObj,endDateObj,PATH):
 
-    def insertFlowDfIntoDB(df, for_date):
+    def insertFlowDfIntoDB(Generator_DB, df, for_date):
 
         doc_list = []
 
@@ -998,12 +1013,13 @@ def Generator(startDateObj,endDateObj,PATH):
 
         try:
             res = Generator_DB.insert_many(doc_list)
-            print("Successfully inserted Generator Data for ", for_date)
+            # print("Successfully inserted Generator Data for ", for_date)
         except:
 
             print("Generator Files insert problem in Database", for_date)
 
         return 'res'
+
 
 
     op = []
@@ -1039,7 +1055,7 @@ def Generator(startDateObj,endDateObj,PATH):
 
             df.columns = temp1
 
-            insertFlowDfIntoDB(df, for_date1)
+            insertFlowDfIntoDB(Generator_DB, df, for_date1)
 
             op.append(for_date1)
 
@@ -1049,11 +1065,11 @@ def Generator(startDateObj,endDateObj,PATH):
     return jsonify(op)
 
 
+# /////////////////////////////////////////////////////////////////////////////ISGS////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 def ISGS(startDateObj,endDateObj,PATH):
     
-
     def insertFlowDfIntoDB(ISGS_DB, df, for_date):
 
         doc_list = []
@@ -1086,7 +1102,7 @@ def ISGS(startDateObj,endDateObj,PATH):
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
 
         try:
-            FILE = "http://10.3.100.24/ScadaData/er_web/Er_web_isgs_gen_{}.xlsx".format(
+            FILE = PATH+"Er_web_isgs_gen_{}.xlsx".format(
                 for_date1.strftime("%d%m%Y"))
 
             df = pd.read_excel(FILE, sheet_name='Sheet1')
