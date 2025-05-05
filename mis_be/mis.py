@@ -103,7 +103,7 @@ def GetCollection():
     collection_names = [
         'voltage_data', 'line_mw_data_p1', 'line_mw_data_p2', 'line_mw_data_400_above',
         'MVAR_p1', 'MVAR_p2', 'Lines_MVAR_400_above', 'ICT_data', 'ICT_data_MW',
-        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'ISGS_Data'
+        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'Thermal_Generator', 'ISGS_Data'
     ]
     return [db[name] for name in collection_names]
 
@@ -111,9 +111,8 @@ def GetCollection():
 (
     voltage_data_collection, line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2,
     MVAR_P1, MVAR_P2, Lines_MVAR_400_above, ICT_data1, ICT_data2,
-    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, ISGS_DB
+    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, Th_Gen_DB, ISGS_DB
 ) = GetCollection()
-
 
 
 @app.route('/VoltageFileInsert', methods=['GET', 'POST'])
@@ -4340,6 +4339,51 @@ def GetGeneratorDataExcel():
 
     else:
         return jsonify("No Data to Download")
+
+# ////////////////////////////////////////////////////////////////////////////////////////////Thermal-Generator///////////////////////////////////////////////////////////////////////////////////////
+
+@app.route('/ThGeneratorFileInsert', methods=['GET', 'POST'])
+def ThGeneratorFileInsert():
+
+    startDate = request.args['startDate']
+    endDate = request.args['endDate']
+
+    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
+    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
+
+    path = "http://10.3.100.24/ScadaData/er_web/"
+
+    res= Thermal_Generator(startDateObj,endDateObj,path)
+
+    return res
+
+
+@app.route('/ThGeneratorNames', methods=['GET', 'POST'])
+def ThGeneratorNames():
+
+    startDate1 = request.args['startDate']
+    endDate1 = request.args['endDate']
+
+    startDate1 = startDate1.split(" ")
+    endDate1 = endDate1.split(" ")
+
+    startDate = startDate1[0]
+    endDate = endDate1[0]
+
+    res= Names(startDate,endDate,"ThGenerator")
+
+    return res
+
+
+@app.route('/MultiThGeneratorNames', methods=['GET', 'POST'])
+def ThMultiGeneratorNames():
+
+    MultistartDate = request.args['MultistartDate']
+    MultistartDate = MultistartDate.split(',')
+
+    res= MultiNames(MultistartDate,"ThGenerator")
+
+    return res
 
 
 # ///////////////////////////////////////////////////////////////////////////////////ISGS/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

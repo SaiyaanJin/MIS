@@ -1,9 +1,8 @@
 import pandas as pd
-from pymongo import MongoClient, errors
+from pymongo import MongoClient, errors, ASCENDING, DESCENDING
 from flask import jsonify
 import pandas as pd
 from datetime import date, timedelta
-
 
 # //////////////////////////////////////////////////////////////////////////////////////////Collections/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -12,17 +11,20 @@ def GetCollection():
     CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
+    Thermal_Generator= db['Thermal_Generator']
+
+    # Thermal_Generator.create_index([('n',DESCENDING),('d',DESCENDING)], unique= True)
     collections = [
         'voltage_data', 'line_mw_data_p1', 'line_mw_data_p2', 'line_mw_data_400_above',
         'MVAR_p1', 'MVAR_p2', 'Lines_MVAR_400_above', 'ICT_data', 'ICT_data_MW',
-        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'ISGS_Data'
+        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'Thermal_Generator', 'ISGS_Data'
     ]
     return [db[collection] for collection in collections]
 
 (
     voltage_data_collection, line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2,
     MVAR_P1, MVAR_P2, Lines_MVAR_400_above, ICT_data1, ICT_data2,
-    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, ISGS_DB
+    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, Th_Gen_DB, ISGS_DB
 ) = GetCollection()
 
 # /////////////////////////////////////////////////////////////////////////////Voltage////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -988,6 +990,69 @@ def Generator(startDateObj,endDateObj,PATH):
             df.columns = temp1
 
             insertFlowDfIntoDB(Generator_DB, df, for_date1)
+
+            op.append(for_date1)
+
+        except:
+            print('Generator File read problem', for_date1)
+
+    return jsonify(op)
+
+
+def Thermal_Generator(startDateObj,endDateObj,PATH):
+
+    def insertFlowDfIntoDB(Th_Gen_DB, df, for_date):
+
+        doc_list = []
+
+        df = df.astype('double').reset_index(drop=True)
+        df.index = df.index.astype('str')
+        if (len(df) != 1440):
+
+            raise Exception("Error")
+
+        for col in set(df.columns):
+            a = {
+                "p": df[col].round(3).to_list(),
+                "d": pd.to_datetime(for_date),
+                "ym": for_date.strftime("%Y%m"),
+                "n": col}
+            doc_list.append(a)
+
+        try:
+            res = Th_Gen_DB.insert_many(doc_list)
+            # print("Successfully inserted Generator Data for ", for_date)
+        except:
+
+            print("Thermal Generator Files insert problem in Database", for_date)
+
+        return 'res'
+
+
+    op = []
+    for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
+
+        try:
+            FILE = PATH+"ER_THERMAL_GEN_{}.xlsx".format(for_date1.strftime("%d%m%Y"))
+            df = pd.read_excel(FILE, sheet_name='DATA')
+            df = df.drop(1)
+            
+            df = df.drop(columns=['Unnamed: 0'])[0:1442]
+            
+            df.columns = df.iloc[0]
+            
+            df = df.drop(0)
+
+            # Drop all columns after 'ER_Total'
+            if 'ER_Total' in df.columns:
+                df = df.loc[:, :'ER_Total']
+                
+            col_name = [col + " MW" for col in df.columns.tolist()]
+            df.columns = col_name
+
+            df.index = pd.date_range(for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
+            # print(df)
+            insertFlowDfIntoDB(Th_Gen_DB, df, for_date1)
 
             op.append(for_date1)
 

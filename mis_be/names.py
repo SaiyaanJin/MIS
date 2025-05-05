@@ -11,7 +11,7 @@ def GetCollection():
     collection_names = [
         'voltage_data', 'line_mw_data_p1', 'line_mw_data_p2', 'line_mw_data_400_above',
         'MVAR_p1', 'MVAR_p2', 'Lines_MVAR_400_above', 'ICT_data', 'ICT_data_MW',
-        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'ISGS_Data'
+        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'Thermal_Generator', 'ISGS_Data'
     ]
     return [db[name] for name in collection_names]
 
@@ -19,7 +19,7 @@ def GetCollection():
 (
     voltage_data_collection, line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2,
     MVAR_P1, MVAR_P2, Lines_MVAR_400_above, ICT_data1, ICT_data2,
-    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, ISGS_DB
+    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, Th_Gen_DB, ISGS_DB
 ) = GetCollection()
 
 
@@ -67,6 +67,9 @@ def Names(startDate, endDate, type_):
     elif type_ == "Generator":
         data = Generator_DB.find(filter=filter_, projection={'n': 1}).distinct('n')
 
+    elif type_ == "ThGenerator":
+        data = Th_Gen_DB.find(filter=filter_, projection={'n': 1}).distinct('n')
+
     elif type_ == "ISGS":
         data = ISGS_DB.find(filter=filter_, projection={'n': 1}).distinct('n')
 
@@ -106,11 +109,12 @@ def MultiNames(MultistartDate, type_):
             results = names if idx == 0 else list(set(results) & set(names))
         return jsonify(list(dict.fromkeys(results)))
 
-    if type_ in ["Voltage", "Frequency", "Generator", "ISGS"]:
+    if type_ in ["Voltage", "Frequency", "Generator", "ThGenerator", "ISGS"]:
         collection_map = {
             "Voltage": [voltage_data_collection],
             "Frequency": [frequency_data_collection],
             "Generator": [Generator_DB],
+            "ThGenerator": [Th_Gen_DB],
             "ISGS": [ISGS_DB],
         }
         return jsonify(common_names(collection_map[type_], MultistartDate))

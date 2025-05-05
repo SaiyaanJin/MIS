@@ -36,6 +36,7 @@ export default function Upload() {
 		"ICT",
 		"Demand",
 		"Generator",
+		"Thermal Generator",
 		"ISGS",
 	];
 
@@ -112,6 +113,18 @@ export default function Upload() {
 						)
 						.then((response) => {
 							alert("Generator data inserted for " + response.data);
+						})
+						.catch((error) => {});
+				} else if (Selected_lines_states[i] === "Thermal Generator") {
+					axios
+						.post(
+							"http://10.3.230.62:5010/ThGeneratorFileInsert?startDate=" +
+								moment(start_date).format("YYYY-MM-DD") +
+								"&endDate=" +
+								moment(end_date).format("YYYY-MM-DD")
+						)
+						.then((response) => {
+							alert("Thermal Generator data inserted for " + response.data);
 						})
 						.catch((error) => {});
 				} else if (Selected_lines_states[i] === "ISGS") {
