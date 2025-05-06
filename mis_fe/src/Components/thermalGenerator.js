@@ -92,7 +92,7 @@ export default function ThermalGenerator() {
 
 			if (i === multiple_date.length) {
 				axios
-					.post("/ThMultiGeneratorNames?MultistartDate=" + temp_multi_date, {})
+					.post("/MultiThGeneratorNames?MultistartDate=" + temp_multi_date, {})
 					.then((response) => {
 						setmultiplegenerator_states(response.data);
 					})
@@ -109,7 +109,7 @@ export default function ThermalGenerator() {
 
 			if (j === multiple_month.length) {
 				axios
-					.post("/ThMultiGeneratorNames?MultistartDate=" + temp_multi_month, {})
+					.post("/MultiThGeneratorNames?MultistartDate=" + temp_multi_month, {})
 					.then((response) => {
 						setmultiplegenerator_states(response.data);
 					})
