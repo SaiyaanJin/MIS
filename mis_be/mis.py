@@ -41,6 +41,7 @@ Demand_excel_data = []
 ICT_excel_data = []
 Lines_excel_data = []
 Generator_excel_data = []
+ThGenerator_excel_data = []
 ISGS_excel_data = []
 MVAR_excel_data = []
 
@@ -4384,6 +4385,484 @@ def ThMultiGeneratorNames():
     res= MultiNames(MultistartDate,"ThGenerator")
 
     return res
+
+
+
+@app.route('/GetThGeneratorData', methods=['GET', 'POST'])
+def GetThGeneratorData():
+
+    startDate1 = request.args['startDate']
+    endDate1 = request.args['endDate']
+
+    stationName = request.args['stationName']
+    stationName = stationName.split(',')
+    time1 = int(request.args['time'])
+
+    startTime = startDate1+":00"
+    endTime = endDate1+":00"
+
+    startDate1 = startDate1.split(" ")
+    endDate1 = endDate1.split(" ")
+
+    startDate = startDate1[0]
+    endDate = endDate1[0]
+
+    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
+                 ).strftime("%d-%m-%Y %H:%M:%S")
+    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
+                ).strftime("%d-%m-%Y %H:%M:%S"))
+
+    allDateTime = []
+
+    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
+              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
+
+    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
+                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
+
+    if time1 > 1+(datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
+        return jsonify("Time ERROR")
+
+    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
+    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
+
+    while startTime <= endTime:
+
+        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
+
+        startTime = (startTime + timedelta(hours=0, minutes=time1))
+
+    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
+    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
+
+    date_range = [startDateObj+timedelta(days=x)
+                  for x in range((endDateObj-startDateObj).days+1)]
+
+    # dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
+    #        datetime_range(startDateObj, endDateObj,
+    #                       timedelta(minutes=time1))]
+
+    # allDateTime = dts
+
+    # allDateTime = allDateTime[allDateTime.index(
+    #     startTime):allDateTime.index(endTime)+1]
+    # allDateTime = []
+    # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
+    #     allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
+
+    reply = []
+    listofzeros = [0] * 1440
+
+    names = ''
+
+    merge_list = []
+
+    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
+
+    merge_list.append(df1)
+
+    for station in stationName:
+
+        names = names+station+', '
+
+        output = []
+
+        for it in date_range:
+
+            filter = {
+                'd': {
+                    '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
+                },
+                'n': station
+
+            }
+            project = {
+                '_id': 0,
+                'p': 1,
+
+            }
+
+            generator_result = Th_Gen_DB.find(
+                filter=filter,
+                projection=project
+            )
+
+            generator_list = list(generator_result)
+
+            if len(generator_list) == 0:
+                output = output + listofzeros
+
+            else:
+
+                output = output + generator_list[0]['p']
+
+        for i in range(1, len(output)):
+            x = float(output[i])
+            math.isnan(x)
+            if math.isnan(x):
+                output[i] = 0
+
+        output = output[index1:index2+1]
+
+        # df1 = pd.DataFrame.from_dict({station: output})
+
+        # merge_list.append(df1)
+
+        if time1 == 1:
+
+            data = {'stationName': station,
+                    'output': output}
+            reply.append(data)
+
+        else:
+            temp_output = []
+
+            x = list(divide_chunks(output, time1))
+
+            for item in x:
+                max_1, min_1, avg_1 = my_max_min_function(item)
+                temp_output.append(avg_1)
+
+            data = {'stationName': station,
+                    'output': temp_output}
+            reply.append(data)
+
+    # merged = pd.concat(merge_list, axis=1, join="inner")
+
+    # merged.to_excel("Generator.xlsx", index=None)
+
+    for i in range(len(reply)):
+
+        max, min, avg = my_max_min_function(reply[i]['output'])
+
+        if max[0] == 0 and min[0] == 0:
+            max = [[0], []]
+            min = [[0], []]
+
+        elif len(max) > 50 and len(min) > 50:
+            max = [[max[0]], []]
+            min = [[min[0]], []]
+
+        else:
+            l1 = []
+            l2 = []
+
+            for x in range(1, len(max)):
+                l1.append(max[0])
+                l2.append(allDateTime[x])
+
+            max = [l1, l2]
+            l1 = []
+            l2 = []
+
+            for y in range(1, len(min)):
+                l1.append(min[0])
+                l2.append(allDateTime[y])
+
+            min = [l1, l2]
+
+        reply[i]['max'] = max
+        reply[i]['min'] = min
+        reply[i]['avg'] = avg
+
+        temp_freq_lst = reply[i]["output"].copy()
+        temp_freq_lst.sort()
+        z = list(np.linspace(0, 100, len(temp_freq_lst)))
+        temp_freq_lst.reverse()
+        temp_list = [temp_freq_lst, z]
+
+        reply[i]['Duration'] = temp_list
+
+    reply.append({'Date_Time': allDateTime})
+
+    for x in range(len(reply)-1):
+        df1 = pd.DataFrame.from_dict(
+            {reply[x]['stationName']: reply[x]['output']})
+        merge_list.append(df1)
+
+    global ThGenerator_excel_data
+    ThGenerator_excel_data = merge_list
+
+    names = names[:-2]
+
+    return jsonify(reply)
+
+
+@app.route('/GetMultiThGeneratorData', methods=['GET', 'POST'])
+def GetMultiThGeneratorData():
+
+    MultistartDate = request.args['MultistartDate']
+    MultistartDate = MultistartDate.split(',')
+    MultistationName = request.args['MultistationName']
+    stationName = MultistationName.split(',')
+    Type = request.args['Type']
+
+    time1 = int(request.args['time'])
+
+    listofzeros = [0] * 1440
+
+    if Type == "Date":
+
+        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+
+        # date_range= [startDateObj+timedelta(days=x) for x in range((endDateObj-startDateObj).days+1)]
+
+        reply = []
+
+        dts = [dt.strftime("%H:%M:%S") for dt in
+               datetime_range(startDateObj, endDateObj,
+                              timedelta(minutes=time1))]
+
+        allDateTime = dts
+
+        for station in stationName:
+
+            for dateval in MultistartDate:
+
+                DateObj = datetime.strptime(dateval, "%Y-%m-%d")
+
+                output = []
+
+                filter = {
+                    'd': {
+                        '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
+                        '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
+                    },
+                    'n': station
+                }
+                project = {
+                    '_id': 0,
+                    'p': 1,
+
+                }
+
+                generator_result = Th_Gen_DB.find(
+                    filter=filter,
+                    projection=project
+                )
+
+                generator_list = list(generator_result)
+
+                if len(generator_list) == 0:
+                    output = output + listofzeros
+
+                else:
+
+                    output = output + generator_list[0]['p']
+
+                for i in range(1, len(output)):
+                    x = float(output[i])
+                    math.isnan(x)
+                    if math.isnan(x):
+                        output[i] = 0
+
+                if time1 == 1:
+
+                    data = {'stationName': station, 'output': output,
+                            'Date_Time': DateObj}
+                    reply.append(data)
+
+                else:
+                    temp_output = []
+
+                    x = list(divide_chunks(output, time1))
+
+                    for item in x:
+                        max_1, min_1, avg_1 = my_max_min_function(item)
+                        temp_output.append(avg_1)
+
+                    data = {'stationName': station, 'output': temp_output,
+                            'Date_Time': DateObj}
+                    reply.append(data)
+
+        temp_dict = {
+            'Date_Time': allDateTime
+        }
+
+        reply.append(temp_dict)
+
+    elif Type == "Month":
+
+        reply = []
+
+        allDateTime = []
+
+        # listofzeros = [0] * 96
+
+        for station in stationName:
+
+            for dateval in MultistartDate:
+
+                startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
+                endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
+
+                # temp_allDateTime = []
+
+                # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
+                #     temp_allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
+
+                # if (len(temp_allDateTime)>=len(allDateTime)):
+                #     allDateTime= temp_allDateTime
+
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
+                       datetime_range(startDateObj, endDateObj,
+                                      timedelta(minutes=time1))]
+
+                if len(allDateTime) < len(dts):
+                    allDateTime = dts
+
+                output = []
+
+                filter = {
+                    'd': {
+                        '$gte': datetime(startDateObj.year, startDateObj.month, startDateObj.day, 0, 0, 0, tzinfo=timezone.utc),
+                        '$lte': datetime(endDateObj.year, endDateObj.month, endDateObj.day, 0, 0, 0, tzinfo=timezone.utc)
+                    },
+                    'n': station
+                }
+                project = {
+                    '_id': 0,
+                    'p': 1,
+
+                }
+
+                generator_result = Th_Gen_DB.find(
+                    filter=filter,
+                    projection=project
+                )
+
+                generator_list = list(generator_result)
+
+                for item in generator_list:
+
+                    output = output + item['p']
+                # print('generator ',len(generator))
+
+                for i in range(1, len(output)):
+                    x = float(output[i])
+                    math.isnan(x)
+                    if math.isnan(x):
+                        output[i] = 0
+
+                if time1 == 1:
+
+                    data = {'stationName': station, 'output': output,
+                            'Date_Time': startDateObj}
+                    reply.append(data)
+
+                else:
+                    temp_output = []
+
+                    x = list(divide_chunks(output, time1))
+
+                    for item in x:
+                        max_1, min_1, avg_1 = my_max_min_function(item)
+                        temp_output.append(avg_1)
+
+                    data = {'stationName': station, 'output': output,
+                            'Date_Time': startDateObj}
+                    reply.append(data)
+
+        temp_dict = {
+            'Date_Time': allDateTime
+        }
+
+        reply.append(temp_dict)
+
+    for i in range(len(reply)-1):
+
+        max, min, avg = my_max_min_function(reply[i]['output'])
+
+        if max[0] == 0 and min[0] == 0:
+            max = [[0], []]
+            min = [[0], []]
+
+        elif len(max) > 50 and len(min) > 50:
+            max = [[max[0]], []]
+            min = [[min[0]], []]
+
+        else:
+            l1 = []
+            l2 = []
+
+            for x in range(1, len(max)):
+                l1.append(max[0])
+                l2.append(allDateTime[x])
+
+            max = [l1, l2]
+            l1 = []
+            l2 = []
+
+            for y in range(1, len(min)):
+                l1.append(min[0])
+                l2.append(allDateTime[y])
+
+            min = [l1, l2]
+
+        reply[i]['max'] = max
+        reply[i]['min'] = min
+        reply[i]['avg'] = avg
+
+        temp_freq_lst = reply[i]["output"].copy()
+        temp_freq_lst.sort()
+        z = list(np.linspace(0, 100, len(temp_freq_lst)))
+        temp_freq_lst.reverse()
+        temp_list = [temp_freq_lst, z]
+
+        reply[i]['Duration'] = temp_list
+
+    return jsonify(reply)
+
+
+@app.route('/GetThGeneratorDataExcel', methods=['GET', 'POST'])
+def GetThGeneratorDataExcel():
+
+    merged = pd.concat(ThGenerator_excel_data, axis=1, join="inner")
+
+    merged.to_excel(
+        "Excel_Files/ThGenerator.xlsx", index=None)
+
+    path = "Excel_Files/ThGenerator.xlsx"
+
+    startDate1 = request.args['startDate']
+    endDate1 = request.args['endDate']
+
+    startDate1 = startDate1.split(" ")
+    endDate1 = endDate1.split(" ")
+
+    startDate = startDate1[0]
+    endDate = endDate1[0]
+
+    # startTime = startDate1[1]
+    # endTime = endDate1[1]
+
+    stationName = request.args['stationName']
+    stationName = stationName.split(',')
+
+    names = ''
+    for i in stationName:
+        names = names+i+', '
+
+    names = names[:-2]
+
+    if startDate == endDate:
+        custom = startDate+' '+' Thermal Generator Data of '+names+'.xlsx'
+
+    else:
+        custom = startDate+' to '+endDate+' '+' Thermal Generator Data of '+names+'.xlsx'
+
+    if os.path.exists(path):
+        with open(path, "rb") as excel:
+            data = excel.read()
+
+        response = Response(
+            data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        return send_file('Excel_Files/ThGenerator.xlsx', as_attachment=True, download_name=custom)
+
+    else:
+        return jsonify("No Data to Download")
 
 
 # ///////////////////////////////////////////////////////////////////////////////////ISGS/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

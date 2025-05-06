@@ -17,15 +17,19 @@ import Generator from "./Components/generator";
 import ISGS from "./Components/isgs";
 import Dc from "./Components/dc";
 import Outage from "./Components/outage";
+import ThermalGenerator from "./Components/thermalGenerator";
 import "../node_modules/primeflex/primeflex.css";
 import axios from "axios";
 
-axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL;
 
 function App() {
 	return (
 		<div className="App">
-			<div className="shadow-class" style={{ marginTop: ".2%", marginBottom: "2%" }}>
+			<div
+				className="shadow-class"
+				style={{ marginTop: ".2%", marginBottom: "2%" }}
+			>
 				<img
 					src="posoco-logo.jpg"
 					alt="posoco"
@@ -33,7 +37,7 @@ function App() {
 						width: "100%",
 						boxShadow: "initial",
 						position: "-webkit-sticky" /* Safari */,
-						
+
 						top: "0",
 					}}
 				/>
@@ -105,7 +109,23 @@ function App() {
 								style={{ backgroundColor: "#16a34a", color: "#ffffff" }}
 								shape="circle"
 							/>
-							<b>Generator</b>
+							<div className="dropdown">
+								<div icon="pi pi-chevron-down">
+									{" "}
+									<b>Generator</b>
+								</div>
+
+								<div className="dropdown-content">
+									<Link to="ThermalGenerator">
+										<Avatar
+											icon="pi pi-bolt"
+											style={{ backgroundColor: "#FF0000", color: "#ffffff" }}
+											shape="circle"
+										/>
+										<b>Thermal Generator</b>
+									</Link>
+								</div>
+							</div>
 						</Link>
 
 						<Link to="ISGS">
@@ -194,7 +214,6 @@ function App() {
 							/>
 							<b>Upload Files</b>
 						</Link>
-
 					</ul>
 				</div>
 				<Routes>
@@ -205,6 +224,7 @@ function App() {
 					<Route exact path="Ict" element={<Ict />} />
 					<Route exact path="Lines" element={<Lines />} />
 					<Route exact path="Generator" element={<Generator />} />
+					<Route exact path="ThermalGenerator" element={<ThermalGenerator />} />
 					<Route exact path="ISGS" element={<ISGS />} />
 					<Route exact path="WeeklyReports" element={<WeeklyReports />} />
 					<Route exact path="MonthlyReports" element={<MonthlyReports />} />
