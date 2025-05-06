@@ -716,9 +716,9 @@ def GetVoltageDataExcel():
 
         merged = pd.concat(Voltage_excel_data, axis=1, join="inner")
         merged.to_excel(
-            "E:/Applications/MIS/mis_be/Excel_Files/Voltage.xlsx", index=None)
+            "Excel_Files/Voltage.xlsx", index=None)
 
-        path = "E:/Applications/MIS/mis_be/Excel_Files/Voltage.xlsx"
+        path = "Excel_Files/Voltage.xlsx"
 
         startDate1 = request.args['startDate']
         endDate1 = request.args['endDate']
@@ -753,7 +753,7 @@ def GetVoltageDataExcel():
 
             response = Response(
                 data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            return send_file('E:/Applications/MIS/mis_be/Excel_Files/Voltage.xlsx', as_attachment=True, download_name=custom)
+            return send_file('Excel_Files/Voltage.xlsx', as_attachment=True, download_name=custom)
         else:
             return Response('Some error occured!')
 
@@ -1288,9 +1288,9 @@ def GetLinesDataExcel():
 
         merged = pd.concat(Lines_excel_data, axis=1, join="inner")
         merged.to_excel(
-            "E:/Applications/MIS/mis_be/Excel_Files/Lines.xlsx", index=None)
+            "Excel_Files/Lines.xlsx", index=None)
 
-        path = "E:/Applications/MIS/mis_be/Excel_Files/Lines.xlsx"
+        path = "Excel_Files/Lines.xlsx"
 
         startDate1 = request.args['startDate']
         endDate1 = request.args['endDate']
@@ -1326,7 +1326,7 @@ def GetLinesDataExcel():
 
             response = Response(
                 data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        return send_file('E:/Applications/MIS/mis_be/Excel_Files/Lines.xlsx', as_attachment=True, download_name=custom)
+        return send_file('Excel_Files/Lines.xlsx', as_attachment=True, download_name=custom)
 
     else:
         return jsonify("No Data to Download")
@@ -1833,9 +1833,9 @@ def GetICTDataExcel():
     if len(ICT_excel_data) > 0:
 
         merged = pd.concat(ICT_excel_data, axis=1, join="inner")
-        merged.to_excel("E:/Applications/MIS/mis_be/Excel_Files/ICT.xlsx", index=None)
+        merged.to_excel("Excel_Files/ICT.xlsx", index=None)
 
-        path = "E:/Applications/MIS/mis_be/Excel_Files/ICT.xlsx"
+        path = "Excel_Files/ICT.xlsx"
 
         startDate1 = request.args['startDate']
         endDate1 = request.args['endDate']
@@ -1871,7 +1871,7 @@ def GetICTDataExcel():
             response = Response(
                 data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-        return send_file('E:/Applications/MIS/mis_be/Excel_Files/ICT.xlsx', as_attachment=True, download_name=custom)
+        return send_file('Excel_Files/ICT.xlsx', as_attachment=True, download_name=custom)
 
     else:
         return jsonify("No Data to Download")
@@ -2375,9 +2375,9 @@ def GetFrequencyDataExcel():
 
         merged = pd.concat(Frequency_excel_data, axis=1, join="inner")
         merged.to_excel(
-            "E:/Applications/MIS/mis_be/Excel_Files/Frequency.xlsx", index=None)
+            "Excel_Files/Frequency.xlsx", index=None)
 
-        path = "E:/Applications/MIS/mis_be/Excel_Files/Frequency.xlsx"
+        path = "Excel_Files/Frequency.xlsx"
 
         startDate1 = request.args['startDate']
         endDate1 = request.args['endDate']
@@ -2412,7 +2412,7 @@ def GetFrequencyDataExcel():
 
             response = Response(
                 data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        return send_file('E:/Applications/MIS/mis_be/Excel_Files/Frequency.xlsx', as_attachment=True, download_name=custom)
+        return send_file('Excel_Files/Frequency.xlsx', as_attachment=True, download_name=custom)
 
     else:
         return jsonify("No Data to Download")
@@ -3775,9 +3775,9 @@ def GetDemandMinDataExcel():
         merged = pd.concat(Demand_excel_data, axis=1, join="inner")
 
         merged.to_excel(
-            "E:/Applications/MIS/mis_be/Excel_Files/Demand.xlsx", index=None)
+            "Excel_Files/Demand.xlsx", index=None)
 
-        path = "E:/Applications/MIS/mis_be/Excel_Files/DemandMin.xlsx"
+        path = "Excel_Files/DemandMin.xlsx"
 
         startDate1 = request.args['startDate']
         endDate1 = request.args['endDate']
@@ -3812,7 +3812,7 @@ def GetDemandMinDataExcel():
 
             response = Response(
                 data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        return send_file('E:/Applications/MIS/mis_be/Excel_Files/Demand.xlsx', as_attachment=True, download_name=custom)
+        return send_file('Excel_Files/Demand.xlsx', as_attachment=True, download_name=custom)
 
     else:
         return jsonify("No Data to Download")
@@ -4298,9 +4298,9 @@ def GetGeneratorDataExcel():
     merged = pd.concat(Generator_excel_data, axis=1, join="inner")
 
     merged.to_excel(
-        "E:/Applications/MIS/mis_be/Excel_Files/Generator.xlsx", index=None)
+        "Excel_Files/Generator.xlsx", index=None)
 
-    path = "E:/Applications/MIS/mis_be/Excel_Files/Generator.xlsx"
+    path = "Excel_Files/Generator.xlsx"
 
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
@@ -4335,7 +4335,7 @@ def GetGeneratorDataExcel():
 
         response = Response(
             data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        return send_file('E:/Applications/MIS/mis_be/Excel_Files/Generator.xlsx', as_attachment=True, download_name=custom)
+        return send_file('Excel_Files/Generator.xlsx', as_attachment=True, download_name=custom)
 
     else:
         return jsonify("No Data to Download")
@@ -4741,9 +4741,9 @@ def GetISGSDataExcel():
 
     merged = pd.concat(ISGS_excel_data, axis=1, join="inner")
 
-    merged.to_excel("E:/Applications/MIS/mis_be/Excel_Files/ISGS.xlsx", index=None)
+    merged.to_excel("Excel_Files/ISGS.xlsx", index=None)
 
-    path = "E:/Applications/MIS/mis_be/Excel_Files/ISGS.xlsx"
+    path = "Excel_Files/ISGS.xlsx"
 
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
@@ -4778,7 +4778,7 @@ def GetISGSDataExcel():
 
         response = Response(
             data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        return send_file('E:/Applications/MIS/mis_be/Excel_Files/ISGS.xlsx', as_attachment=True, download_name=custom)
+        return send_file('Excel_Files/ISGS.xlsx', as_attachment=True, download_name=custom)
 
     else:
         return jsonify("No Data to Download")
