@@ -107,7 +107,7 @@ export default function Frequency() {
 		if (start_date && end_date) {
 			axios
 				.post(
-					"http://10.3.230.62:5010/FrequencyNames?startDate=" +
+					"/FrequencyNames?startDate=" +
 						moment(start_date).format("YYYY-MM-DD HH:mm") +
 						"&endDate=" +
 						moment(end_date).format("YYYY-MM-DD HH:mm"),
@@ -127,7 +127,7 @@ export default function Frequency() {
 			if (i === multiple_date.length) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/MultiFrequencyNames?MultistartDate=" +
+						"/MultiFrequencyNames?MultistartDate=" +
 							temp_multi_date,
 						{}
 					)
@@ -149,7 +149,7 @@ export default function Frequency() {
 			if (j === multiple_month.length) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/MultiFrequencyNames?MultistartDate=" +
+						"/MultiFrequencyNames?MultistartDate=" +
 							temp_multi_month,
 						{}
 					)
@@ -166,7 +166,7 @@ export default function Frequency() {
 			if (minutes && checked3) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -192,7 +192,7 @@ export default function Frequency() {
 			} else {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -231,7 +231,7 @@ export default function Frequency() {
 				if (temp1 && multiple_Selected_frequency_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_frequency_states +
@@ -259,7 +259,7 @@ export default function Frequency() {
 				if (temp1 && multiple_Selected_frequency_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_frequency_states +
@@ -290,7 +290,7 @@ export default function Frequency() {
 				if (temp2 && multiple_Selected_frequency_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_frequency_states +
@@ -318,7 +318,7 @@ export default function Frequency() {
 				if (temp2 && multiple_Selected_frequency_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_frequency_states +
@@ -534,7 +534,7 @@ export default function Frequency() {
 						<a
 							hidden={enable}
 							href={
-								"http://10.3.230.62:5010/GetFrequencyDataExcel?startDate=" +
+								"/GetFrequencyDataExcel?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

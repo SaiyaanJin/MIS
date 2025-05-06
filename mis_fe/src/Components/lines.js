@@ -74,7 +74,7 @@ export default function Lines() {
 		if (start_date && end_date) {
 			axios
 				.post(
-					"http://10.3.230.62:5010/LinesMWMVARNames?startDate=" +
+					"/LinesMWMVARNames?startDate=" +
 						moment(start_date).format("YYYY-MM-DD HH:mm") +
 						"&endDate=" +
 						moment(end_date).format("YYYY-MM-DD HH:mm"),
@@ -104,7 +104,7 @@ export default function Lines() {
 			if (i === multiple_date.length) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/MultiLinesMWMVARNames?MultistartDate=" +
+						"/MultiLinesMWMVARNames?MultistartDate=" +
 							temp_multi_date,
 						{}
 					)
@@ -136,7 +136,7 @@ export default function Lines() {
 			if (j === multiple_month.length) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/MultiLinesMWMVARNames?MultistartDate=" +
+						"/MultiLinesMWMVARNames?MultistartDate=" +
 							temp_multi_month,
 						{}
 					)
@@ -163,7 +163,7 @@ export default function Lines() {
 			if (minutes && checked3) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/LinesMWMVARData?startDate=" +
+						"/LinesMWMVARData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -184,7 +184,7 @@ export default function Lines() {
 
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -199,7 +199,7 @@ export default function Lines() {
 			} else {
 				axios
 					.post(
-						"http://10.3.230.62:5010/LinesMWMVARData?startDate=" +
+						"/LinesMWMVARData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -219,7 +219,7 @@ export default function Lines() {
 
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -247,7 +247,7 @@ export default function Lines() {
 				if (temp1 && multiple_Selected_lines_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/MultiLinesMWMVARData?MultistartDate=" +
+							"/MultiLinesMWMVARData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_lines_states +
@@ -267,7 +267,7 @@ export default function Lines() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -290,7 +290,7 @@ export default function Lines() {
 				if (temp1 && multiple_Selected_lines_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/MultiLinesMWMVARData?MultistartDate=" +
+							"/MultiLinesMWMVARData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_lines_states +
@@ -309,7 +309,7 @@ export default function Lines() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -335,7 +335,7 @@ export default function Lines() {
 				if (temp2 && multiple_Selected_lines_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/MultiLinesMWMVARData?MultistartDate=" +
+							"/MultiLinesMWMVARData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_lines_states +
@@ -355,7 +355,7 @@ export default function Lines() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -378,7 +378,7 @@ export default function Lines() {
 				if (temp2 && multiple_Selected_lines_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/MultiLinesMWMVARData?MultistartDate=" +
+							"/MultiLinesMWMVARData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_lines_states +
@@ -397,7 +397,7 @@ export default function Lines() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -566,7 +566,7 @@ export default function Lines() {
 						<a
 							hidden={enable}
 							href={
-								"http://10.3.230.62:5010/GetLinesDataExcel?startDate=" +
+								"/GetLinesDataExcel?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

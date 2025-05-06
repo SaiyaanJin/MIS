@@ -75,7 +75,7 @@ export default function Ict() {
 		if (start_date && end_date) {
 			axios
 				.post(
-					"http://10.3.230.62:5010/ICTNames?startDate=" +
+					"/ICTNames?startDate=" +
 						moment(start_date).format("YYYY-MM-DD HH:mm") +
 						"&endDate=" +
 						moment(end_date).format("YYYY-MM-DD HH:mm"),
@@ -96,7 +96,7 @@ export default function Ict() {
 			if (i === multiple_date.length) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/MultiICTNames?MultistartDate=" +
+						"/MultiICTNames?MultistartDate=" +
 							temp_multi_date +
 							"&Type=Date",
 						{}
@@ -119,7 +119,7 @@ export default function Ict() {
 			if (j === multiple_month.length) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/MultiICTNames?MultistartDate=" +
+						"/MultiICTNames?MultistartDate=" +
 							temp_multi_month +
 							"&Type=Date",
 						{}
@@ -137,7 +137,7 @@ export default function Ict() {
 			if (minutes && checked3) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetICTData?startDate=" +
+						"/GetICTData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -157,7 +157,7 @@ export default function Ict() {
 
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -172,7 +172,7 @@ export default function Ict() {
 			} else {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetICTData?startDate=" +
+						"/GetICTData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -191,7 +191,7 @@ export default function Ict() {
 
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -219,7 +219,7 @@ export default function Ict() {
 				if (temp1 && multiple_Selected_ict_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiICTData?MultistartDate=" +
+							"/GetMultiICTData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_ict_states +
@@ -239,7 +239,7 @@ export default function Ict() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -262,7 +262,7 @@ export default function Ict() {
 				if (temp1 && multiple_Selected_ict_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiICTData?MultistartDate=" +
+							"/GetMultiICTData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_ict_states +
@@ -281,7 +281,7 @@ export default function Ict() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -307,7 +307,7 @@ export default function Ict() {
 				if (temp2 && multiple_Selected_ict_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiICTData?MultistartDate=" +
+							"/GetMultiICTData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_ict_states +
@@ -327,7 +327,7 @@ export default function Ict() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -350,7 +350,7 @@ export default function Ict() {
 				if (temp2 && multiple_Selected_ict_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiICTData?MultistartDate=" +
+							"/GetMultiICTData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_ict_states +
@@ -369,7 +369,7 @@ export default function Ict() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -556,7 +556,7 @@ export default function Ict() {
 						<a
 							hidden={enable}
 							href={
-								"http://10.3.230.62:5010/GetICTDataExcel?startDate=" +
+								"/GetICTDataExcel?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

@@ -30,7 +30,7 @@ export default function Dc() {
 
 	const data = () => {
 		axios
-			.post("http://10.3.230.62:5010/cm_dc_revision", {})
+			.post("/cm_dc_revision", {})
 			.then((response) => {
 				setdc_rev1(response.data[0]);
 				setdc_rev2(response.data[1]);

@@ -131,7 +131,7 @@ export default function Combined() {
 			if (checkedF) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/FrequencyNames?startDate=" +
+						"/FrequencyNames?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm")
@@ -145,7 +145,7 @@ export default function Combined() {
 			if (checkedV) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/VoltageNames?startDate=" +
+						"/VoltageNames?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm")
@@ -161,7 +161,7 @@ export default function Combined() {
 			if (checkedD) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/DemandMinNames?startDate=" +
+						"/DemandMinNames?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm")
@@ -184,7 +184,7 @@ export default function Combined() {
 			if (checkedI) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/ICTNames?startDate=" +
+						"/ICTNames?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm"),
@@ -199,7 +199,7 @@ export default function Combined() {
 			if (checkedL) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/LinesMWMVARNames?startDate=" +
+						"/LinesMWMVARNames?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm"),
@@ -239,7 +239,7 @@ export default function Combined() {
 			if (checkedF && Selected_f_states && Selected_f_states.length > 0) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -265,7 +265,7 @@ export default function Combined() {
 			if (checkedV && Selected_v_states && Selected_v_states.length > 0) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetVoltageData?startDate=" +
+						"/GetVoltageData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -290,7 +290,7 @@ export default function Combined() {
 			if (checkedD && Selected_d_states && Selected_d_states.length > 0) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetDemandMinData?startDate=" +
+						"/GetDemandMinData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -315,7 +315,7 @@ export default function Combined() {
 			if (checkedI && Selected_i_states && Selected_i_states.length > 0) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetICTData?startDate=" +
+						"/GetICTData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -340,7 +340,7 @@ export default function Combined() {
 			if (checkedL && Selected_l_states && Selected_l_states.length > 0) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/LinesMWMVARData?startDate=" +
+						"/LinesMWMVARData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +

@@ -100,7 +100,7 @@ export default function Voltage() {
 		if (start_date && end_date) {
 			axios
 				.post(
-					"http://10.3.230.62:5010/VoltageNames?startDate=" +
+					"/VoltageNames?startDate=" +
 						moment(start_date).format("YYYY-MM-DD HH:mm") +
 						"&endDate=" +
 						moment(end_date).format("YYYY-MM-DD HH:mm"),
@@ -120,7 +120,7 @@ export default function Voltage() {
 			if (i === multiple_date.length) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/MultiVoltageNames?MultistartDate=" +
+						"/MultiVoltageNames?MultistartDate=" +
 							temp_multi_date,
 						{}
 					)
@@ -142,7 +142,7 @@ export default function Voltage() {
 			if (j === multiple_month.length) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/MultiVoltageNames?MultistartDate=" +
+						"/MultiVoltageNames?MultistartDate=" +
 							temp_multi_month,
 						{}
 					)
@@ -159,7 +159,7 @@ export default function Voltage() {
 			if (minutes && checked3) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetVoltageData?startDate=" +
+						"/GetVoltageData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -180,7 +180,7 @@ export default function Voltage() {
 
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -195,7 +195,7 @@ export default function Voltage() {
 			} else {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetVoltageData?startDate=" +
+						"/GetVoltageData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -215,7 +215,7 @@ export default function Voltage() {
 
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetFrequencyData?startDate=" +
+						"/GetFrequencyData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
@@ -243,7 +243,7 @@ export default function Voltage() {
 				if (temp1 && multiple_Selected_voltage_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiVoltageData?MultistartDate=" +
+							"/GetMultiVoltageData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_voltage_states +
@@ -263,7 +263,7 @@ export default function Voltage() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -286,7 +286,7 @@ export default function Voltage() {
 				if (temp1 && multiple_Selected_voltage_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiVoltageData?MultistartDate=" +
+							"/GetMultiVoltageData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
 								multiple_Selected_voltage_states +
@@ -305,7 +305,7 @@ export default function Voltage() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp1[0] +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Date" +
@@ -331,7 +331,7 @@ export default function Voltage() {
 				if (temp2 && multiple_Selected_voltage_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiVoltageData?MultistartDate=" +
+							"/GetMultiVoltageData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_voltage_states +
@@ -351,7 +351,7 @@ export default function Voltage() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -374,7 +374,7 @@ export default function Voltage() {
 				if (temp2 && multiple_Selected_voltage_states) {
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiVoltageData?MultistartDate=" +
+							"/GetMultiVoltageData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
 								multiple_Selected_voltage_states +
@@ -393,7 +393,7 @@ export default function Voltage() {
 
 					axios
 						.post(
-							"http://10.3.230.62:5010/GetMultiFrequencyData?MultistartDate=" +
+							"/GetMultiFrequencyData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North" +
 								"&Type=Month" +
@@ -589,7 +589,7 @@ export default function Voltage() {
 						<a
 							hidden={enable}
 							href={
-								"http://10.3.230.62:5010/GetVoltageDataExcel?startDate=" +
+								"/GetVoltageDataExcel?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

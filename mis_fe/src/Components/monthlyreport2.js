@@ -66,7 +66,7 @@ function MonthlyReports2() {
 		if (date_range && date_range[1]) {
 			axios
 				.post(
-					"http://10.3.230.62:5010/meter_names?startDate=" +
+					"/meter_names?startDate=" +
 						moment(date_range[0]).format("YYYY-MM-DD") +
 						"&endDate=" +
 						moment(date_range[1]).format("YYYY-MM-DD") +
@@ -82,7 +82,7 @@ function MonthlyReports2() {
 					if (response.data.length === 0) {
 						axios
 							.post(
-								"http://10.3.230.62:5010/meter_names?startDate=" +
+								"/meter_names?startDate=" +
 									moment(date_range[0]).format("YYYY-MM-DD") +
 									"&endDate=" +
 									moment(date_range[1]).format("YYYY-MM-DD") +
@@ -116,7 +116,7 @@ function MonthlyReports2() {
 			if (!folder_files) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/Report_Meter_Data2?startDate=" +
+						"/Report_Meter_Data2?startDate=" +
 							moment(start_date).format("YYYY-MM-DD") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD") +
@@ -175,7 +175,7 @@ function MonthlyReports2() {
 			} else {
 				axios
 					.post(
-						"http://10.3.230.62:5010/Report_Meter_Data2?startDate=" +
+						"/Report_Meter_Data2?startDate=" +
 							moment(start_date).format("YYYY-MM-DD") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD") +
@@ -277,7 +277,7 @@ function MonthlyReports2() {
 			if (!folder_files) {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetMeterData?startDate=" +
+						"/GetMeterData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD") +
@@ -364,7 +364,7 @@ function MonthlyReports2() {
 			} else {
 				axios
 					.post(
-						"http://10.3.230.62:5010/GetMeterData?startDate=" +
+						"/GetMeterData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD") +

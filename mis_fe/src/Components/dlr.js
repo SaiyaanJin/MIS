@@ -28,7 +28,7 @@ export default function Dlr() {
     if (start_date && end_date) {
       axios
         .post(
-          "http://10.3.230.62:5010/dlrNames?startDate=" +
+          "/dlrNames?startDate=" +
             moment(start_date).format("YYYY-MM-DD") +
             "&endDate=" +
             moment(end_date).format("YYYY-MM-DD"),
@@ -45,7 +45,7 @@ export default function Dlr() {
     if (start_date && end_date && Selected_dlr_states) {
       axios
         .post(
-          "http://10.3.230.62:5010/GetdlrData?startDate=" +
+          "/GetdlrData?startDate=" +
             moment(start_date).format("YYYY-MM-DD") +
             "&endDate=" +
             moment(end_date).format("YYYY-MM-DD") +

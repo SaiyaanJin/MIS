@@ -106,7 +106,7 @@ export default function WeeklyReports() {
 		if (date && type) {
 			axios
 				.post(
-					"http://10.3.230.62:5010/reports?date_val=" +
+					"/reports?date_val=" +
 						date_range +
 						"&category=" +
 						type,

@@ -18,6 +18,9 @@ import ISGS from "./Components/isgs";
 import Dc from "./Components/dc";
 import Outage from "./Components/outage";
 import "../node_modules/primeflex/primeflex.css";
+import axios from "axios";
+
+axios.defaults.baseURL = process.env.REACT_APP_API_BASE_URL
 
 function App() {
 	return (
