@@ -12,21 +12,17 @@ import axios from "axios";
 import moment from "moment";
 import { Button } from "primereact/button";
 import Voltagegraph from "../graphs/voltagegraph";
-import { Fieldset } from "primereact/fieldset";
 import { Divider } from "primereact/divider";
 import { BlockUI } from "primereact/blockui";
 
 import { InputSwitch } from "primereact/inputswitch";
-
 import { InputNumber } from "primereact/inputnumber";
-
 import { Checkbox } from "primereact/checkbox";
-
-import { Toast } from "primereact/toast";
 
 axios.defaults.headers.post["Access-Control-Allow-Origin"] = "*";
 
 export default function Voltage() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
 			moment()
@@ -119,11 +115,7 @@ export default function Voltage() {
 
 			if (i === multiple_date.length) {
 				axios
-					.post(
-						"/MultiVoltageNames?MultistartDate=" +
-							temp_multi_date,
-						{}
-					)
+					.post("/MultiVoltageNames?MultistartDate=" + temp_multi_date, {})
 					.then((response) => {
 						setmultiplevoltage_states(response.data);
 					})
@@ -141,11 +133,7 @@ export default function Voltage() {
 
 			if (j === multiple_month.length) {
 				axios
-					.post(
-						"/MultiVoltageNames?MultistartDate=" +
-							temp_multi_month,
-						{}
-					)
+					.post("/MultiVoltageNames?MultistartDate=" + temp_multi_month, {})
 					.then((response) => {
 						setmultiplevoltage_states(response.data);
 					})
@@ -589,7 +577,7 @@ export default function Voltage() {
 						<a
 							hidden={enable}
 							href={
-								"/GetVoltageDataExcel?startDate=" +
+								`${baseUrl}/GetVoltageDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

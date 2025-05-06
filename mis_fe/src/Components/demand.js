@@ -21,6 +21,7 @@ import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 
 export default function Demand() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
 			moment()
@@ -99,8 +100,8 @@ export default function Demand() {
 		WB_DRAWAL: "West Bengal DRAWAL",
 		"WB_DRAWAL( ER END)": "West Bengal DRAWAL (ER END)",
 		WB_END_DRAWAL: "West Bengal End DRAWAL",
-		'CESC DEMAND': 'CESC DEMAND',
-		'ALL INDIA DEMAND': 'ALL INDIA DEMAND'
+		"CESC DEMAND": "CESC DEMAND",
+		"ALL INDIA DEMAND": "ALL INDIA DEMAND",
 	};
 
 	useEffect(() => {
@@ -134,11 +135,7 @@ export default function Demand() {
 
 			if (i === multiple_date.length) {
 				axios
-					.post(
-						"/MultiDemandMinNames?MultistartDate=" +
-							temp_multi_date,
-						{}
-					)
+					.post("/MultiDemandMinNames?MultistartDate=" + temp_multi_date, {})
 					.then((response) => {
 						setmultipledemand_states(
 							response.data.map((v, i) => {
@@ -163,11 +160,7 @@ export default function Demand() {
 
 			if (j === multiple_month.length) {
 				axios
-					.post(
-						"/MultiDemandMinNames?MultistartDate=" +
-							temp_multi_month,
-						{}
-					)
+					.post("/MultiDemandMinNames?MultistartDate=" + temp_multi_month, {})
 					.then((response) => {
 						setmultipledemand_states(
 							response.data.map((v, i) => {
@@ -200,7 +193,7 @@ export default function Demand() {
 					)
 					.then((response) => {
 						setdemand_data(response.data);
-						
+
 						setexportColumns({
 							"Date Time": response.data[1].Date_Time,
 							Data: response.data[0].output,
@@ -239,7 +232,7 @@ export default function Demand() {
 					)
 					.then((response) => {
 						setdemand_data(response.data);
-						console.log(response.data)
+						console.log(response.data);
 						setenable(false);
 						setgraphenable(false);
 						setBlocked(false);
@@ -716,7 +709,7 @@ export default function Demand() {
 						<a
 							hidden={enable}
 							href={
-								"/GetDemandMinDataExcel?startDate=" +
+								`${baseUrl}/GetDemandMinDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

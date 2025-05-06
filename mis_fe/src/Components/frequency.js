@@ -12,7 +12,6 @@ import axios from "axios";
 import moment from "moment";
 import { Button } from "primereact/button";
 import Frequencygraph from "../graphs/frequencygraph";
-import { Fieldset } from "primereact/fieldset";
 import { Divider } from "primereact/divider";
 
 import { InputSwitch } from "primereact/inputswitch";
@@ -21,18 +20,15 @@ import { InputNumber } from "primereact/inputnumber";
 
 import { Checkbox } from "primereact/checkbox";
 
-// import { Toast } from "primereact/toast";
-
-// import CircularProgress from "@mui/material/CircularProgress";
-// import Box from "@mui/material/Box";
 import { BlockUI } from "primereact/blockui";
-// import { Inplace, InplaceDisplay, InplaceContent } from "primereact/inplace";
+
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 
 axios.defaults.headers.post["Access-Control-Allow-Origin"] = "*";
 
 export default function Frequency() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
 			moment()
@@ -126,11 +122,7 @@ export default function Frequency() {
 
 			if (i === multiple_date.length) {
 				axios
-					.post(
-						"/MultiFrequencyNames?MultistartDate=" +
-							temp_multi_date,
-						{}
-					)
+					.post("/MultiFrequencyNames?MultistartDate=" + temp_multi_date, {})
 					.then((response) => {
 						setmultiplefrequency_states(response.data);
 					})
@@ -148,11 +140,7 @@ export default function Frequency() {
 
 			if (j === multiple_month.length) {
 				axios
-					.post(
-						"/MultiFrequencyNames?MultistartDate=" +
-							temp_multi_month,
-						{}
-					)
+					.post("/MultiFrequencyNames?MultistartDate=" + temp_multi_month, {})
 					.then((response) => {
 						setmultiplefrequency_states(response.data);
 					})
@@ -534,7 +522,7 @@ export default function Frequency() {
 						<a
 							hidden={enable}
 							href={
-								"/GetFrequencyDataExcel?startDate=" +
+								`${baseUrl}/GetFrequencyDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

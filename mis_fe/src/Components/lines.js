@@ -12,7 +12,7 @@ import axios from "axios";
 import moment from "moment";
 import { Button } from "primereact/button";
 import Linesgraph from "../graphs/linesgraph";
-import { Fieldset } from "primereact/fieldset";
+
 import { Divider } from "primereact/divider";
 import { BlockUI } from "primereact/blockui";
 import { InputSwitch } from "primereact/inputswitch";
@@ -22,6 +22,7 @@ import { Checkbox } from "primereact/checkbox";
 axios.defaults.headers.post["Access-Control-Allow-Origin"] = "*";
 
 export default function Lines() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
 			moment()
@@ -103,11 +104,7 @@ export default function Lines() {
 
 			if (i === multiple_date.length) {
 				axios
-					.post(
-						"/MultiLinesMWMVARNames?MultistartDate=" +
-							temp_multi_date,
-						{}
-					)
+					.post("/MultiLinesMWMVARNames?MultistartDate=" + temp_multi_date, {})
 					.then((response) => {
 						setmultiplelines_states(
 							response.data.map((v, i) => {
@@ -135,11 +132,7 @@ export default function Lines() {
 
 			if (j === multiple_month.length) {
 				axios
-					.post(
-						"/MultiLinesMWMVARNames?MultistartDate=" +
-							temp_multi_month,
-						{}
-					)
+					.post("/MultiLinesMWMVARNames?MultistartDate=" + temp_multi_month, {})
 					.then((response) => {
 						setmultiplelines_states(
 							response.data.map((v, i) => {
@@ -566,7 +559,7 @@ export default function Lines() {
 						<a
 							hidden={enable}
 							href={
-								"/GetLinesDataExcel?startDate=" +
+								`${baseUrl}/GetLinesDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

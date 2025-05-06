@@ -19,6 +19,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { Checkbox } from "primereact/checkbox";
 
 export default function ThermalGenerator() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
 			moment()
@@ -551,7 +552,7 @@ export default function ThermalGenerator() {
 						<a
 							hidden={enable}
 							href={
-								"/GetThGeneratorDataExcel?startDate=" +
+								`${baseUrl}/GetThGeneratorDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

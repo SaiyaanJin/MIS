@@ -12,7 +12,6 @@ import axios from "axios";
 import moment from "moment";
 import { Button } from "primereact/button";
 import ISGSgraph from "../graphs/isgsgraph";
-import { Fieldset } from "primereact/fieldset";
 import { Divider } from "primereact/divider";
 import { BlockUI } from "primereact/blockui";
 
@@ -23,6 +22,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { Checkbox } from "primereact/checkbox";
 
 export default function ISGS() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
 			moment()
@@ -95,11 +95,7 @@ export default function ISGS() {
 
 			if (i === multiple_date.length) {
 				axios
-					.post(
-						"/MultiISGSNames?MultistartDate=" +
-							temp_multi_date,
-						{}
-					)
+					.post("/MultiISGSNames?MultistartDate=" + temp_multi_date, {})
 					.then((response) => {
 						setmultipleisgs_states(response.data);
 					})
@@ -117,11 +113,7 @@ export default function ISGS() {
 
 			if (j === multiple_month.length) {
 				axios
-					.post(
-						"/MultiISGSNames?MultistartDate=" +
-							temp_multi_month,
-						{}
-					)
+					.post("/MultiISGSNames?MultistartDate=" + temp_multi_month, {})
 					.then((response) => {
 						setmultipleisgs_states(response.data);
 					})
@@ -608,7 +600,7 @@ export default function ISGS() {
 						<a
 							hidden={enable}
 							href={
-								"/GetISGSDataExcel?startDate=" +
+								`${baseUrl}/GetISGSDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

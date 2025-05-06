@@ -12,7 +12,7 @@ import axios from "axios";
 import moment from "moment";
 import { Button } from "primereact/button";
 import Ictgraph from "../graphs/ictgraph";
-import { Fieldset } from "primereact/fieldset";
+
 import { Divider } from "primereact/divider";
 import { BlockUI } from "primereact/blockui";
 
@@ -23,6 +23,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { Checkbox } from "primereact/checkbox";
 
 export default function Ict() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
 			moment()
@@ -53,7 +54,6 @@ export default function Ict() {
 		useState();
 	const [multiple_ict_data, setmultipleict_data] = useState();
 	const [graphenable2, setgraphenable2] = useState(true);
-	const temp_multi_date = [];
 
 	const [multiple_month, setMultiple_Month] = useState();
 
@@ -96,9 +96,7 @@ export default function Ict() {
 			if (i === multiple_date.length) {
 				axios
 					.post(
-						"/MultiICTNames?MultistartDate=" +
-							temp_multi_date +
-							"&Type=Date",
+						"/MultiICTNames?MultistartDate=" + temp_multi_date + "&Type=Date",
 						{}
 					)
 					.then((response) => {
@@ -119,9 +117,7 @@ export default function Ict() {
 			if (j === multiple_month.length) {
 				axios
 					.post(
-						"/MultiICTNames?MultistartDate=" +
-							temp_multi_month +
-							"&Type=Date",
+						"/MultiICTNames?MultistartDate=" + temp_multi_month + "&Type=Date",
 						{}
 					)
 					.then((response) => {
@@ -556,7 +552,7 @@ export default function Ict() {
 						<a
 							hidden={enable}
 							href={
-								"/GetICTDataExcel?startDate=" +
+								`${baseUrl}/GetICTDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +

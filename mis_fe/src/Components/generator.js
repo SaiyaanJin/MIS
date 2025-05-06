@@ -23,6 +23,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { Checkbox } from "primereact/checkbox";
 
 export default function Generator() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
 			moment()
@@ -96,11 +97,7 @@ export default function Generator() {
 
 			if (i === multiple_date.length) {
 				axios
-					.post(
-						"/MultiGeneratorNames?MultistartDate=" +
-							temp_multi_date,
-						{}
-					)
+					.post("/MultiGeneratorNames?MultistartDate=" + temp_multi_date, {})
 					.then((response) => {
 						setmultiplegenerator_states(response.data);
 					})
@@ -118,11 +115,7 @@ export default function Generator() {
 
 			if (j === multiple_month.length) {
 				axios
-					.post(
-						"/MultiGeneratorNames?MultistartDate=" +
-							temp_multi_month,
-						{}
-					)
+					.post("/MultiGeneratorNames?MultistartDate=" + temp_multi_month, {})
 					.then((response) => {
 						setmultiplegenerator_states(response.data);
 					})
@@ -564,7 +557,7 @@ export default function Generator() {
 						<a
 							hidden={enable}
 							href={
-								"/GetGeneratorDataExcel?startDate=" +
+								`${baseUrl}/GetGeneratorDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +
