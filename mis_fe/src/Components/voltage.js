@@ -415,6 +415,142 @@ export default function Voltage() {
 		setfreq_region1(selectedregions);
 	};
 
+	const saveAsExcelFile = (buffer, fileName) => {
+		import("file-saver").then((module) => {
+			if (module && module.default) {
+				let EXCEL_TYPE =
+					"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
+				let EXCEL_EXTENSION = ".xlsx";
+				const data = new Blob([buffer], {
+					type: EXCEL_TYPE,
+				});
+
+				module.default.saveAs(data, fileName + EXCEL_EXTENSION);
+			}
+		});
+	};
+
+	const handleExport = () => {
+		if (voltage_data) {
+			var excel_data = [];
+			for (
+				var i = 0;
+				i < voltage_data[voltage_data.length - 1]["Date_Time"].length;
+				i++
+			) {
+				var t1 = {
+					Date: voltage_data[voltage_data.length - 1]["Date_Time"][i],
+				};
+
+				for (var j = 0; j < voltage_data.length - 1; j++) {
+					t1[voltage_data[j]["stationName"] + " BUS-1"] =
+						voltage_data[j]["voltageBus1"][i];
+					t1[voltage_data[j]["stationName"] + " BUS-2"] =
+						voltage_data[j]["voltageBus2"][i];
+				}
+
+				excel_data.push(t1);
+			}
+		}
+		import("xlsx").then((xlsx) => {
+			const worksheet = xlsx.utils.json_to_sheet(excel_data);
+			const workbook = { Sheets: { data: worksheet }, SheetNames: ["data"] };
+			const excelBuffer = xlsx.write(workbook, {
+				bookType: "xlsx",
+				type: "array",
+			});
+
+			saveAsExcelFile(
+				excelBuffer,
+				"Voltage_Data_" +
+					moment(start_date).format("DD-MM-YYYY") +
+					"_" +
+					moment(end_date).format("DD-MM-YYYY")
+			);
+		});
+	};
+
+	const handleExport1 = () => {
+		if (multiple_voltage_data) {
+			var excel_data = [];
+			if (checked2) {
+				for (
+					var i = 0;
+					i <
+					multiple_voltage_data[multiple_voltage_data.length - 1]["Date_Time"]
+						.length;
+					i++
+				) {
+					var t1 = {
+						Date: multiple_voltage_data[multiple_voltage_data.length - 1][
+							"Date_Time"
+						][i],
+					};
+
+					for (var j = 0; j < multiple_voltage_data.length - 1; j++) {
+						t1[multiple_voltage_data[j]["stationName"] + " BUS-1"] =
+							multiple_voltage_data[j]["voltageBus1"][i];
+						t1[multiple_voltage_data[j]["stationName"] + " BUS-2"] =
+							multiple_voltage_data[j]["voltageBus2"][i];
+					}
+
+					excel_data.push(t1);
+				}
+			} else if (checked1) {
+				for (
+					var i = 0;
+					i <
+					multiple_voltage_data[multiple_voltage_data.length - 1]["Date_Time"]
+						.length;
+					i++
+				) {
+					var t1 = {
+						Time: multiple_voltage_data[multiple_voltage_data.length - 1][
+							"Date_Time"
+						][i],
+					};
+
+					for (var j = 0; j < multiple_voltage_data.length - 1; j++) {
+						t1[
+							multiple_voltage_data[j]["stationName"] +
+								" BUS-1 (" +
+								moment(
+									multiple_voltage_data[j]["stationName"]["Date_Time"]
+								).format("DD-MM-YY") +
+								")"
+						] = multiple_voltage_data[j]["voltageBus1"][i];
+						t1[
+							multiple_voltage_data[j]["stationName"] +
+								" BUS-2 (" +
+								moment(
+									multiple_voltage_data[j]["stationName"]["Date_Time"]
+								).format("DD-MM-YY") +
+								")"
+						] = multiple_voltage_data[j]["voltageBus2"][i];
+					}
+
+					excel_data.push(t1);
+				}
+			}
+		}
+		import("xlsx").then((xlsx) => {
+			const worksheet = xlsx.utils.json_to_sheet(excel_data);
+			const workbook = { Sheets: { data: worksheet }, SheetNames: ["data"] };
+			const excelBuffer = xlsx.write(workbook, {
+				bookType: "xlsx",
+				type: "array",
+			});
+
+			saveAsExcelFile(
+				excelBuffer,
+				"Voltage_Data_" +
+					moment(start_date).format("DD-MM-YYYY") +
+					"_" +
+					moment(end_date).format("DD-MM-YYYY")
+			);
+		});
+	};
+
 	return (
 		<>
 			<div hidden={!loading_show}>
@@ -573,7 +709,7 @@ export default function Voltage() {
 						/>
 						<label htmlFor="2">Frequency</label>
 					</div>
-					<div className="col-2">
+					{/* <div className="col-2">
 						<a
 							hidden={enable}
 							href={
@@ -588,7 +724,7 @@ export default function Voltage() {
 							{" "}
 							Download{" "}
 						</a>
-					</div>
+					</div> */}
 					<div className="field-checkbox">
 						Show Frequency:
 						<Checkbox
@@ -620,6 +756,15 @@ export default function Voltage() {
 			</div>
 
 			<div hidden={graphenable}>
+				<Button
+					icon="pi pi-file-excel"
+					severity="success"
+					raised
+					rounded
+					onClick={handleExport}
+				>
+					Export to Excel
+				</Button>
 				<Divider />
 				<Voltagegraph
 					voltage_data={voltage_data}
@@ -812,6 +957,15 @@ export default function Voltage() {
 			</div>
 			<Divider />
 			<div hidden={graphenable2}>
+				<Button
+					icon="pi pi-file-excel"
+					severity="success"
+					raised
+					rounded
+					onClick={handleExport1}
+				>
+					Export to Excel
+				</Button>
 				<Voltagegraph
 					voltage_data={multiple_voltage_data}
 					Selected_voltage_states={multiple_Selected_voltage_states}
