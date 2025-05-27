@@ -3777,11 +3777,11 @@ def GetDemandMinDataExcel():
     if len(Demand_excel_data) > 0:
 
         merged = pd.concat(Demand_excel_data, axis=1, join="inner")
-
+        
         merged.to_excel(
             dir_path+"Excel_Files/Demand.xlsx", index=None)
 
-        path = dir_path+"Excel_Files/DemandMin.xlsx"
+        path = dir_path+"Excel_Files/Demand.xlsx"
 
         startDate1 = request.args['startDate']
         endDate1 = request.args['endDate']
