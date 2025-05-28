@@ -514,17 +514,17 @@ export default function Voltage() {
 						t1[
 							multiple_voltage_data[j]["stationName"] +
 								" BUS-1 (" +
-								moment(
-									multiple_voltage_data[j]["stationName"]["Date_Time"]
-								).format("DD-MM-YY") +
+								moment(multiple_voltage_data[j]["Date_Time"]).format(
+									"DD-MM-YY"
+								) +
 								")"
 						] = multiple_voltage_data[j]["voltageBus1"][i];
 						t1[
 							multiple_voltage_data[j]["stationName"] +
 								" BUS-2 (" +
-								moment(
-									multiple_voltage_data[j]["stationName"]["Date_Time"]
-								).format("DD-MM-YY") +
+								moment(multiple_voltage_data[j]["Date_Time"]).format(
+									"DD-MM-YY"
+								) +
 								")"
 						] = multiple_voltage_data[j]["voltageBus2"][i];
 					}
