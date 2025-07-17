@@ -8,7 +8,7 @@ import math
 from flask_cors import CORS
 from pandas.tseries.offsets import MonthEnd
 import numpy as np
-import requests
+from flask_caching import Cache
 
 from weeklyreports import FrequencyReport
 from weeklyreports import VoltageReport2
@@ -31,6 +31,12 @@ from outage import *
 
 app = Flask(__name__)
 CORS(app)
+
+# Configure caching (SimpleCache for dev; use Redis for production)
+app.config['CACHE_TYPE'] = 'SimpleCache'  # Or 'RedisCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 86400  # 1 day in seconds
+
+cache = Cache(app)
 
 Lines_file_name = ''
 MVAR_file_name = ''
@@ -134,30 +140,41 @@ def VoltageFileInsert():
 
     return jsonify({'status': "success", 'dates': res})
 
-
 @app.route('/VoltageNames', methods=['GET', 'POST'])
 def VoltageNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"VoltageNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        print("cache hit")
+        return cached_res
 
-    res = Names(startDate,endDate,"Voltage")
+    res = Names(startDate, endDate, "Voltage")
+    cache.set(cache_key, res, timeout=86400)
+    print("cache miss")
     return res
 
 
 @app.route('/MultiVoltageNames', methods=['GET', 'POST'])
 def MultiVoltageNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    
-    res= MultiNames(MultistartDate,"Voltage")
+    dates_key = "_".join(sorted(MultistartDate.split(',')))
+
+    cache_key = f"MultiVoltageNames_{dates_key}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        print("cache hit")
+        return cached_res
+
+    date_list = MultistartDate.split(',')
+    res = MultiNames(date_list, "Voltage")
+    cache.set(cache_key, res, timeout=86400)
+    print("cache miss")
     return res
 
 
