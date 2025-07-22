@@ -178,554 +178,248 @@ def MultiVoltageNames():
     return res
 
 
-
 @app.route('/GetVoltageData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400, query_string=True)
 def GetVoltageData():
 
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
-
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
+    stationName = request.args['stationName'].split(',')
     time1 = int(request.args['time'])
 
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
+    startTime = f"{startDate1}:00"
+    endTime = f"{endDate1}:00"
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    startTimeObj = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
+    endTimeObj = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
 
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-                ).strftime("%d-%m-%Y %H:%M:%S"))
+    startTimeStr = startTimeObj.strftime("%d-%m-%Y %H:%M:%S")
+    endTimeStr = endTimeObj.strftime("%d-%m-%Y %H:%M:%S")
 
-    allDateTime = []
+    index1 = startTimeObj.hour * 60 + startTimeObj.minute
+    index2 = index1 + int((endTimeObj - startTimeObj).total_seconds() / 60)
 
-    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
-              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
-
-    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
-                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
-
-    if time1 > 1 + (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
+    if time1 > 1 + (endTimeObj - startTimeObj).total_seconds() / 60:
         return jsonify("Time ERROR")
 
-    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
-    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
-
-    while startTime <= endTime:
-
-        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
-
-        startTime = (startTime + timedelta(hours=0, minutes=time1))
+    allDateTime = []
+    dt_cursor = startTimeObj
+    while dt_cursor <= endTimeObj:
+        allDateTime.append(dt_cursor.strftime("%d-%m-%Y %H:%M:%S"))
+        dt_cursor += timedelta(minutes=time1)
 
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
-
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
+    date_range = [startDateObj + timedelta(days=x)
+                  for x in range((endDateObj - startDateObj).days + 1)]
 
     reply = []
     listofzeros = [0] * 1440
-
     names = ''
 
     for station in stationName:
-
-        names = names+station+', '
+        names += station + ', '
         voltageBus1 = []
         voltageBus2 = []
 
-        for it in date_range:
-
+        for dt in date_range:
             filter = {
                 'd': {
-                    '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                    '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
+                    '$gte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc)
                 },
                 'n': station
             }
-            project = {
-                '_id': 0,
-                'vol': 1,
-                'vol2': 1,
+            project = {'_id': 0, 'vol': 1, 'vol2': 1}
+            result_list = list(voltage_data_collection.find(filter=filter, projection=project))
 
-            }
-            result = voltage_data_collection.find(
-                filter=filter,
-                projection=project
-
-            )
-
-            result_list = list(result)
-
-            if len(result_list) == 0:
-                voltageBus1 = voltageBus1 + listofzeros
-                voltageBus2 = voltageBus2 + listofzeros
-
+            if not result_list:
+                voltageBus1 += listofzeros
+                voltageBus2 += listofzeros
             else:
+                voltageBus1 += result_list[0]['vol']
+                voltageBus2 += result_list[0]['vol2']
 
-                voltageBus1 = voltageBus1 + result_list[0]['vol']
-                voltageBus2 = voltageBus2 + result_list[0]['vol2']
+        voltageBus1 = [0 if math.isnan(float(v)) else v for v in voltageBus1]
+        voltageBus2 = [0 if math.isnan(float(v)) else v for v in voltageBus2]
 
-        for i in range(len(voltageBus1)):
-            x = float(voltageBus1[i])
-            math.isnan(x)
-            if math.isnan(x):
-                voltageBus1[i] = 0
-
-        for j in range(len(voltageBus2)):
-            y = float(voltageBus2[j])
-            math.isnan(y)
-            if math.isnan(y):
-                voltageBus2[j] = 0
-
-        voltageBus1 = voltageBus1[index1:index2+1]
-
-        voltageBus2 = voltageBus2[index1:index2+1]
+        voltageBus1 = voltageBus1[index1:index2 + 1]
+        voltageBus2 = voltageBus2[index1:index2 + 1]
 
         if time1 == 1:
-
-            data = {'stationName': station,
-                    'voltageBus1': voltageBus1, 'voltageBus2': voltageBus2}
-            reply.append(data)
-
+            reply.append({'stationName': station, 'voltageBus1': voltageBus1, 'voltageBus2': voltageBus2})
         else:
-            temp_voltageBus1 = []
-            temp_voltageBus2 = []
+            chunks1 = list(divide_chunks(voltageBus1, time1))
+            chunks2 = list(divide_chunks(voltageBus2, time1))
 
-            x = list(divide_chunks(voltageBus1, time1))
-            y = list(divide_chunks(voltageBus2, time1))
+            avg1 = [my_max_min_function(chunk)[2] for chunk in chunks1]
+            avg2 = [my_max_min_function(chunk)[2] for chunk in chunks2]
 
-            for item in x:
-                max_1, min_1, avg_1 = my_max_min_function(item)
-                temp_voltageBus1.append(avg_1)
-
-            for item in y:
-                max_2, min_2, avg_2 = my_max_min_function(item)
-                temp_voltageBus2.append(avg_2)
-
-            data = {'stationName': station, 'voltageBus1': temp_voltageBus1,
-                    'voltageBus2': temp_voltageBus2}
-            reply.append(data)
+            reply.append({'stationName': station, 'voltageBus1': avg1, 'voltageBus2': avg2})
 
     df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
     merge_list = [df1]
 
-    index = 0
-    for it in reply:
-
-        df = pd.DataFrame.from_dict(it)
-        df = df.drop(['stationName'], axis=1)
-        df.columns = pd.MultiIndex.from_product(
-            [[stationName[index]], df.columns])
+    for idx, it in enumerate(reply):
+        df = pd.DataFrame.from_dict(it).drop(['stationName'], axis=1)
+        df.columns = pd.MultiIndex.from_product([[stationName[idx]], df.columns])
         merge_list.append(df)
-        index += 1
 
     global Voltage_excel_data
-
     Voltage_excel_data = merge_list
 
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("Voltage.xlsx", index=None)
-
-    names = names[:-2]
-
     for i in range(len(reply)):
-
-        temp_freq_lst = reply[i]['voltageBus1'].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['voltageBus1 Duration'] = temp_list
-
-        temp_freq_lst1 = reply[i]['voltageBus2'].copy()
-        temp_freq_lst1.sort()
-        z1 = list(np.linspace(0, 100, len(temp_freq_lst1)))
-        temp_freq_lst1.reverse()
-        temp_list1 = [temp_freq_lst1, z1]
-
-        reply[i]['voltageBus2 Duration'] = temp_list1
+        for key in ['voltageBus1', 'voltageBus2']:
+            temp_vals = sorted(reply[i][key], reverse=True)
+            percentiles = list(np.linspace(0, 100, len(temp_vals)))
+            reply[i][f"{key} Duration"] = [temp_vals, percentiles]
 
         max_v1, min_v1, avg_v1 = my_max_min_function(reply[i]['voltageBus1'])
         max_v2, min_v2, avg_v2 = my_max_min_function(reply[i]['voltageBus2'])
 
-        if max_v1[0] == 0 and min_v1[0] == 0:
-            max_v1 = [[""], []]
-            min_v1 = [[""], []]
+        def process_extremes(extremes, label):
+            if extremes[0] == 0 or len(extremes) > 50:
+                return [[""], []]
+            values = [extremes[0]] * (len(extremes) - 1)
+            times = [allDateTime[i] for i in extremes[1:]]
+            return [values, times]
 
-        elif len(max_v1) > 50 and len(min_v1) > 50:
-            max_v1 = [[""], []]
-            min_v1 = [[""], []]
-
-        else:
-            l1 = []
-            l2 = []
-
-            for x in range(1, len(max_v1)):
-                l1.append(max_v1[0])
-                l2.append(allDateTime[max_v1[x]])
-
-            max_v1 = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min_v1)):
-                l1.append(min_v1[0])
-                l2.append(allDateTime[min_v1[y]])
-
-            min_v1 = [l1, l2]
-
-        if max_v2[0] == 0 and min_v2[0] == 0:
-            max_v2 = [[""], []]
-            min_v2 = [[""], []]
-
-        elif len(max_v2) > 50 and len(min_v2) > 50:
-            max_v2 = [[""], []]
-            min_v2 = [[""], []]
-
-        else:
-            l1 = []
-            l2 = []
-
-            for x in range(1, len(max_v2)):
-                l1.append(max_v2[0])
-                l2.append(allDateTime[max_v2[x]])
-
-            max_v2 = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min_v2)):
-                l1.append(min_v2[0])
-                l2.append(allDateTime[min_v2[y]])
-
-            min_v2 = [l1, l2]
-
-        reply[i]['max_v1'] = max_v1
-        reply[i]['min_v1'] = min_v1
+        reply[i]['max_v1'] = process_extremes(max_v1, 'max_v1')
+        reply[i]['min_v1'] = process_extremes(min_v1, 'min_v1')
         reply[i]['avg_v1'] = avg_v1
 
-        reply[i]['max_v2'] = max_v2
-        reply[i]['min_v2'] = min_v2
+        reply[i]['max_v2'] = process_extremes(max_v2, 'max_v2')
+        reply[i]['min_v2'] = process_extremes(min_v2, 'min_v2')
         reply[i]['avg_v2'] = avg_v2
 
     reply.append({'Date_Time': allDateTime})
     return jsonify(reply)
 
 
+
 @app.route('/GetMultiVoltageData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400)
 def GetMultiVoltageData():
 
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationName = request.args['MultistationName'].split(',')
     Type = request.args['Type']
-
     time1 = int(request.args['time'])
 
     listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
 
     if Type == "Date":
-
-        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-
-        # date_range= [startDateObj+timedelta(days=x) for x in range((endDateObj-startDateObj).days+1)]
-
-        reply = []
-
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
-
+        date_obj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        dts = [dt.strftime("%H:%M:%S") for dt in datetime_range(date_obj, date_obj, timedelta(minutes=time1))]
         allDateTime = dts
-        # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-        #     allDateTime.append((startDateObj + timedelta(seconds = 60*i)).strftime("%H:%M:%S"))
 
         for station in stationName:
-
             for dateval in MultistartDate:
-
-                DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
+                dt_obj = datetime.strptime(dateval, "%Y-%m-%d")
                 filter = {
                     'd': {
-                        '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
+                        '$gte': datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0, tzinfo=timezone.utc),
+                        '$lte': datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0, tzinfo=timezone.utc)
                     },
                     'n': station
                 }
-                project = {
-                    '_id': 0,
-                    'vol': 1,
-                    'vol2': 1,
+                project = {'_id': 0, 'vol': 1, 'vol2': 1}
+                result_list = list(voltage_data_collection.find(filter=filter, projection=project))
 
-                }
-                result = voltage_data_collection.find(
-                    filter=filter,
-                    projection=project
+                voltageBus1 = result_list[0]['vol'] if result_list else listofzeros
+                voltageBus2 = result_list[0]['vol2'] if result_list else listofzeros
 
-                )
-
-                result_list = list(result)
-
-                if len(result_list) == 0:
-                    voltageBus1 = listofzeros
-                    voltageBus2 = listofzeros
-
-                else:
-
-                    voltageBus1 = result_list[0]['vol']
-                    voltageBus2 = result_list[0]['vol2']
-
-                for i in range(len(voltageBus1)):
-
-                    x = float(voltageBus1[i])
-
-                    math.isnan(x)
-
-                    if math.isnan(x):
-                        voltageBus1[i] = 0
-
-                for j in range(len(voltageBus2)):
-
-                    y = float(voltageBus2[j])
-                    math.isnan(y)
-
-                    if math.isnan(y):
-                        voltageBus2[j] = 0
+                voltageBus1 = [0 if pd.isna(float(v)) else float(v) for v in voltageBus1]
+                voltageBus2 = [0 if pd.isna(float(v)) else float(v) for v in voltageBus2]
 
                 if time1 == 1:
-
-                    data = {'stationName': station, 'voltageBus1': voltageBus1,
-                            'voltageBus2': voltageBus2, 'Date_Time': DateObj}
-                    reply.append(data)
-
+                    reply.append({'stationName': station, 'voltageBus1': voltageBus1,
+                                  'voltageBus2': voltageBus2, 'Date_Time': dt_obj})
                 else:
-                    temp_voltageBus1 = []
-                    temp_voltageBus2 = []
+                    temp_voltageBus1 = [my_max_min_function(chunk)[2] for chunk in divide_chunks(voltageBus1, time1)]
+                    temp_voltageBus2 = [my_max_min_function(chunk)[2] for chunk in divide_chunks(voltageBus2, time1)]
 
-                    x = list(divide_chunks(voltageBus1, time1))
-                    y = list(divide_chunks(voltageBus2, time1))
+                    reply.append({'stationName': station, 'voltageBus1': temp_voltageBus1,
+                                  'voltageBus2': temp_voltageBus2, 'Date_Time': dt_obj})
 
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_voltageBus1.append(avg_1)
-
-                    for item in y:
-                        max_2, min_2, avg_2 = my_max_min_function(item)
-                        temp_voltageBus2.append(avg_2)
-
-                    data = {'stationName': station, 'voltageBus1': temp_voltageBus1,
-                            'voltageBus2': temp_voltageBus2, 'Date_Time': DateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
+        reply.append({'Date_Time': allDateTime})
 
     elif Type == "Month":
-
-        reply = []
-        allDateTime = []
-
         for station in stationName:
-
             for dateval in MultistartDate:
-
                 startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
                 endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
-
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                       datetime_range(startDateObj, endDateObj,
-                                      timedelta(minutes=time1))]
-                # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-                #     allDateTime.append((startDateObj + timedelta(seconds = 60*i)).strftime("%d-%m-%Y %H:%M:%S"))
-
-                alldate = pd.date_range(
-                    startDateObj, endDateObj-timedelta(days=1), freq='d').strftime("%Y-%m-%d")
-                alldate = list(alldate)
-                endDateObj = endDateObj.strftime("%Y-%m-%d")
-                alldate.append(endDateObj)
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
 
                 if len(allDateTime) < len(dts):
                     allDateTime = dts
 
-                voltageBus1 = []
-                voltageBus2 = []
+                alldate = list(pd.date_range(startDateObj, endDateObj - timedelta(days=1), freq='d').strftime("%Y-%m-%d"))
+                alldate.append(endDateObj.strftime("%Y-%m-%d"))
 
-                for dates in alldate:
+                voltageBus1, voltageBus2 = [], []
 
-                    dates = datetime.strptime(dates, "%Y-%m-%d")
-
+                for d in alldate:
+                    dt = datetime.strptime(d, "%Y-%m-%d")
                     filter = {
                         'd': {
-                            '$gte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc),
-                            '$lte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc)
+                            '$gte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc),
+                            '$lte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc)
                         },
                         'n': station
                     }
-                    project = {
-                        '_id': 0,
-                        'vol': 1,
-                        'vol2': 1,
+                    project = {'_id': 0, 'vol': 1, 'vol2': 1}
+                    result_list = list(voltage_data_collection.find(filter=filter, projection=project))
 
-                    }
+                    voltageBus1 += result_list[0]['vol'] if result_list else listofzeros
+                    voltageBus2 += result_list[0]['vol2'] if result_list else listofzeros
 
-                    result = voltage_data_collection.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-
-                    result_list = list(result)
-
-                    if len(result_list) == 0:
-                        voltageBus1 = voltageBus1 + listofzeros
-                        voltageBus2 = voltageBus2 + listofzeros
-
-                    else:
-
-                        voltageBus1 = voltageBus1 + result_list[0]['vol']
-                        voltageBus2 = voltageBus2 + result_list[0]['vol2']
-
-                for i in range(len(voltageBus1)):
-                    x = float(voltageBus1[i])
-                    math.isnan(x)
-                    if math.isnan(x):
-                        voltageBus1[i] = 0
-
-                for j in range(len(voltageBus2)):
-                    y = float(voltageBus2[j])
-                    math.isnan(y)
-                    if math.isnan(y):
-                        voltageBus2[j] = 0
+                voltageBus1 = [0 if pd.isna(float(v)) else float(v) for v in voltageBus1]
+                voltageBus2 = [0 if pd.isna(float(v)) else float(v) for v in voltageBus2]
 
                 if time1 == 1:
-
-                    data = {'stationName': station, 'voltageBus1': voltageBus1,
-                            'voltageBus2': voltageBus2, 'Date_Time': startDateObj}
-                    reply.append(data)
-
+                    reply.append({'stationName': station, 'voltageBus1': voltageBus1,
+                                  'voltageBus2': voltageBus2, 'Date_Time': startDateObj})
                 else:
-                    temp_voltageBus1 = []
-                    temp_voltageBus2 = []
+                    temp_voltageBus1 = [my_max_min_function(chunk)[2] for chunk in divide_chunks(voltageBus1, time1)]
+                    temp_voltageBus2 = [my_max_min_function(chunk)[2] for chunk in divide_chunks(voltageBus2, time1)]
 
-                    x = list(divide_chunks(voltageBus1, time1))
-                    y = list(divide_chunks(voltageBus2, time1))
+                    reply.append({'stationName': station, 'voltageBus1': temp_voltageBus1,
+                                  'voltageBus2': temp_voltageBus2, 'Date_Time': startDateObj})
 
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_voltageBus1.append(avg_1)
+        reply.append({'Date_Time': allDateTime})
 
-                    for item in y:
-                        max_2, min_2, avg_2 = my_max_min_function(item)
-                        temp_voltageBus2.append(avg_2)
+    for item in reply[:-1]:
+        sorted_v1 = sorted(item['voltageBus1'], reverse=True)
+        sorted_v2 = sorted(item['voltageBus2'], reverse=True)
+        z = list(np.linspace(0, 100, len(sorted_v1)))
+        z2 = list(np.linspace(0, 100, len(sorted_v2)))
 
-                    data = {'stationName': station, 'voltageBus1': temp_voltageBus1,
-                            'voltageBus2': temp_voltageBus2, 'Date_Time': startDateObj}
-                    reply.append(data)
+        item['voltageBus1 Duration'] = [sorted_v1, z]
+        item['voltageBus2 Duration'] = [sorted_v2, z2]
 
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
+        max_v1, min_v1, avg_v1 = my_max_min_function(item['voltageBus1'])
+        max_v2, min_v2, avg_v2 = my_max_min_function(item['voltageBus2'])
 
-        reply.append(temp_dict)
+        def format_max_min(val, label):
+            if val[0] == 0 or len(val) > 50:
+                return [[""], []]
+            return [[val[0]] * len(val[1]), [allDateTime[i] for i in val[1]]]
 
-    for i in range(len(reply)-1):
-
-        temp_freq_lst = reply[i]['voltageBus1'].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['voltageBus1 Duration'] = temp_list
-
-        temp_freq_lst1 = reply[i]['voltageBus2'].copy()
-        temp_freq_lst1.sort()
-        z1 = list(np.linspace(0, 100, len(temp_freq_lst1)))
-        temp_freq_lst1.reverse()
-        temp_list1 = [temp_freq_lst1, z1]
-
-        reply[i]['voltageBus2 Duration'] = temp_list1
-
-        max_v1, min_v1, avg_v1 = my_max_min_function(reply[i]['voltageBus1'])
-        max_v2, min_v2, avg_v2 = my_max_min_function(reply[i]['voltageBus2'])
-
-        if max_v1[0] == 0 and min_v1[0] == 0:
-            max_v1 = [[""], []]
-            min_v1 = [[""], []]
-
-        elif len(max_v1) > 50 and len(min_v1) > 50:
-            max_v1 = [[""], []]
-            min_v1 = [[""], []]
-
-        else:
-            l1 = []
-            l2 = []
-
-            for x in range(1, len(max_v1)):
-                l1.append(max_v1[0])
-                l2.append(allDateTime[max_v1[x]])
-
-            max_v1 = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min_v1)):
-                l1.append(min_v1[0])
-                l2.append(allDateTime[min_v1[y]])
-
-            min_v1 = [l1, l2]
-
-        if max_v2[0] == 0 and min_v2[0] == 0:
-            max_v2 = [[""], []]
-            min_v2 = [[""], []]
-
-        elif len(max_v2) > 50 and len(min_v2) > 50:
-            max_v2 = [[""], []]
-            min_v2 = [[""], []]
-
-        else:
-            l1 = []
-            l2 = []
-
-            for x in range(1, len(max_v2)):
-                l1.append(max_v2[0])
-                l2.append(allDateTime[max_v2[x]])
-
-            max_v2 = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min_v2)):
-                l1.append(min_v2[0])
-                l2.append(allDateTime[min_v2[y]])
-
-            min_v2 = [l1, l2]
-
-        reply[i]['max_v1'] = max_v1
-        reply[i]['min_v1'] = min_v1
-        reply[i]['avg_v1'] = avg_v1
-
-        reply[i]['max_v2'] = max_v2
-        reply[i]['min_v2'] = min_v2
-        reply[i]['avg_v2'] = avg_v2
+        item['max_v1'] = format_max_min(max_v1, 'max')
+        item['min_v1'] = format_max_min(min_v1, 'min')
+        item['avg_v1'] = avg_v1
+        item['max_v2'] = format_max_min(max_v2, 'max')
+        item['min_v2'] = format_max_min(min_v2, 'min')
+        item['avg_v2'] = avg_v2
 
     return jsonify(reply)
+
 
 
 @app.route('/GetVoltageDataExcel', methods=['GET', 'POST'])
@@ -840,245 +534,129 @@ def MultiLinesNames():
     
     return res
 
-
+@cache.cached(timeout=86400, query_string=True)
 @app.route('/GetLinesData', methods=['GET', 'POST'])
 def GetLinesData():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
-
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
-
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
-
-    startDate = startDate1[0]
-    endDate = endDate1[0]
-
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = (datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-               ).strftime("%d-%m-%Y %H:%M:%S")
-
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
+    stationName = request.args['stationName'].split(',')
     time1 = int(request.args['time'])
+
+    startTime = startDate1 + ":00"
+    endTime = endDate1 + ":00"
+
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
+
+    startTime_fmt = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S").strftime("%d-%m-%Y %H:%M:%S")
+    endTime_fmt = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S").strftime("%d-%m-%Y %H:%M:%S")
 
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
+    date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
 
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
+    dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
+    allDateTime = dts[dts.index(startTime_fmt):dts.index(endTime_fmt) + 1]
 
-    dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-           datetime_range(startDateObj, endDateObj,
-                          timedelta(minutes=time1))]
-
-    allDateTime = dts
-
-    allDateTime = allDateTime[allDateTime.index(
-        startTime):allDateTime.index(endTime)+1]
-
-    reply = []
     listofzeros = [11111] * 1440
-
+    reply = []
+    merge_list = [pd.DataFrame({'Date_Time': allDateTime})]
     names = ''
 
-    merge_list = []
-
-    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
-    merge_list.append(df1)
-
     for station in stationName:
-
-        station = station[:-3]
-
-        names = names+station+', '
+        station_clean = station[:-3]
+        names += station_clean + ', '
         line = []
 
-        for it in date_range:
-
-            filter = {
-                'd': {
-                    '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                    '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
-                },
-                'n': station
-
-            }
-            project = {
-                '_id': 0,
-                'p': 1,
-
-            }
-
-            result = line_mw_data_collection.find(
-                filter=filter,
-                projection=project
-
-            )
+        for dt in date_range:
+            date_filter = {'d': {
+                '$gte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc),
+                '$lte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc)
+            }, 'n': station_clean}
+            projection = {'_id': 0, 'p': 1}
 
             global Lines_file_name
-
             Lines_file_name = 'p1'
+            result = list(line_mw_data_collection.find(filter=date_filter, projection=projection))
 
-            result_list = list(result)
-
-            if len(result_list) == 0:
-
-                result1 = line_mw_data_collection1.find(
-                    filter=filter,
-                    projection=project
-
-                )
+            if not result:
                 Lines_file_name = 'p2'
+                result = list(line_mw_data_collection1.find(filter=date_filter, projection=projection))
 
-                result_list = list(result1)
-
-            if len(result_list) == 0:
-
-                result2 = line_mw_data_collection2.find(
-                    filter=filter,
-                    projection=project
-
-                )
+            if not result:
                 Lines_file_name = '400 & above'
+                result = list(line_mw_data_collection2.find(filter=date_filter, projection=projection))
 
-                result_list = list(result2)
-
-            if len(result_list) == 0:
-                line = line + listofzeros
-
-            else:
-
-                line = line + result_list[0]['p']
+            line += result[0]['p'] if result else listofzeros
 
         for i in range(len(line)):
-            x = float(line[i])
-            math.isnan(x)
-            if math.isnan(x):
+            val = float(line[i])
+            if math.isnan(val):
                 line[i] = 0
 
-        line = line[allDateTime.index(
-            startTime):allDateTime.index(endTime)+1]
+        line = line[dts.index(startTime_fmt):dts.index(endTime_fmt) + 1]
 
         if time1 == 1:
-
-            data = {'stationName': station, 'line': line}
-            reply.append(data)
-
+            reply.append({'stationName': station_clean, 'line': line})
         else:
-            temp_line = []
+            chunks = list(divide_chunks(line, time1))
+            temp_line = [my_max_min_function(chunk)[2] for chunk in chunks]
+            reply.append({'stationName': station_clean, 'line': temp_line})
 
-            x = list(divide_chunks(line, time1))
+    for entry in reply:
+        max_v, min_v, avg = my_max_min_function(entry['line'])
 
-            for item in x:
-                max_1, min_1, avg_1 = my_max_min_function(item)
-                temp_line.append(avg_1)
-
-            data = {'stationName': station, 'line': temp_line}
-            reply.append(data)
-
-        # df1 = pd.DataFrame.from_dict({station+' '+Lines_file_name: line})
-
-        # merge_list.append(df1)
-
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("Line.xlsx", index=None)
-
-    for i in range(len(reply)):
-
-        max, min, avg = my_max_min_function(reply[i]['line'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_v[0] == 0 and min_v[0] == 0:
+            max_v = [[0], []]
+            min_v = [[0], []]
+        elif len(max_v) > 50 and len(min_v) > 50:
+            max_v = [[max_v[0]], []]
+            min_v = [[min_v[0]], []]
         else:
-            l1 = []
-            l2 = []
+            max_v = [[max_v[0]] * len(max_v[1]), [allDateTime[i] for i in max_v[1]]]
+            min_v = [[min_v[0]] * len(min_v[1]), [allDateTime[i] for i in min_v[1]]]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
-
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
+        entry['max'] = max_v
+        entry['min'] = min_v
+        entry['avg'] = avg
 
     reply.append({'Date_Time': allDateTime})
 
-    # df1 = pd.DataFrame.from_dict({station+' '+Lines_file_name: line})
-
-    # merge_list.append(df1)
-
-    for x in range(len(reply)-1):
-        df1 = pd.DataFrame.from_dict(
-            {reply[x]['stationName']: reply[x]['line']})
-        merge_list.append(df1)
+    for x in range(len(reply) - 1):
+        merge_list.append(pd.DataFrame({reply[x]['stationName']: reply[x]['line']}))
 
     global Lines_excel_data
-
     Lines_excel_data = merge_list
-
-    names = names[:-2]
 
     return jsonify(reply)
 
 
+
 @app.route('/GetMultiLinesData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400, query_string=True)
 def GetMultiLinesData():
-
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationName = request.args['MultistationName'].split(',')
     Type = request.args['Type']
-
     time1 = int(request.args['time'])
 
     global Lines_file_name
 
     listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
 
     if Type == "Date":
-
         startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        endDateObj = startDateObj
 
-        reply = []
+        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
 
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
-
-        allDateTime = dts
-
-        for station in stationName:
-
-            station = station[:-3]
+        for raw_station in stationName:
+            station = raw_station[:-3]
 
             for dateval in MultistartDate:
-
                 DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
                 line = []
 
                 filter = {
@@ -1088,107 +666,43 @@ def GetMultiLinesData():
                     },
                     'n': station
                 }
-                project = {
-                    '_id': 0,
-                    'p': 1,
+                project = {'_id': 0, 'p': 1}
 
-                }
-
-                result = line_mw_data_collection.find(
-                    filter=filter,
-                    projection=project
-
-                )
-
-                Lines_file_name = 'p1'
-
-                result_list = list(result)
-
-                if len(result_list) == 0:
-
-                    result1 = line_mw_data_collection1.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-                    Lines_file_name = 'p2'
-
-                    result_list = list(result1)
-
-                if len(result_list) == 0:
-
-                    result2 = line_mw_data_collection2.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-                    Lines_file_name = '400 & above'
-
-                    result_list = list(result2)
-
-                if len(result_list) == 0:
-                    line = line + listofzeros
-
+                for collection, name in [(line_mw_data_collection, 'p1'), (line_mw_data_collection1, 'p2'), (line_mw_data_collection2, '400 & above')]:
+                    result_list = list(collection.find(filter=filter, projection=project))
+                    if result_list:
+                        line += result_list[0]['p']
+                        Lines_file_name = name
+                        break
                 else:
+                    line += listofzeros
 
-                    line = line + result_list[0]['p']
-
-                for i in range(len(line)):
-                    x = float(line[i])
-                    math.isnan(x)
-                    if math.isnan(x):
-                        line[i] = 0
+                line = [0 if math.isnan(float(x)) else float(x) for x in line]
 
                 if time1 == 1:
-
-                    data = {'stationName': station,
-                            'line': line, 'Date_Time': DateObj}
-                    reply.append(data)
-
+                    reply.append({'stationName': station, 'line': line, 'Date_Time': DateObj})
                 else:
-                    temp_line = []
-
-                    x = list(divide_chunks(line, time1))
-
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_line.append(avg_1)
-
-                    data = {'stationName': station,
-                            'line': temp_line, 'Date_Time': DateObj}
-                    reply.append(data)
+                    chunked = list(divide_chunks(line, time1))
+                    averaged = [my_max_min_function(chunk)[2] for chunk in chunked]
+                    reply.append({'stationName': station, 'line': averaged, 'Date_Time': DateObj})
 
     elif Type == "Month":
-
-        reply = []
-        allDateTime = []
-
         for station in stationName:
-
             for dateval in MultistartDate:
-
                 startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
                 endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
 
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                       datetime_range(startDateObj, endDateObj,
-                                      timedelta(minutes=time1))]
-
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
                 if len(allDateTime) < len(dts):
                     allDateTime = dts
 
-                alldate = pd.date_range(
-                    startDateObj, endDateObj-timedelta(days=1), freq='d').strftime("%Y-%m-%d")
-                alldate = list(alldate)
-                endDateObj = endDateObj.strftime("%Y-%m-%d")
-                alldate.append(endDateObj)
+                alldate = list(pd.date_range(startDateObj, endDateObj - timedelta(days=1), freq='d').strftime("%Y-%m-%d"))
+                alldate.append(endDateObj.strftime("%Y-%m-%d"))
 
                 line = []
 
-                for dates in alldate:
-
-                    dates = datetime.strptime(dates, "%Y-%m-%d")
-
+                for datestr in alldate:
+                    dates = datetime.strptime(datestr, "%Y-%m-%d")
                     filter = {
                         'd': {
                             '$gte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc),
@@ -1196,117 +710,55 @@ def GetMultiLinesData():
                         },
                         'n': station
                     }
-                    project = {
-                        '_id': 0,
-                        'p': 1,
 
-                    }
+                    project = {'_id': 0, 'p': 1}
 
-                    result = line_mw_data_collection.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-
-                    Lines_file_name = 'p1'
-
-                    result_list = list(result)
-
-                    if len(result_list) == 0:
-
-                        result1 = line_mw_data_collection1.find(
-                            filter=filter,
-                            projection=project
-
-                        )
-                        Lines_file_name = 'p2'
-
-                        result_list = list(result1)
-
-                    if len(result_list) == 0:
-
-                        result2 = line_mw_data_collection2.find(
-                            filter=filter,
-                            projection=project
-
-                        )
-                        Lines_file_name = '400 & above'
-
-                        result_list = list(result2)
-
-                    if len(result_list) == 0:
-                        line = line + listofzeros
-
+                    for collection, name in [(line_mw_data_collection, 'p1'), (line_mw_data_collection1, 'p2'), (line_mw_data_collection2, '400 & above')]:
+                        result_list = list(collection.find(filter=filter, projection=project))
+                        if result_list:
+                            line += result_list[0]['p']
+                            Lines_file_name = name
+                            break
                     else:
+                        line += listofzeros
 
-                        line = line + result_list[0]['p']
-
-                for i in range(len(line)):
-                    x = float(line[i])
-                    math.isnan(x)
-                    if math.isnan(x):
-                        line[i] = 0
+                line = [0 if math.isnan(float(x)) else float(x) for x in line]
 
                 if time1 == 1:
-
-                    data = {'stationName': station,
-                            'line': line, 'Date_Time': startDateObj}
-                    reply.append(data)
-
+                    reply.append({'stationName': station, 'line': line, 'Date_Time': startDateObj})
                 else:
-                    temp_line = []
+                    chunked = list(divide_chunks(line, time1))
+                    averaged = [my_max_min_function(chunk)[2] for chunk in chunked]
+                    reply.append({'stationName': station, 'line': averaged, 'Date_Time': startDateObj})
 
-                    x = list(divide_chunks(line, time1))
+    temp_dict = {'Date_Time': allDateTime}
 
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_line.append(avg_1)
+    for entry in reply:
+        max_, min_, avg_ = my_max_min_function(entry['line'])
 
-                    data = {'stationName': station,
-                            'line': temp_line, 'Date_Time': startDateObj}
-                    reply.append(data)
-
-    temp_dict = {
-        'Date_Time': allDateTime
-    }
-
-    for i in range(len(reply)):
-
-        max, min, avg = my_max_min_function(reply[i]['line'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_[0] == 0 and min_[0] == 0:
+            max_ = [[0], []]
+            min_ = [[0], []]
+        elif len(max_) > 50 and len(min_) > 50:
+            max_ = [[max_[0]], []]
+            min_ = [[min_[0]], []]
         else:
-            l1 = []
-            l2 = []
+            l1 = [max_[0]] * (len(max_) - 1)
+            l2 = allDateTime[1:len(max_)]
+            max_ = [l1, l2]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+            l1 = [min_[0]] * (len(min_) - 1)
+            l2 = allDateTime[1:len(min_)]
+            min_ = [l1, l2]
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
+        entry['max'] = max_
+        entry['min'] = min_
+        entry['avg'] = avg_
 
     reply.append(temp_dict)
 
     return jsonify(reply)
+
 
 
 @app.route('/GetLinesDataExcel', methods=['GET', 'POST'])
@@ -1444,238 +896,142 @@ def MultiICTNames():
     return res
 
 
-
 @app.route('/GetICTData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400, query_string=True)
 def GetICTData():
 
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
-
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
+    stationName = request.args['stationName'].split(',')
     time1 = int(request.args['time'])
 
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
+    startTime = startDate1 + ":00"
+    endTime = endDate1 + ":00"
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    startTimeObj = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
+    endTimeObj = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
 
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-                ).strftime("%d-%m-%Y %H:%M:%S"))
+    index1 = startTimeObj.hour * 60 + startTimeObj.minute
+    index2 = index1 + int((endTimeObj - startTimeObj).total_seconds() / 60)
 
-    allDateTime = []
-
-    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
-              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
-
-    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
-                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
-
-    if time1 > 1 + (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
+    if time1 > 1 + (endTimeObj - startTimeObj).total_seconds() / 60:
         return jsonify("Time ERROR")
 
-    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
-    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
-
-    while startTime <= endTime:
-
-        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
-
-        startTime = (startTime + timedelta(hours=0, minutes=time1))
+    allDateTime = []
+    ts = startTimeObj
+    while ts <= endTimeObj:
+        allDateTime.append(ts.strftime("%d-%m-%Y %H:%M:%S"))
+        ts += timedelta(minutes=time1)
 
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
-
-    # dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-    #        datetime_range(startDateObj, endDateObj,
-    #                       timedelta(minutes=time1))]
-
-    # allDateTime = dts
-
-    # allDateTime = allDateTime[allDateTime.index(
-    #     startTime):allDateTime.index(endTime)+1]
+    date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
 
     reply = []
     listofzeros = [0] * 1440
-
     names = ''
-
     merge_list = []
 
     df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
     merge_list.append(df1)
 
     for station in stationName:
-
-        names = names+station+', '
+        names += station + ', '
         line = []
 
         for it in date_range:
-
             filter = {
                 'd': {
                     '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
                     '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
                 },
                 'n': station
-
             }
-            project = {
-                '_id': 0,
-                'p': 1,
+            project = {'_id': 0, 'p': 1}
 
-            }
-
-            result1 = ICT_data1.find(
-                filter=filter,
-                projection=project
-
-            )
-
+            result1 = ICT_data1.find(filter=filter, projection=project)
             result_list = list(result1)
 
-            if len(result_list) == 0:
-                result2 = ICT_data2.find(
-                    filter=filter,
-                    projection=project
-                )
+            if not result_list:
+                result2 = ICT_data2.find(filter=filter, projection=project)
                 result_list = list(result2)
 
-            if len(result_list) == 0:
-                line = line + listofzeros
-
-            else:
-
-                line = line + result_list[0]['p']
+            line += result_list[0]['p'] if result_list else listofzeros
 
         for i in range(len(line)):
-            x = float(line[i])
-            math.isnan(x)
-            if math.isnan(x):
+            try:
+                if math.isnan(float(line[i])):
+                    line[i] = 0
+            except:
                 line[i] = 0
 
-        line = line[index1:index2+1]
+        line = line[index1:index2 + 1]
 
         if time1 == 1:
-
             data = {'stationName': station, 'line': line}
-            reply.append(data)
-
         else:
             temp_line = []
-
-            x = list(divide_chunks(line, time1))
-
-            for item in x:
-                max_1, min_1, avg_1 = my_max_min_function(item)
-                temp_line.append(avg_1)
-
+            for chunk in divide_chunks(line, time1):
+                _, _, avg = my_max_min_function(chunk)
+                temp_line.append(avg)
             data = {'stationName': station, 'line': temp_line}
-            reply.append(data)
 
-        # df1 = pd.DataFrame.from_dict({station: line})
-
-        # merge_list.append(df1)
-
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("ICT.xlsx", index=None)
+        reply.append(data)
 
     for i in range(len(reply)):
+        max_, min_, avg = my_max_min_function(reply[i]['line'])
 
-        max, min, avg = my_max_min_function(reply[i]['line'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_[0] == 0 and min_[0] == 0:
+            max_, min_ = [[0], []], [[0], []]
+        elif len(max_) > 50 and len(min_) > 50:
+            max_ = [[max_[0]], []]
+            min_ = [[min_[0]], []]
         else:
-            l1 = []
-            l2 = []
+            max_ = [[max_[0]] * (len(max_) - 1), allDateTime[1:len(max_)]]
+            min_ = [[min_[0]] * (len(min_) - 1), allDateTime[1:len(min_)]]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
-
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
+        reply[i]['max'] = max_
+        reply[i]['min'] = min_
         reply[i]['avg'] = avg
 
     reply.append({'Date_Time': allDateTime})
 
-    for x in range(len(reply)-1):
-        df1 = pd.DataFrame.from_dict(
-            {reply[x]['stationName']: reply[x]['line']})
+    for x in range(len(reply) - 1):
+        df1 = pd.DataFrame.from_dict({reply[x]['stationName']: reply[x]['line']})
         merge_list.append(df1)
 
     global ICT_excel_data
-
     ICT_excel_data = merge_list
-
-    names = names[:-2]
 
     return jsonify(reply)
 
 
+
 @app.route('/GetMultiICTData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400, query_string=True)
 def GetMultiICTData():
 
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationName = request.args['MultistationName'].split(',')
     Type = request.args['Type']
-
     time1 = int(request.args['time'])
 
     listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
 
     if Type == "Date":
-
         startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-
-        # date_range= [startDateObj+timedelta(days=x) for x in range((endDateObj-startDateObj).days+1)]
-
-        reply = []
-
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
-
-        allDateTime = dts
+        endDateObj = startDateObj
+        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
 
         for station in stationName:
-
             for dateval in MultistartDate:
-
                 DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
-                line = []
 
                 filter = {
                     'd': {
@@ -1684,184 +1040,81 @@ def GetMultiICTData():
                     },
                     'n': station
                 }
-                project = {
-                    '_id': 0,
-                    'p': 1,
 
-                }
-
-                result = ICT_data1.find(
-                    filter=filter,
-                    projection=project
-
-                )
-
-                result_list = list(result)
-
-                if len(result_list) == 0:
-                    line = line + listofzeros
-
-                else:
-
-                    line = line + result_list[0]['p']
+                result_list = list(ICT_data1.find(filter=filter, projection={'_id': 0, 'p': 1}))
+                line = result_list[0]['p'] if result_list else listofzeros
 
                 for i in range(len(line)):
-                    x = float(line[i])
-                    math.isnan(x)
-                    if math.isnan(x):
+                    try:
+                        if math.isnan(float(line[i])):
+                            line[i] = 0
+                    except:
                         line[i] = 0
 
-                if time1 == 1:
+                if time1 > 1:
+                    line = [my_max_min_function(chunk)[2] for chunk in divide_chunks(line, time1)]
 
-                    data = {'stationName': station,
-                            'line': line, 'Date_Time': DateObj}
-                    reply.append(data)
+                reply.append({'stationName': station, 'line': line, 'Date_Time': DateObj})
 
-                else:
-                    temp_line = []
-
-                    x = list(divide_chunks(line, time1))
-
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_line.append(avg_1)
-
-                    data = {'stationName': station,
-                            'line': temp_line, 'Date_Time': DateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-        reply.append(temp_dict)
-
-    if Type == "Month":
-
-        reply = []
-
-        allDateTime = []
-
+    elif Type == "Month":
         for station in stationName:
-
             for dateval in MultistartDate:
-
                 startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
-                endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
+                endDateObj = (pd.Timestamp(dateval) + MonthEnd(1)).to_pydatetime()
 
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                       datetime_range(startDateObj, endDateObj,
-                                      timedelta(minutes=time1))]
-
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
                 if len(allDateTime) < len(dts):
                     allDateTime = dts
 
-                alldate = pd.date_range(
-                    startDateObj, endDateObj-timedelta(days=1), freq='d').strftime("%Y-%m-%d")
-                alldate = list(alldate)
-                endDateObj = endDateObj.strftime("%Y-%m-%d")
-                alldate.append(endDateObj)
+                alldates = pd.date_range(startDateObj, endDateObj - timedelta(days=1), freq='d').strftime("%Y-%m-%d").tolist()
+                alldates.append(endDateObj.strftime("%Y-%m-%d"))
 
                 line = []
-
-                for dates in alldate:
-
-                    dates = datetime.strptime(dates, "%Y-%m-%d")
-
+                for d in alldates:
+                    d_obj = datetime.strptime(d, "%Y-%m-%d")
                     filter = {
                         'd': {
-                            '$gte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc),
-                            '$lte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc)
+                            '$gte': datetime(d_obj.year, d_obj.month, d_obj.day, 0, 0, 0, tzinfo=timezone.utc),
+                            '$lte': datetime(d_obj.year, d_obj.month, d_obj.day, 0, 0, 0, tzinfo=timezone.utc)
                         },
                         'n': station
-
                     }
-                    project = {
-                        '_id': 0,
-                        'p': 1,
-
-                    }
-
-                    result = ICT_data1.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-
-                    result_list = list(result)
-
-                    if len(result_list) == 0:
-                        line = line + listofzeros
-
-                    else:
-
-                        line = line + result_list[0]['p']
+                    result_list = list(ICT_data1.find(filter=filter, projection={'_id': 0, 'p': 1}))
+                    line += result_list[0]['p'] if result_list else listofzeros
 
                 for i in range(len(line)):
-                    x = float(line[i])
-                    math.isnan(x)
-                    if math.isnan(x):
+                    try:
+                        if math.isnan(float(line[i])):
+                            line[i] = 0
+                    except:
                         line[i] = 0
 
-                if time1 == 1:
+                if time1 > 1:
+                    line = [my_max_min_function(chunk)[2] for chunk in divide_chunks(line, time1)]
 
-                    data = {'stationName': station,
-                            'line': line, 'Date_Time': startDateObj}
-                    reply.append(data)
+                reply.append({'stationName': station, 'line': line, 'Date_Time': startDateObj})
 
-                else:
-                    temp_line = []
+    # Append timestamps
+    reply.append({'Date_Time': allDateTime})
 
-                    x = list(divide_chunks(line, time1))
+    # Calculate max, min, avg for each station
+    for i in range(len(reply) - 1):
+        max_, min_, avg = my_max_min_function(reply[i]['line'])
 
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_line.append(avg_1)
-
-                    data = {'stationName': station,
-                            'line': temp_line, 'Date_Time': startDateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
-
-    for i in range(len(reply)-1):
-
-        max, min, avg = my_max_min_function(reply[i]['line'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_[0] == 0 and min_[0] == 0:
+            max_, min_ = [[0], []], [[0], []]
+        elif len(max_) > 50 and len(min_) > 50:
+            max_, min_ = [[max_[0]], []], [[min_[0]], []]
         else:
-            l1 = []
-            l2 = []
+            max_ = [[max_[0]] * (len(max_)-1), allDateTime[1:len(max_)]]
+            min_ = [[min_[0]] * (len(min_)-1), allDateTime[1:len(min_)]]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
-
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
+        reply[i]['max'] = max_
+        reply[i]['min'] = min_
         reply[i]['avg'] = avg
 
     return jsonify(reply)
+
 
 
 @app.route('/GetICTDataExcel', methods=['GET', 'POST'])
@@ -1973,444 +1226,218 @@ def MultiFrequencyNames():
 
 
 @app.route('/GetFrequencyData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400, query_string=True)
 def GetFrequencyData():
 
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
-
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
+    stationName = request.args['stationName'].split(',')
     time1 = int(request.args['time'])
 
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
+    startTime = startDate1 + ":00"
+    endTime = endDate1 + ":00"
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDateOnly = startDate1.split(" ")[0]
+    endDateOnly = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    startTimeDT = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
+    endTimeDT = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
 
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-                ).strftime("%d-%m-%Y %H:%M:%S"))
+    index1 = startTimeDT.hour * 60 + startTimeDT.minute
+    total_minutes = int((endTimeDT - startTimeDT).total_seconds() / 60)
+    index2 = index1 + total_minutes
 
-    allDateTime = []
-
-    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
-              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
-
-    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
-                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
-
-    if time1 > 1 + (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
+    if time1 > 1 + total_minutes:
         return jsonify("Time ERROR")
 
-    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
-    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
+    allDateTime = []
+    cursor_time = startTimeDT
+    while cursor_time <= endTimeDT:
+        allDateTime.append(cursor_time.strftime("%d-%m-%Y %H:%M:%S"))
+        cursor_time += timedelta(minutes=time1)
 
-    while startTime <= endTime:
-
-        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
-
-        startTime = (startTime + timedelta(hours=0, minutes=time1))
-
-    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
-    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
-
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
-
-    # dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-    #        datetime_range(startDateObj, endDateObj,
-    #                       timedelta(minutes=time1))]
-
-    # allDateTime = dts
-    # print(allDateTime)
-
-    # allDateTime = allDateTime[allDateTime.index(
-    #     startTime):allDateTime.index(endTime)+1]
+    startDateObj = datetime.strptime(startDateOnly, "%Y-%m-%d")
+    endDateObj = datetime.strptime(endDateOnly, "%Y-%m-%d")
+    date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
 
     reply = []
-    listofzeros = [] * 1440
-
     names = ''
-
-    merge_list = []
-
-    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
-    merge_list.append(df1)
+    merge_list = [pd.DataFrame.from_dict({'Date_Time': allDateTime})]
 
     for station in stationName:
-
-        names = names+station+', '
+        names += station + ', '
         frequency = []
 
         for it in date_range:
-
             filter = {
                 'd': {
                     '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
                     '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
                 },
                 'n': station
-
             }
-            project = {
-                '_id': 0,
-                'p': 1,
-
-            }
-
-            result = frequency_data_collection.find(
-                filter=filter,
-                projection=project
-            )
-
+            project = {'_id': 0, 'p': 1}
+            result = frequency_data_collection.find(filter=filter, projection=project)
             result_list = list(result)
 
-            if len(result_list) == 0:
-                frequency = frequency + listofzeros
-
+            if not result_list:
+                frequency += [0] * 1440
             else:
-
-                frequency = frequency + result_list[0]['p']
+                frequency += result_list[0]['p']
 
         for i in range(len(frequency)):
-            x = float(frequency[i])
-            math.isnan(x)
-            if math.isnan(x):
+            val = float(frequency[i])
+            if math.isnan(val):
                 frequency[i] = 0
 
         frequency = frequency[index1:index2+1]
 
         if time1 == 1:
-
-            data = {'stationName': station,
-                    'frequency': frequency}
-            reply.append(data)
-
+            reply.append({'stationName': station, 'frequency': frequency})
         else:
-
             temp_frequency = []
-
-            x = list(divide_chunks(frequency, time1))
-
-            for item in x:
-                max_1, min_1, avg_1 = my_max_min_function(item)
-                temp_frequency.append(avg_1)
-
-            data = {'stationName': station,
-                    'frequency': temp_frequency}
-            reply.append(data)
-
-        # df1 = pd.DataFrame.from_dict({station: frequency})
-
-        # merge_list.append(df1)
-
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("Frequency.xlsx", index=None)
+            chunks = list(divide_chunks(frequency, time1))
+            for chunk in chunks:
+                _, _, avg = my_max_min_function(chunk)
+                temp_frequency.append(avg)
+            reply.append({'stationName': station, 'frequency': temp_frequency})
 
     for i in range(len(reply)):
+        max_vals, min_vals, avg = my_max_min_function(reply[i]['frequency'])
 
-        max, min, avg = my_max_min_function(reply[i]['frequency'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_vals[0] == 0 and min_vals[0] == 0:
+            max_vals, min_vals = [[0], []], [[0], []]
+        elif len(max_vals) > 50 and len(min_vals) > 50:
+            max_vals, min_vals = [[max_vals[0]], []], [[min_vals[0]], []]
         else:
-            l1 = []
-            l2 = []
+            max_time = [max_vals[0]] * (len(max_vals)-1)
+            min_time = [min_vals[0]] * (len(min_vals)-1)
+            max_vals = [max_time, allDateTime[1:len(max_vals)]]
+            min_vals = [min_time, allDateTime[1:len(min_vals)]]
 
-            for x in range(1, len(max)):
+        temp_freq_sorted = sorted(reply[i]['frequency'], reverse=True)
+        z = list(np.linspace(0, 100, len(temp_freq_sorted)))
+        duration = [temp_freq_sorted, z]
 
-                l1.append(max[0])
-                l2.append(allDateTime[x])
-
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
+        reply[i]['max'] = max_vals
+        reply[i]['min'] = min_vals
         reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["frequency"].copy()
-        temp_freq_lst.sort()
-        # temp_freq_lst = list(dict.fromkeys(temp_freq_lst))
-        # iz = 5
-        # while iz < len(temp_freq_lst):
-        #     if temp_freq_lst[iz] == temp_freq_lst[iz-1] and temp_freq_lst[iz] == temp_freq_lst[iz-2] and temp_freq_lst[iz] == temp_freq_lst[iz-3] and temp_freq_lst[iz] == temp_freq_lst[iz-4] and temp_freq_lst[iz] == temp_freq_lst[iz-5]:
-        #         del temp_freq_lst[iz]
-        #     else:
-        #         iz += 1
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        reply[i]['Duration'] = duration
 
     reply.append({'Date_Time': allDateTime})
 
-    for x in range(len(reply)-1):
-        df1 = pd.DataFrame.from_dict(
-            {reply[x]['stationName']: reply[x]['frequency']})
-        merge_list.append(df1)
+    for x in range(len(reply) - 1):
+        df = pd.DataFrame.from_dict({reply[x]['stationName']: reply[x]['frequency']})
+        merge_list.append(df)
 
     global Frequency_excel_data
-
     Frequency_excel_data = merge_list
-    names = names[:-2]
 
     return jsonify(reply)
+
 
 
 @app.route('/GetMultiFrequencyData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400)
 def GetMultiFrequencyData():
-
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationName = request.args['MultistationName'].split(',')
     Type = request.args['Type']
-
     time1 = int(request.args['time'])
 
     listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
+
+    def get_frequency(date_obj, station):
+        filter = {
+            'd': {
+                '$gte': datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0, tzinfo=timezone.utc),
+                '$lte': datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0, tzinfo=timezone.utc)
+            },
+            'n': station
+        }
+        project = {'_id': 0, 'p': 1}
+        result = list(frequency_data_collection.find(filter=filter, projection=project))
+        return result[0]['p'] if result else listofzeros
+
+    def clean_data(data):
+        for i in range(len(data)):
+            try:
+                x = float(data[i])
+                if math.isnan(x):
+                    data[i] = 0
+            except:
+                data[i] = 0
+        return data
+
+    def add_metadata(item, freq_list, datetime_label):
+        item['frequency'] = freq_list
+        item['Date_Time'] = datetime_label
+        maxv, minv, avgv = my_max_min_function(freq_list)
+
+        if maxv[0] == 0 and minv[0] == 0:
+            item['max'], item['min'] = [[0], []], [[0], []]
+        elif len(maxv) > 50 and len(minv) > 50:
+            item['max'], item['min'] = [[maxv[0]], []], [[minv[0]], []]
+        else:
+            max_list = [maxv[0]] * (len(allDateTime) - 1)
+            min_list = [minv[0]] * (len(allDateTime) - 1)
+            item['max'] = [max_list, allDateTime[1:]]
+            item['min'] = [min_list, allDateTime[1:]]
+        item['avg'] = avgv
+        sorted_freq = sorted(freq_list, reverse=True)
+        z = list(np.linspace(0, 100, len(sorted_freq)))
+        item['Duration'] = [sorted_freq, z]
+        return item
 
     if Type == "Date":
-
-        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-
-        reply = []
-
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
-
-        allDateTime = dts
+        date_obj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(date_obj, date_obj + timedelta(days=1), timedelta(minutes=time1))]
 
         for station in stationName:
-
             for dateval in MultistartDate:
-
-                DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
+                current_date = datetime.strptime(dateval, "%Y-%m-%d")
                 frequency = []
+                frequency += get_frequency(current_date, station)
+                frequency = clean_data(frequency)
 
-                filter = {
-                    'd': {
-                        '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
-                    },
-                    'n': station
-                }
-                project = {
-                    '_id': 0,
-                    'p': 1,
+                if time1 > 1:
+                    chunked = divide_chunks(frequency, time1)
+                    frequency = [my_max_min_function(chunk)[2] for chunk in chunked]
 
-                }
-
-                result = frequency_data_collection.find(
-                    filter=filter,
-                    projection=project
-
-                )
-
-                result_list = list(result)
-
-                if len(result_list) == 0:
-                    frequency = frequency + listofzeros
-
-                else:
-
-                    frequency = frequency + result_list[0]['p']
-
-                for i in range(len(frequency)):
-                    x = float(frequency[i])
-                    math.isnan(x)
-                    if math.isnan(x):
-                        frequency[i] = 0
-
-                if time1 == 1:
-
-                    temp_freq_lst = frequency.copy()
-                    temp_freq_lst.sort()
-                    z = list(np.linspace(0, 100, len(temp_freq_lst)))
-                    temp_freq_lst.reverse()
-                    temp_list = [temp_freq_lst, z]
-
-                    data = {'stationName': station,
-                            'frequency': frequency, 'Date_Time': DateObj, 'Duration': temp_list}
-                    reply.append(data)
-
-                else:
-                    temp_frequency = []
-
-                    x = list(divide_chunks(frequency, time1))
-
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_frequency.append(avg_1)
-
-                    data = {'stationName': station,
-                            'frequency': temp_frequency, 'Date_Time': DateObj}
-                    reply.append(data)
+                item = {'stationName': station}
+                reply.append(add_metadata(item, frequency, current_date))
 
     elif Type == "Month":
-
-        reply = []
-        allDateTime = []
-
         for station in stationName:
-
             for dateval in MultistartDate:
+                start_date = datetime.strptime(dateval, "%Y-%m-%d")
+                end_date = pd.Timestamp(dateval) + MonthEnd(1)
 
-                startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
-                endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
+                allDateTime_candidate = [dt.strftime("%d-%m-%Y %H:%M:%S")
+                                         for dt in datetime_range(start_date, end_date, timedelta(minutes=time1))]
+                if len(allDateTime) < len(allDateTime_candidate):
+                    allDateTime = allDateTime_candidate
 
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                       datetime_range(startDateObj, endDateObj,
-                                      timedelta(minutes=time1))]
-
-                if len(allDateTime) < len(dts):
-                    allDateTime = dts
-
-                alldate = pd.date_range(
-                    startDateObj, endDateObj-timedelta(days=1), freq='d').strftime("%Y-%m-%d")
-                alldate = list(alldate)
-                endDateObj = endDateObj.strftime("%Y-%m-%d")
-                alldate.append(endDateObj)
+                date_list = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d").tolist()
 
                 frequency = []
+                for d in date_list:
+                    frequency += get_frequency(datetime.strptime(d, "%Y-%m-%d"), station)
 
-                for dates in alldate:
+                frequency = clean_data(frequency)
 
-                    dates = datetime.strptime(dates, "%Y-%m-%d")
+                if time1 > 1:
+                    chunked = divide_chunks(frequency, time1)
+                    frequency = [my_max_min_function(chunk)[2] for chunk in chunked]
 
-                    filter = {
-                        'd': {
-                            '$gte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc),
-                            '$lte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc)
-                        },
-                        'n': station
-                    }
-                    project = {
-                        '_id': 0,
-                        'p': 1,
+                item = {'stationName': station}
+                reply.append(add_metadata(item, frequency, start_date))
 
-                    }
-
-                    result = frequency_data_collection.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-
-                    result_list = list(result)
-
-                    if len(result_list) == 0:
-                        frequency = frequency + listofzeros
-
-                    else:
-
-                        frequency = frequency + result_list[0]['p']
-
-                for i in range(len(frequency)):
-                    x = float(frequency[i])
-                    math.isnan(x)
-                    if math.isnan(x):
-                        frequency[i] = 0
-
-                if time1 == 1:
-
-                    temp_freq_lst = frequency.copy()
-                    temp_freq_lst.sort()
-                    z = list(np.linspace(0, 100, len(temp_freq_lst)))
-                    temp_freq_lst.reverse()
-                    temp_list = [temp_freq_lst, z]
-
-                    data = {'stationName': station,
-                            'frequency': frequency, 'Date_Time': startDateObj, 'Duration': temp_list}
-                    reply.append(data)
-
-                else:
-                    temp_frequency = []
-
-                    x = list(divide_chunks(frequency, time1))
-
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_frequency.append(avg_1)
-
-                    data = {'stationName': station,
-                            'frequency': temp_frequency, 'Date_Time': startDateObj}
-                    reply.append(data)
-
-    temp_dict = {
-        'Date_Time': allDateTime
-    }
-
-    for i in range(len(reply)):
-
-        max, min, avg = my_max_min_function(reply[i]['frequency'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
-        else:
-            l1 = []
-            l2 = []
-
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
-
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["frequency"].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
-
-    reply.append(temp_dict)
-
+    reply.append({'Date_Time': allDateTime})
     return jsonify(reply)
+
 
 
 @app.route('/GetFrequencyDataExcel', methods=['GET', 'POST'])
@@ -2503,308 +1530,115 @@ def MultiLinesMWMVARNames():
     return res
 
 
-
 @app.route('/LinesMWMVARData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400)
 def LinesMWMVARData():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
-
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
+    stationList = request.args['stationName'].split(',')
     time1 = int(request.args['time'])
 
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
+    startTime = startDate1 + ":00"
+    endTime = endDate1 + ":00"
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    startTimeFmt = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
+    endTimeFmt = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
 
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-                ).strftime("%d-%m-%Y %H:%M:%S"))
+    startTimeStr = startTimeFmt.strftime("%d-%m-%Y %H:%M:%S")
+    endTimeStr = endTimeFmt.strftime("%d-%m-%Y %H:%M:%S")
 
-    allDateTime = []
+    index1 = startTimeFmt.hour * 60 + startTimeFmt.minute
+    duration_minutes = int((endTimeFmt - startTimeFmt).total_seconds() / 60)
+    index2 = index1 + duration_minutes
 
-    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
-              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
-
-    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
-                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
-
-    if time1 > 1 + (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
+    if time1 > 1 + duration_minutes:
         return jsonify("Time ERROR")
 
-    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
-    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
+    allDateTime = []
+    current = startTimeFmt
+    while current <= endTimeFmt:
+        allDateTime.append(current.strftime("%d-%m-%Y %H:%M:%S"))
+        current += timedelta(minutes=time1)
 
-    while startTime <= endTime:
-
-        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
-
-        startTime = (startTime + timedelta(hours=0, minutes=time1))
-
-    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
-    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
-
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
-
-    # dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-    #        datetime_range(startDateObj, endDateObj,
-    #                       timedelta(minutes=time1))]
-
-    # allDateTime = dts
-
-    # allDateTime = allDateTime[allDateTime.index(
-    #     startTime):allDateTime.index(endTime)+1]
+    date_range = [datetime.strptime(startDate, "%Y-%m-%d") + timedelta(days=x)
+                  for x in range((datetime.strptime(endDate, "%Y-%m-%d") - datetime.strptime(startDate, "%Y-%m-%d")).days + 1)]
 
     reply = []
     listofzeros = [0] * 1440
+    merge_list = [pd.DataFrame.from_dict({'Date_Time': allDateTime})]
 
-    merge_list = []
+    def fetch_line_data(collections, station, day):
+        for col in collections:
+            result = list(col.find({
+                'd': {
+                    '$gte': datetime(day.year, day.month, day.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(day.year, day.month, day.day, 0, 0, 0, tzinfo=timezone.utc)
+                },
+                'n': station
+            }, {'_id': 0, 'p': 1}))
+            if result:
+                return result[0]['p']
+        return listofzeros
 
-    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
-    merge_list.append(df1)
-
-    for station in stationName:
-
-        temp_name = station
-        temp_name = temp_name.split(" ")
-
-        if temp_name[-1] == "MW":
-
-            station = station[:-3]
-
-            line = []
-
-            for it in date_range:
-
-                filter = {
-                    'd': {
-                        '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
-                    },
-                    'n': station
-
-                }
-                project = {
-                    '_id': 0,
-                    'p': 1,
-
-                }
-
-                result = line_mw_data_collection.find(
-                    filter=filter,
-                    projection=project
-
-                )
-
-                global Lines_file_name
-
-                Lines_file_name = 'p1'
-
-                result_list = list(result)
-
-                if len(result_list) == 0:
-
-                    result1 = line_mw_data_collection1.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-                    Lines_file_name = 'p2'
-
-                    result_list = list(result1)
-
-                if len(result_list) == 0:
-
-                    result2 = line_mw_data_collection2.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-                    Lines_file_name = '400 & above'
-
-                    result_list = list(result2)
-
-                if len(result_list) == 0:
-                    line = line + listofzeros
-
-                else:
-
-                    line = line + result_list[0]['p']
-
-            for i in range(len(line)):
+    def clean_data(line):
+        for i in range(len(line)):
+            try:
                 x = float(line[i])
-                math.isnan(x)
                 if math.isnan(x):
                     line[i] = 0
+            except:
+                line[i] = 0
+        return line
 
-            line = line[index1:index2+1]
+    for station in stationList:
+        temp = station.split(" ")
+        is_mw = temp[-1] == "MW"
+        is_mvar = temp[-1] == "MVAR"
+        name = station[:-3] if is_mw else station[:-5]
 
-            if time1 == 1:
-
-                data = {'stationName': station, 'line': line}
-                reply.append(data)
-
-            else:
-                temp_line = []
-
-                x = list(divide_chunks(line, time1))
-
-                for item in x:
-                    max_1, min_1, avg_1 = my_max_min_function(item)
-                    temp_line.append(avg_1)
-
-                data = {'stationName': station, 'line': temp_line}
-                reply.append(data)
-
-            # df1 = pd.DataFrame.from_dict({station+' '+Lines_file_name: line})
-
-            # merge_list.append(df1)
-
-        elif temp_name[-1] == "MVAR":
-
-            station = station[:-5]
-
-            line = []
-
-            for it in date_range:
-
-                filter = {
-                    'd': {
-                        '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
-                    },
-                    'n': station
-
-                }
-                project = {
-                    '_id': 0,
-                    'p': 1,
-
-                }
-
-                result = MVAR_P1.find(
-                    filter=filter,
-                    projection=project
-
-                )
-
-                global MVAR_file_name
-
-                MVAR_file_name = 'p1'
-
-                result_list = list(result)
-
-                if len(result_list) == 0:
-
-                    result1 = MVAR_P2.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-                    MVAR_file_name = 'p2'
-
-                    result_list = list(result1)
-
-                if len(result_list) == 0:
-
-                    result2 = Lines_MVAR_400_above.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-                    MVAR_file_name = '400 & above'
-
-                    result_list = list(result2)
-
-                if len(result_list) == 0:
-                    line = line + listofzeros
-
-                else:
-
-                    line = line + result_list[0]['p']
-
-            for i in range(len(line)):
-                x = float(line[i])
-                math.isnan(x)
-                if math.isnan(x):
-                    line[i] = 0
-
-            line = line[index1:index2+1]
-
-            if time1 == 1:
-
-                data = {'stationName': station, 'line': line}
-                reply.append(data)
-
-            else:
-                temp_line = []
-
-                x = list(divide_chunks(line, time1))
-
-                for item in x:
-                    max_1, min_1, avg_1 = my_max_min_function(item)
-                    temp_line.append(avg_1)
-
-                data = {'stationName': station, 'line': temp_line}
-                reply.append(data)
-
-            # df1 = pd.DataFrame.from_dict({station+' '+MVAR_file_name: line})
-
-            # merge_list.append(df1)
-
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("Line.xlsx", index=None)
-
-    for i in range(len(reply)):
-
-        max, min, avg = my_max_min_function(reply[i]['line'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if is_mw:
+            collections = [line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2]
+        elif is_mvar:
+            collections = [MVAR_P1, MVAR_P2, Lines_MVAR_400_above]
         else:
-            l1 = []
-            l2 = []
+            continue
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+        line = []
+        for date in date_range:
+            line += fetch_line_data(collections, name, date)
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
+        line = clean_data(line)
+        line = line[index1:index2+1]
 
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
+        if time1 == 1:
+            result = line
+        else:
+            result = [my_max_min_function(chunk)[2] for chunk in divide_chunks(line, time1)]
 
-            min = [l1, l2]
+        reply.append({'stationName': name, 'line': result})
 
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
+    for entry in reply:
+        maxv, minv, avgv = my_max_min_function(entry['line'])
+
+        if maxv[0] == 0 and minv[0] == 0:
+            maxv, minv = [[0], []], [[0], []]
+        elif len(maxv) > 50 and len(minv) > 50:
+            maxv, minv = [[maxv[0]], []], [[minv[0]], []]
+        else:
+            maxv = [[maxv[0]] * (len(allDateTime) - 1), allDateTime[1:]]
+            minv = [[minv[0]] * (len(allDateTime) - 1), allDateTime[1:]]
+
+        entry['max'] = maxv
+        entry['min'] = minv
+        entry['avg'] = avgv
 
     reply.append({'Date_Time': allDateTime})
 
-    for x in range(len(reply)-1):
-        df1 = pd.DataFrame.from_dict(
-            {reply[x]['stationName']: reply[x]['line']})
-        merge_list.append(df1)
+    for item in reply[:-1]:
+        merge_list.append(pd.DataFrame.from_dict({item['stationName']: item['line']}))
 
     global Lines_excel_data
     Lines_excel_data = merge_list
@@ -2813,467 +1647,107 @@ def LinesMWMVARData():
 
 
 @app.route('/MultiLinesMWMVARData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400)
 def MultiLinesMWMVARData():
-
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationNames = request.args['MultistationName'].split(',')
     Type = request.args['Type']
-
     time1 = int(request.args['time'])
-
-    global Lines_file_name
-
     listofzeros = [0] * 1440
 
-    if Type == "Date":
-
-        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-
-        reply = []
-
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
-
-        allDateTime = dts
-
-        for station in stationName:
-
-            temp_name = station
-            temp_name = temp_name.split(" ")
-
-            if temp_name[-1] == "MW":
-
-                station = station[:-3]
-
-                for dateval in MultistartDate:
-
-                    DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
-                    line = []
-
-                    filter = {
-                        'd': {
-                            '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                            '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
-                        },
-                        'n': station
-                    }
-                    project = {
-                        '_id': 0,
-                        'p': 1,
-
-                    }
-
-                    result = line_mw_data_collection.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-
-                    Lines_file_name = 'p1'
-
-                    result_list = list(result)
-
-                    if len(result_list) == 0:
-
-                        result1 = line_mw_data_collection1.find(
-                            filter=filter,
-                            projection=project
-
-                        )
-                        Lines_file_name = 'p2'
-
-                        result_list = list(result1)
-
-                    if len(result_list) == 0:
-
-                        result2 = line_mw_data_collection2.find(
-                            filter=filter,
-                            projection=project
-
-                        )
-                        Lines_file_name = '400 & above'
-
-                        result_list = list(result2)
-
-                    if len(result_list) == 0:
-                        line = line + listofzeros
-
-                    else:
-
-                        line = line + result_list[0]['p']
-
-                    for i in range(len(line)):
-                        x = float(line[i])
-                        math.isnan(x)
-                        if math.isnan(x):
-                            line[i] = 0
-
-                    if time1 == 1:
-
-                        data = {'stationName': station,
-                                'line': line, 'Date_Time': DateObj}
-                        reply.append(data)
-
-                    else:
-                        temp_line = []
-
-                        x = list(divide_chunks(line, time1))
-
-                        for item in x:
-                            max_1, min_1, avg_1 = my_max_min_function(item)
-                            temp_line.append(avg_1)
-
-                        data = {'stationName': station,
-                                'line': temp_line, 'Date_Time': DateObj}
-                        reply.append(data)
-
-            elif temp_name[-1] == "MVAR":
-
-                station = station[:-5]
-
-                for dateval in MultistartDate:
-
-                    DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
-                    line = []
-
-                    filter = {
-                        'd': {
-                            '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                            '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
-                        },
-                        'n': station
-                    }
-                    project = {
-                        '_id': 0,
-                        'p': 1,
-
-                    }
-
-                    result = MVAR_P1.find(
-                        filter=filter,
-                        projection=project
-
-                    )
-
-                    result_list = list(result)
-
-                    if len(result_list) == 0:
-
-                        result1 = MVAR_P2.find(
-                            filter=filter,
-                            projection=project
-
-                        )
-
-                        result_list = list(result1)
-
-                    if len(result_list) == 0:
-
-                        result2 = Lines_MVAR_400_above.find(
-                            filter=filter,
-                            projection=project
-
-                        )
-
-                        result_list = list(result2)
-
-                    if len(result_list) == 0:
-                        line = line + listofzeros
-
-                    else:
-
-                        line = line + result_list[0]['p']
-
-                    for i in range(len(line)):
-                        x = float(line[i])
-                        math.isnan(x)
-                        if math.isnan(x):
-                            line[i] = 0
-
-                    if time1 == 1:
-
-                        data = {'stationName': station,
-                                'line': line, 'Date_Time': DateObj}
-                        reply.append(data)
-
-                    else:
-                        temp_line = []
-
-                        x = list(divide_chunks(line, time1))
-
-                        for item in x:
-                            max_1, min_1, avg_1 = my_max_min_function(item)
-                            temp_line.append(avg_1)
-
-                        data = {'stationName': station,
-                                'line': temp_line, 'Date_Time': DateObj}
-                        reply.append(data)
-
-    elif Type == "Month":
-
-        reply = []
-        allDateTime = []
-
-        for station in stationName:
-
-            temp_name = station
-            temp_name = temp_name.split(" ")
-
-            if temp_name[-1] == "MW":
-
-                station = station[:-3]
-
-                for dateval in MultistartDate:
-
-                    startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
-                    endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
-
-                    dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                           datetime_range(startDateObj, endDateObj,
-                                          timedelta(minutes=time1))]
-
-                    if len(allDateTime) < len(dts):
-                        allDateTime = dts
-
-                    alldate = pd.date_range(
-                        startDateObj, endDateObj-timedelta(days=1), freq='d').strftime("%Y-%m-%d")
-                    alldate = list(alldate)
-                    endDateObj = endDateObj.strftime("%Y-%m-%d")
-                    alldate.append(endDateObj)
-
-                    line = []
-
-                    for dates in alldate:
-
-                        dates = datetime.strptime(dates, "%Y-%m-%d")
-
-                        filter = {
-                            'd': {
-                                '$gte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc),
-                                '$lte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc)
-                            },
-                            'n': station
-                        }
-                        project = {
-                            '_id': 0,
-                            'p': 1,
-
-                        }
-
-                        result = line_mw_data_collection.find(
-                            filter=filter,
-                            projection=project
-
-                        )
-
-                        Lines_file_name = 'p1'
-
-                        result_list = list(result)
-
-                        if len(result_list) == 0:
-
-                            result1 = line_mw_data_collection1.find(
-                                filter=filter,
-                                projection=project
-
-                            )
-                            Lines_file_name = 'p2'
-
-                            result_list = list(result1)
-
-                        if len(result_list) == 0:
-
-                            result2 = line_mw_data_collection2.find(
-                                filter=filter,
-                                projection=project
-
-                            )
-                            Lines_file_name = '400 & above'
-
-                            result_list = list(result2)
-
-                        if len(result_list) == 0:
-                            line = line + listofzeros
-
-                        else:
-
-                            line = line + result_list[0]['p']
-
-                    for i in range(len(line)):
-                        x = float(line[i])
-                        math.isnan(x)
-                        if math.isnan(x):
-                            line[i] = 0
-
-                    if time1 == 1:
-
-                        data = {'stationName': station,
-                                'line': line, 'Date_Time': startDateObj}
-                        reply.append(data)
-
-                    else:
-                        temp_line = []
-
-                        x = list(divide_chunks(line, time1))
-
-                        for item in x:
-                            max_1, min_1, avg_1 = my_max_min_function(item)
-                            temp_line.append(avg_1)
-
-                        data = {'stationName': station,
-                                'line': temp_line, 'Date_Time': startDateObj}
-                        reply.append(data)
-
-            elif temp_name[-1] == "MVAR":
-
-                station = station[:-5]
-
-                for dateval in MultistartDate:
-
-                    startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
-                    endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
-
-                    dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                           datetime_range(startDateObj, endDateObj,
-                                          timedelta(minutes=time1))]
-
-                    if len(allDateTime) < len(dts):
-                        allDateTime = dts
-
-                    alldate = pd.date_range(
-                        startDateObj, endDateObj-timedelta(days=1), freq='d').strftime("%Y-%m-%d")
-                    alldate = list(alldate)
-                    endDateObj = endDateObj.strftime("%Y-%m-%d")
-                    alldate.append(endDateObj)
-
-                    line = []
-
-                    for dates in alldate:
-
-                        dates = datetime.strptime(dates, "%Y-%m-%d")
-
-                        filter = {
-                            'd': {
-                                '$gte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc),
-                                '$lte': datetime(dates.year, dates.month, dates.day, 0, 0, 0, tzinfo=timezone.utc)
-                            },
-                            'n': station
-
-                        }
-
-                        project = {
-                            '_id': 0,
-                            'p': 1,
-
-                        }
-
-                        result = MVAR_P1.find(
-                            filter=filter,
-                            projection=project
-
-                        )
-
-                        result_list = list(result)
-
-                        if len(result_list) == 0:
-
-                            result1 = MVAR_P2.find(
-                                filter=filter,
-                                projection=project
-
-                            )
-
-                            result_list = list(result1)
-
-                        if len(result_list) == 0:
-
-                            result2 = Lines_MVAR_400_above.find(
-                                filter=filter,
-                                projection=project
-
-                            )
-
-                            result_list = list(result2)
-
-                        if len(result_list) == 0:
-                            line = line + listofzeros
-
-                        else:
-
-                            line = line + result_list[0]['p']
-
-                    for i in range(len(line)):
-                        x = float(line[i])
-                        math.isnan(x)
-                        if math.isnan(x):
-                            line[i] = 0
-
-                    if time1 == 1:
-
-                        data = {'stationName': station,
-                                'line': line, 'Date_Time': startDateObj}
-                        reply.append(data)
-
-                    else:
-                        temp_line = []
-
-                        x = list(divide_chunks(line, time1))
-
-                        for item in x:
-                            max_1, min_1, avg_1 = my_max_min_function(item)
-                            temp_line.append(avg_1)
-
-                        data = {'stationName': station,
-                                'line': temp_line, 'Date_Time': startDateObj}
-                        reply.append(data)
-
-    temp_dict = {
-        'Date_Time': allDateTime
-    }
-
-    for i in range(len(reply)):
-
-        max, min, avg = my_max_min_function(reply[i]['line'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+    global Lines_file_name
+    reply = []
+    allDateTime = []
+
+    def fetch_data(collections, station, date):
+        for col in collections:
+            result = list(col.find({
+                'd': {
+                    '$gte': datetime(date.year, date.month, date.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(date.year, date.month, date.day, 0, 0, 0, tzinfo=timezone.utc)
+                },
+                'n': station
+            }, {'_id': 0, 'p': 1}))
+            if result:
+                return result[0]['p']
+        return listofzeros
+
+    def clean_line(line):
+        for i in range(len(line)):
+            try:
+                x = float(line[i])
+                if math.isnan(x):
+                    line[i] = 0
+            except:
+                line[i] = 0
+        return line
+
+    def process_station(station, is_mw, collections):
+        name = station[:-3] if is_mw else station[:-5]
+
+        for dateval in MultistartDate:
+            startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
+
+            if Type == "Date":
+                endDateObj = startDateObj
+                dts = [dt.strftime("%H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
+                allDateTime[:] = dts
+
+                line = fetch_data(collections, name, startDateObj)
+                line = clean_line(line)
+
+                if time1 == 1:
+                    reply.append({'stationName': name, 'line': line, 'Date_Time': startDateObj})
+                else:
+                    temp_line = [my_max_min_function(chunk)[2] for chunk in divide_chunks(line, time1)]
+                    reply.append({'stationName': name, 'line': temp_line, 'Date_Time': startDateObj})
+
+            elif Type == "Month":
+                endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
+                if len(allDateTime) < len(dts):
+                    allDateTime[:] = dts
+
+                alldates = pd.date_range(startDateObj, endDateObj - timedelta(days=1), freq='d').strftime("%Y-%m-%d").tolist()
+                alldates.append(endDateObj.strftime("%Y-%m-%d"))
+
+                line = []
+                for d in alldates:
+                    day = datetime.strptime(d, "%Y-%m-%d")
+                    day_line = fetch_data(collections, name, day)
+                    line += day_line
+
+                line = clean_line(line)
+
+                if time1 == 1:
+                    reply.append({'stationName': name, 'line': line, 'Date_Time': startDateObj})
+                else:
+                    temp_line = [my_max_min_function(chunk)[2] for chunk in divide_chunks(line, time1)]
+                    reply.append({'stationName': name, 'line': temp_line, 'Date_Time': startDateObj})
+
+    for station in stationNames:
+        if station.endswith("MW"):
+            process_station(station, True, [line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2])
+        elif station.endswith("MVAR"):
+            process_station(station, False, [MVAR_P1, MVAR_P2, Lines_MVAR_400_above])
+
+    # Attach min/max/avg
+    for entry in reply:
+        max_v, min_v, avg = my_max_min_function(entry['line'])
+
+        if max_v[0] == 0 and min_v[0] == 0:
+            max_v, min_v = [[0], []], [[0], []]
+        elif len(max_v) > 50 and len(min_v) > 50:
+            max_v, min_v = [[max_v[0]], []], [[min_v[0]], []]
         else:
-            l1 = []
-            l2 = []
+            max_v = [[max_v[0]] * (len(allDateTime) - 1), allDateTime[1:]]
+            min_v = [[min_v[0]] * (len(allDateTime) - 1), allDateTime[1:]]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+        entry['max'], entry['min'], entry['avg'] = max_v, min_v, avg
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-    reply.append(temp_dict)
-
+    reply.append({'Date_Time': allDateTime})
     return jsonify(reply)
+
 
 
 # ///////////////////////////////////////////////////////////////////////////////////Demand/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3327,226 +1801,112 @@ def MultiDemandMinNames():
     return res
 
 
-
 @app.route('/GetDemandMinData', methods=['GET', 'POST'])
 def GetDemandMinData():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
-
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
+    stationName = request.args['stationName'].split(',')
     time1 = int(request.args['time'])
 
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
+    startTimeStr = startDate1 + ":00"
+    endTimeStr = endDate1 + ":00"
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    startTime = datetime.strptime(startTimeStr, "%Y-%m-%d %H:%M:%S")
+    endTime = datetime.strptime(endTimeStr, "%Y-%m-%d %H:%M:%S")
 
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-                ).strftime("%d-%m-%Y %H:%M:%S"))
+    index1 = startTime.hour * 60 + startTime.minute
+    total_minutes = int((endTime - startTime).total_seconds() / 60)
+    index2 = index1 + total_minutes
 
-    allDateTime = []
-
-    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
-              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
-
-    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
-                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
-
-    if time1 > 1+(datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
+    if time1 > (total_minutes + 1):
         return jsonify("Time ERROR")
 
-    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
-    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
-
-    while startTime <= endTime:
-
-        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
-
-        startTime = (startTime + timedelta(hours=0, minutes=time1))
+    allDateTime = []
+    current_time = startTime
+    while current_time <= endTime:
+        allDateTime.append(current_time.strftime("%d-%m-%Y %H:%M:%S"))
+        current_time += timedelta(minutes=time1)
 
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
-
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
+    date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
 
     reply = []
     listofzeros = [0] * 1440
-
-    names = ''
-
     merge_list = []
+    merge_list.append(pd.DataFrame.from_dict({'Date_Time': allDateTime}))
 
-    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
-    merge_list.append(df1)
+    exempt_list = ['CESC DEMAND', 'ALL INDIA DEMAND', 'REG DEMAND']
 
     for station in stationName:
-
-        names = names+station+', '
-
         output = []
 
-        for it in date_range:
-
+        for day in date_range:
             filter = {
                 'd': {
-                    '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                    '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
+                    '$gte': datetime(day.year, day.month, day.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(day.year, day.month, day.day, 0, 0, 0, tzinfo=timezone.utc)
                 },
                 'n': station
-
             }
-            project = {
-                '_id': 0,
-                'p': 1,
+            project = {'_id': 0, 'p': 1}
 
-            }
+            parts = station.split("_")
+            is_demand = (parts[-1] == "DEMAND" or station in exempt_list)
 
-            temp_station = station
-            temp_station = temp_station.split("_")
+            collection = demand_collection if is_demand else drawal_collection
+            result = list(collection.find(filter=filter, projection=project))
 
-            exempt_list= ['CESC DEMAND', 'ALL INDIA DEMAND', 'REG DEMAND']
-
-            if (temp_station[-1] == "DEMAND" or station in exempt_list):
-
-                demand_result = demand_collection.find(
-                    filter=filter,
-                    projection=project
-                )
-
-                demand_list = list(demand_result)
-
-                if len(demand_list) == 0:
-                    output = output + listofzeros
-
-                else:
-
-                    output = output + demand_list[0]['p']
-
+            if result:
+                output += result[0]['p']
             else:
-
-                drawal_result = drawal_collection.find(
-                    filter=filter,
-                    projection=project
-                )
-
-                drawal_list = list(drawal_result)
-
-                if len(drawal_list) == 0:
-                    output = output + listofzeros
-
-                else:
-
-                    output = output + drawal_list[0]['p']
+                output += listofzeros
 
         for i in range(1, len(output)):
-            x = float(output[i])
-            math.isnan(x)
-            if math.isnan(x):
+            try:
+                if math.isnan(float(output[i])):
+                    output[i] = 0
+            except:
                 output[i] = 0
 
-        output = output[index1:index2+1]
-
-        # df1 = pd.DataFrame.from_dict({station: output})
-
-        # merge_list.append(df1)
+        output = output[index1:index2 + 1]
 
         if time1 == 1:
-
-            data = {'stationName': station,
-                    'output': output}
-            reply.append(data)
-
+            reply.append({'stationName': station, 'output': output})
         else:
             temp_output = []
-
-            x = list(divide_chunks(output, time1))
-
-            for item in x:
-                max_1, min_1, avg_1 = my_max_min_function(item)
-                temp_output.append(avg_1)
-
-            data = {'stationName': station,
-                    'output': temp_output}
-            reply.append(data)
-
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("DemandMin.xlsx", index=None)
+            for item in divide_chunks(output, time1):
+                _, _, avg = my_max_min_function(item)
+                temp_output.append(avg)
+            reply.append({'stationName': station, 'output': temp_output})
 
     for i in range(len(reply)):
+        max_val, min_val, avg_val = my_max_min_function(reply[i]['output'])
 
-        max, min, avg = my_max_min_function(reply[i]['output'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_val[0] == 0 and min_val[0] == 0:
+            reply[i]['max'] = [[0], []]
+            reply[i]['min'] = [[0], []]
+        elif len(max_val) > 50 and len(min_val) > 50:
+            reply[i]['max'] = [[max_val[0]], []]
+            reply[i]['min'] = [[min_val[0]], []]
         else:
-            l1 = []
-            l2 = []
+            reply[i]['max'] = [[max_val[0]] * (len(max_val) - 1), allDateTime[1:]]
+            reply[i]['min'] = [[min_val[0]] * (len(min_val) - 1), allDateTime[1:]]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+        reply[i]['avg'] = avg_val
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["output"].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        sorted_output = sorted(reply[i]["output"], reverse=True)
+        z = list(np.linspace(0, 100, len(sorted_output)))
+        reply[i]['Duration'] = [sorted_output, z]
 
     reply.append({'Date_Time': allDateTime})
 
-    names = names[:-2]
-
-    for x in range(len(reply)-1):
-        df1 = pd.DataFrame.from_dict(
-            {reply[x]['stationName']: reply[x]['output']})
-        merge_list.append(df1)
-
-        # df2 = pd.DataFrame.from_dict(
-        #     {'Maximums': reply[x]['max'][0]+reply[x]['max'][1]})
-        # merge_list.append(df2)
-
-        # df3 = pd.DataFrame.from_dict(
-        #     {'Minimums': reply[x]['min'][0]+reply[x]['min'][1]})
-        # merge_list.append(df3)
-
-        # df4 = pd.DataFrame.from_dict({'Average': [reply[x]['avg']]})
-        # merge_list.append(df4)
-
-        # df5 = pd.DataFrame.from_dict({'Duration': reply[x]['Duration'][0]})
-        # merge_list.append(df5)
+    for i in range(len(reply) - 1):
+        df = pd.DataFrame.from_dict({reply[i]['stationName']: reply[i]['output']})
+        merge_list.append(df)
 
     global Demand_excel_data
     Demand_excel_data = merge_list
@@ -3556,38 +1916,21 @@ def GetDemandMinData():
 
 @app.route('/GetMultiDemandMinData', methods=['GET', 'POST'])
 def GetMultiDemandMinData():
-
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationName = request.args['MultistationName'].split(',')
     Type = request.args['Type']
-
     time1 = int(request.args['time'])
 
     listofzeros = [0] * 1440
+    reply = []
 
     if Type == "Date":
-
-        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-
-        # date_range= [startDateObj+timedelta(days=x) for x in range((endDateObj-startDateObj).days+1)]
-
-        reply = []
-
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
-
-        allDateTime = dts
+        date_obj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(date_obj, date_obj + timedelta(days=1), timedelta(minutes=time1))]
 
         for station in stationName:
-
             for dateval in MultistartDate:
-
                 DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
                 output = []
 
                 filter = {
@@ -3597,111 +1940,48 @@ def GetMultiDemandMinData():
                     },
                     'n': station
                 }
-                project = {
-                    '_id': 0,
-                    'p': 1,
+                project = {'_id': 0, 'p': 1}
+                is_demand = station[-6:] == "DEMAND"
 
-                }
+                collection = demand_collection if is_demand else drawal_collection
+                data_list = list(collection.find(filter=filter, projection=project))
 
-                # temp_station = station
-                # temp_station = temp_station.split("_")
-                temp_station= station[-6:]
-
-                if temp_station == "DEMAND":
-
-                    demand_result = demand_collection.find(
-                        filter=filter,
-                        projection=project
-                    )
-
-                    demand_list = list(demand_result)
-
-                    if len(demand_list) == 0:
-                        output = output + listofzeros
-
-                    else:
-
-                        output = output + demand_list[0]['p']
-
+                if data_list:
+                    output += data_list[0]['p']
                 else:
-
-                    drawal_result = drawal_collection.find(
-                        filter=filter,
-                        projection=project
-                    )
-
-                    drawal_list = list(drawal_result)
-
-                    if len(drawal_list) == 0:
-                        output = output + listofzeros
-
-                    else:
-
-                        output = output + drawal_list[0]['p']
+                    output += listofzeros
 
                 for i in range(1, len(output)):
-                    x = float(output[i])
-                    math.isnan(x)
-                    if math.isnan(x):
+                    try:
+                        if math.isnan(float(output[i])):
+                            output[i] = 0
+                    except:
                         output[i] = 0
 
                 if time1 == 1:
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': DateObj}
-                    reply.append(data)
-
+                    data = {'stationName': station, 'output': output, 'Date_Time': DateObj}
                 else:
-                    temp_output = []
+                    chunked = list(divide_chunks(output, time1))
+                    averaged = [my_max_min_function(chunk)[2] for chunk in chunked]
+                    data = {'stationName': station, 'output': averaged, 'Date_Time': DateObj}
 
-                    x = list(divide_chunks(output, time1))
+                reply.append(data)
 
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_output.append(avg_1)
-
-                    data = {'stationName': station, 'output': temp_output,
-                            'Date_Time': DateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
+        reply.append({'Date_Time': allDateTime})
 
     elif Type == "Month":
-
-        reply = []
-
         allDateTime = []
 
-        # listofzeros = [0] * 96
-
         for station in stationName:
-
             for dateval in MultistartDate:
-
                 startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
                 endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
-
-                # temp_allDateTime = []
-
-                # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-                #     temp_allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
-
-                # if (len(temp_allDateTime)>=len(allDateTime)):
-                #     allDateTime= temp_allDateTime
-
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                       datetime_range(startDateObj, endDateObj,
-                                      timedelta(minutes=time1))]
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
 
                 if len(allDateTime) < len(dts):
                     allDateTime = dts
 
                 output = []
-
                 filter = {
                     'd': {
                         '$gte': datetime(startDateObj.year, startDateObj.month, startDateObj.day, 0, 0, 0, tzinfo=timezone.utc),
@@ -3709,121 +1989,58 @@ def GetMultiDemandMinData():
                     },
                     'n': station
                 }
-                project = {
-                    '_id': 0,
-                    'p': 1,
+                project = {'_id': 0, 'p': 1}
+                is_demand = station[-6:] == "DEMAND"
 
-                }
+                collection = demand_collection if is_demand else drawal_collection
+                data_list = list(collection.find(filter=filter, projection=project))
 
-                # temp_station = station
-                # temp_station = temp_station.split("_")
-                temp_station= station[-6:]
-
-                if temp_station == "DEMAND":
-
-                    demand_result = demand_collection.find(
-                        filter=filter,
-                        projection=project
-                    )
-
-                    demand_list = list(demand_result)
-
-                    for item in demand_list:
-
-                        output = output + item['p']
-                    # print('demand ',len(demand))
-
+                if not data_list:
+                    output += listofzeros
                 else:
-
-                    drawal_result = drawal_collection.find(
-                        filter=filter,
-                        projection=project
-                    )
-
-                    drawal_list = list(drawal_result)
-
-                    if len(drawal_list) == 0:
-                        output = output + listofzeros
-
-                    for item in drawal_list:
-
-                        output = output + item['p']
-                        # print('drawal ',len(drawal))
+                    for item in data_list:
+                        output += item['p']
 
                 for i in range(1, len(output)):
-                    x = float(output[i])
-                    math.isnan(x)
-                    if math.isnan(x):
+                    try:
+                        if math.isnan(float(output[i])):
+                            output[i] = 0
+                    except:
                         output[i] = 0
 
                 if time1 == 1:
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': startDateObj}
-                    reply.append(data)
-
+                    data = {'stationName': station, 'output': output, 'Date_Time': startDateObj}
                 else:
-                    temp_output = []
+                    chunked = list(divide_chunks(output, time1))
+                    averaged = [my_max_min_function(chunk)[2] for chunk in chunked]
+                    data = {'stationName': station, 'output': averaged, 'Date_Time': startDateObj}
 
-                    x = list(divide_chunks(output, time1))
+                reply.append(data)
 
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_output.append(avg_1)
+        reply.append({'Date_Time': allDateTime})
 
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': startDateObj}
-                    reply.append(data)
+    for i in range(len(reply) - 1):
+        output = reply[i]['output']
+        max_val, min_val, avg_val = my_max_min_function(output)
 
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
-
-    for i in range(len(reply)-1):
-
-        max, min, avg = my_max_min_function(reply[i]['output'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_val[0] == 0 and min_val[0] == 0:
+            reply[i]['max'] = [[0], []]
+            reply[i]['min'] = [[0], []]
+        elif len(max_val) > 50 and len(min_val) > 50:
+            reply[i]['max'] = [[max_val[0]], []]
+            reply[i]['min'] = [[min_val[0]], []]
         else:
-            l1 = []
-            l2 = []
+            reply[i]['max'] = [[max_val[0]] * (len(max_val) - 1), allDateTime[1:]]
+            reply[i]['min'] = [[min_val[0]] * (len(min_val) - 1), allDateTime[1:]]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+        reply[i]['avg'] = avg_val
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["output"].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        sorted_output = sorted(output, reverse=True)
+        z = list(np.linspace(0, 100, len(sorted_output)))
+        reply[i]['Duration'] = [sorted_output, z]
 
     return jsonify(reply)
+
 
 
 @app.route('/GetDemandMinDataExcel', methods=['GET', 'POST'])
@@ -3931,433 +2148,202 @@ def MultiGeneratorNames():
     return res
 
 
-
 @app.route('/GetGeneratorData', methods=['GET', 'POST'])
 def GetGeneratorData():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
-
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
+    stationName = request.args['stationName'].split(',')
     time1 = int(request.args['time'])
 
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
+    start_datetime = datetime.strptime(startDate1 + ":00", "%Y-%m-%d %H:%M:%S")
+    end_datetime = datetime.strptime(endDate1 + ":00", "%Y-%m-%d %H:%M:%S")
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    index1 = start_datetime.hour * 60 + start_datetime.minute
+    duration_minutes = int((end_datetime - start_datetime).total_seconds() / 60)
+    index2 = index1 + duration_minutes
 
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-                ).strftime("%d-%m-%Y %H:%M:%S"))
-
-    allDateTime = []
-
-    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
-              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
-
-    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
-                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
-
-    if time1 > 1+(datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
+    if time1 > 1 + duration_minutes:
         return jsonify("Time ERROR")
 
-    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
-    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
-
-    while startTime <= endTime:
-
-        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
-
-        startTime = (startTime + timedelta(hours=0, minutes=time1))
+    allDateTime = []
+    temp_time = start_datetime
+    while temp_time <= end_datetime:
+        allDateTime.append(temp_time.strftime("%d-%m-%Y %H:%M:%S"))
+        temp_time += timedelta(minutes=time1)
 
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
-
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
-
-    # dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-    #        datetime_range(startDateObj, endDateObj,
-    #                       timedelta(minutes=time1))]
-
-    # allDateTime = dts
-
-    # allDateTime = allDateTime[allDateTime.index(
-    #     startTime):allDateTime.index(endTime)+1]
-    # allDateTime = []
-    # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-    #     allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
+    date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
 
     reply = []
     listofzeros = [0] * 1440
-
     names = ''
-
-    merge_list = []
-
-    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
-    merge_list.append(df1)
+    merge_list = [pd.DataFrame.from_dict({'Date_Time': allDateTime})]
 
     for station in stationName:
-
-        names = names+station+', '
-
+        names += station + ', '
         output = []
 
-        for it in date_range:
-
+        for date_val in date_range:
             filter = {
                 'd': {
-                    '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                    '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
+                    '$gte': datetime(date_val.year, date_val.month, date_val.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(date_val.year, date_val.month, date_val.day, 0, 0, 0, tzinfo=timezone.utc)
                 },
                 'n': station
-
             }
-            project = {
-                '_id': 0,
-                'p': 1,
-
-            }
-
-            generator_result = Generator_DB.find(
-                filter=filter,
-                projection=project
-            )
-
+            project = {'_id': 0, 'p': 1}
+            generator_result = Generator_DB.find(filter=filter, projection=project)
             generator_list = list(generator_result)
 
-            if len(generator_list) == 0:
-                output = output + listofzeros
-
-            else:
-
-                output = output + generator_list[0]['p']
+            output += generator_list[0]['p'] if generator_list else listofzeros
 
         for i in range(1, len(output)):
-            x = float(output[i])
-            math.isnan(x)
-            if math.isnan(x):
+            try:
+                if math.isnan(float(output[i])):
+                    output[i] = 0
+            except:
                 output[i] = 0
 
-        output = output[index1:index2+1]
-
-        # df1 = pd.DataFrame.from_dict({station: output})
-
-        # merge_list.append(df1)
+        output = output[index1:index2 + 1]
 
         if time1 == 1:
-
-            data = {'stationName': station,
-                    'output': output}
-            reply.append(data)
-
+            data = {'stationName': station, 'output': output}
         else:
-            temp_output = []
+            chunked = list(divide_chunks(output, time1))
+            temp_output = [my_max_min_function(chunk)[2] for chunk in chunked]
+            data = {'stationName': station, 'output': temp_output}
 
-            x = list(divide_chunks(output, time1))
-
-            for item in x:
-                max_1, min_1, avg_1 = my_max_min_function(item)
-                temp_output.append(avg_1)
-
-            data = {'stationName': station,
-                    'output': temp_output}
-            reply.append(data)
-
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("Generator.xlsx", index=None)
+        reply.append(data)
 
     for i in range(len(reply)):
+        output = reply[i]['output']
+        max_val, min_val, avg_val = my_max_min_function(output)
 
-        max, min, avg = my_max_min_function(reply[i]['output'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_val[0] == 0 and min_val[0] == 0:
+            reply[i]['max'] = [[0], []]
+            reply[i]['min'] = [[0], []]
+        elif len(max_val) > 50 and len(min_val) > 50:
+            reply[i]['max'] = [[max_val[0]], []]
+            reply[i]['min'] = [[min_val[0]], []]
         else:
-            l1 = []
-            l2 = []
+            time_labels = allDateTime[1:]
+            reply[i]['max'] = [[max_val[0]] * (len(max_val) - 1), time_labels]
+            reply[i]['min'] = [[min_val[0]] * (len(min_val) - 1), time_labels]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+        reply[i]['avg'] = avg_val
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
-
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["output"].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        sorted_output = sorted(output, reverse=True)
+        z = list(np.linspace(0, 100, len(sorted_output)))
+        reply[i]['Duration'] = [sorted_output, z]
 
     reply.append({'Date_Time': allDateTime})
 
-    for x in range(len(reply)-1):
-        df1 = pd.DataFrame.from_dict(
-            {reply[x]['stationName']: reply[x]['output']})
+    for x in range(len(reply) - 1):
+        df1 = pd.DataFrame.from_dict({reply[x]['stationName']: reply[x]['output']})
         merge_list.append(df1)
 
     global Generator_excel_data
     Generator_excel_data = merge_list
-
-    names = names[:-2]
 
     return jsonify(reply)
 
 
 @app.route('/GetMultiGeneratorData', methods=['GET', 'POST'])
 def GetMultiGeneratorData():
-
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationNames = request.args['MultistationName'].split(',')
     Type = request.args['Type']
-
     time1 = int(request.args['time'])
 
     listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
 
-    if Type == "Date":
-
-        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-
-        # date_range= [startDateObj+timedelta(days=x) for x in range((endDateObj-startDateObj).days+1)]
-
-        reply = []
-
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
-
-        allDateTime = dts
-
-        for station in stationName:
-
-            for dateval in MultistartDate:
-
-                DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
-                output = []
-
-                filter = {
-                    'd': {
-                        '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
-                    },
-                    'n': station
+    for station in stationNames:
+        for dateval in MultistartDate:
+            if Type == "Date":
+                startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
+                endDateObj = startDateObj
+                date_filter = {
+                    '$gte': datetime(startDateObj.year, startDateObj.month, startDateObj.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(startDateObj.year, startDateObj.month, startDateObj.day, 0, 0, 0, tzinfo=timezone.utc)
                 }
-                project = {
-                    '_id': 0,
-                    'p': 1,
-
-                }
-
-                generator_result = Generator_DB.find(
-                    filter=filter,
-                    projection=project
-                )
-
-                generator_list = list(generator_result)
-
-                if len(generator_list) == 0:
-                    output = output + listofzeros
-
-                else:
-
-                    output = output + generator_list[0]['p']
-
-                for i in range(1, len(output)):
-                    x = float(output[i])
-                    math.isnan(x)
-                    if math.isnan(x):
-                        output[i] = 0
-
-                if time1 == 1:
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': DateObj}
-                    reply.append(data)
-
-                else:
-                    temp_output = []
-
-                    x = list(divide_chunks(output, time1))
-
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_output.append(avg_1)
-
-                    data = {'stationName': station, 'output': temp_output,
-                            'Date_Time': DateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
-
-    elif Type == "Month":
-
-        reply = []
-
-        allDateTime = []
-
-        # listofzeros = [0] * 96
-
-        for station in stationName:
-
-            for dateval in MultistartDate:
-
+                dts = [dt.strftime("%H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
+            else:  # Type == "Month"
                 startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
                 endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
-
-                # temp_allDateTime = []
-
-                # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-                #     temp_allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
-
-                # if (len(temp_allDateTime)>=len(allDateTime)):
-                #     allDateTime= temp_allDateTime
-
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                       datetime_range(startDateObj, endDateObj,
-                                      timedelta(minutes=time1))]
-
+                date_filter = {
+                    '$gte': datetime(startDateObj.year, startDateObj.month, startDateObj.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(endDateObj.year, endDateObj.month, endDateObj.day, 0, 0, 0, tzinfo=timezone.utc)
+                }
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
                 if len(allDateTime) < len(dts):
                     allDateTime = dts
 
-                output = []
+            if Type == "Date":
+                allDateTime = dts
 
-                filter = {
-                    'd': {
-                        '$gte': datetime(startDateObj.year, startDateObj.month, startDateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(endDateObj.year, endDateObj.month, endDateObj.day, 0, 0, 0, tzinfo=timezone.utc)
-                    },
-                    'n': station
-                }
-                project = {
-                    '_id': 0,
-                    'p': 1,
+            generator_list = list(Generator_DB.find({'d': date_filter, 'n': station}, {'_id': 0, 'p': 1}))
+            output = []
 
-                }
-
-                generator_result = Generator_DB.find(
-                    filter=filter,
-                    projection=project
-                )
-
-                generator_list = list(generator_result)
-
+            if not generator_list:
+                output.extend(listofzeros)
+            else:
                 for item in generator_list:
+                    output.extend(item['p'])
 
-                    output = output + item['p']
-                # print('generator ',len(generator))
-
-                for i in range(1, len(output)):
+            for i in range(1, len(output)):
+                try:
                     x = float(output[i])
-                    math.isnan(x)
                     if math.isnan(x):
                         output[i] = 0
+                except:
+                    output[i] = 0
 
-                if time1 == 1:
+            if time1 == 1:
+                reply.append({'stationName': station, 'output': output, 'Date_Time': startDateObj})
+            else:
+                temp_output = []
+                for chunk in divide_chunks(output, time1):
+                    _, _, avg_1 = my_max_min_function(chunk)
+                    temp_output.append(avg_1)
+                reply.append({'stationName': station, 'output': temp_output, 'Date_Time': startDateObj})
 
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': startDateObj}
-                    reply.append(data)
+    reply.append({'Date_Time': allDateTime})
 
-                else:
-                    temp_output = []
+    for i in range(len(reply) - 1):
+        output = reply[i]['output']
+        max_vals, min_vals, avg_val = my_max_min_function(output)
 
-                    x = list(divide_chunks(output, time1))
-
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_output.append(avg_1)
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': startDateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
-
-    for i in range(len(reply)-1):
-
-        max, min, avg = my_max_min_function(reply[i]['output'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_vals[0] == 0 and min_vals[0] == 0:
+            max_vals = [[0], []]
+            min_vals = [[0], []]
+        elif len(max_vals) > 50 and len(min_vals) > 50:
+            max_vals = [[max_vals[0]], []]
+            min_vals = [[min_vals[0]], []]
         else:
-            l1 = []
-            l2 = []
+            l1 = [max_vals[0]] * (len(max_vals) - 1)
+            l2 = allDateTime[1:len(max_vals)]
+            max_vals = [l1, l2]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+            l1 = [min_vals[0]] * (len(min_vals) - 1)
+            l2 = allDateTime[1:len(min_vals)]
+            min_vals = [l1, l2]
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
+        reply[i]['max'] = max_vals
+        reply[i]['min'] = min_vals
+        reply[i]['avg'] = avg_val
 
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["output"].copy()
-        temp_freq_lst.sort()
+        temp_freq_lst = sorted(output, reverse=True)
         z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        reply[i]['Duration'] = [temp_freq_lst, z]
 
     return jsonify(reply)
+
 
 
 @app.route('/GetGeneratorDataExcel', methods=['GET', 'POST'])
@@ -4462,434 +2448,259 @@ def ThMultiGeneratorNames():
     return res
 
 
-
-
 @app.route('/GetThGeneratorData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400, query_string=True)
 def GetThGeneratorData():
+    # Extract and validate parameters
+    start_str = request.args.get('startDate') or request.form.get('startDate')
+    end_str = request.args.get('endDate') or request.form.get('endDate')
+    station_str = request.args.get('stationName') or request.form.get('stationName')
+    time_interval = request.args.get('time') or request.form.get('time')
 
-    startDate1 = request.args['startDate']
-    endDate1 = request.args['endDate']
+    if not all([start_str, end_str, station_str, time_interval]):
+        return jsonify({"error": "Missing one or more required parameters"}), 400
 
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
-    time1 = int(request.args['time'])
+    try:
+        station_list = station_str.split(',')
+        time_interval = int(time_interval)
+        start_dt = datetime.strptime(start_str + ":00", "%Y-%m-%d %H:%M:%S")
+        end_dt = datetime.strptime(end_str + ":00", "%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        return jsonify({"error": f"Invalid date/time format: {e}"}), 400
 
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
+    total_minutes = int((end_dt - start_dt).total_seconds() / 60)
+    if time_interval > (total_minutes + 1):
+        return jsonify("Time ERROR"), 400
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
-
-    startDate = startDate1[0]
-    endDate = endDate1[0]
-
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-                ).strftime("%d-%m-%Y %H:%M:%S"))
-
+    # Create list of all time points
     allDateTime = []
+    cursor = start_dt
+    while cursor <= end_dt:
+        allDateTime.append(cursor.strftime("%d-%m-%Y %H:%M:%S"))
+        cursor += timedelta(minutes=time_interval)
 
-    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
-              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
+    # Get start and end indexes
+    index_start = start_dt.hour * 60 + start_dt.minute
+    index_end = index_start + total_minutes
 
-    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
-                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
-
-    if time1 > 1+(datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
-        return jsonify("Time ERROR")
-
-    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
-    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
-
-    while startTime <= endTime:
-
-        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
-
-        startTime = (startTime + timedelta(hours=0, minutes=time1))
-
-    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
-    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
-
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
-
-    # dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-    #        datetime_range(startDateObj, endDateObj,
-    #                       timedelta(minutes=time1))]
-
-    # allDateTime = dts
-
-    # allDateTime = allDateTime[allDateTime.index(
-    #     startTime):allDateTime.index(endTime)+1]
-    # allDateTime = []
-    # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-    #     allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
+    # Generate date range list
+    start_date = start_dt.date()
+    end_date = end_dt.date()
+    date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
 
     reply = []
-    listofzeros = [0] * 1440
+    merge_list = [pd.DataFrame({'Date_Time': allDateTime})]
+    list_of_zeros = [0] * 1440
 
-    names = ''
+    for station in station_list:
+        full_output = []
 
-    merge_list = []
-
-    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
-    merge_list.append(df1)
-
-    for station in stationName:
-
-        names = names+station+', '
-
-        output = []
-
-        for it in date_range:
-
+        for day in date_range:
             filter = {
                 'd': {
-                    '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                    '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
+                    '$gte': datetime(day.year, day.month, day.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(day.year, day.month, day.day, 0, 0, 0, tzinfo=timezone.utc)
                 },
                 'n': station
-
-            }
-            project = {
-                '_id': 0,
-                'p': 1,
-
             }
 
-            generator_result = Th_Gen_DB.find(
-                filter=filter,
-                projection=project
-            )
+            projection = {'_id': 0, 'p': 1}
+            results = list(Th_Gen_DB.find(filter=filter, projection=projection))
 
-            generator_list = list(generator_result)
-
-            if len(generator_list) == 0:
-                output = output + listofzeros
-
+            if results:
+                full_output += results[0]['p']
             else:
+                full_output += list_of_zeros
 
-                output = output + generator_list[0]['p']
+        # Clean NaN or non-numeric
+        for i in range(len(full_output)):
+            try:
+                if math.isnan(float(full_output[i])):
+                    full_output[i] = 0
+            except:
+                full_output[i] = 0
 
-        for i in range(1, len(output)):
-            x = float(output[i])
-            math.isnan(x)
-            if math.isnan(x):
-                output[i] = 0
+        sliced_output = full_output[index_start:index_end + 1]
 
-        output = output[index1:index2+1]
-
-        # df1 = pd.DataFrame.from_dict({station: output})
-
-        # merge_list.append(df1)
-
-        if time1 == 1:
-
-            data = {'stationName': station,
-                    'output': output}
-            reply.append(data)
-
+        if time_interval == 1:
+            reply.append({'stationName': station, 'output': sliced_output})
         else:
-            temp_output = []
+            chunks = list(divide_chunks(sliced_output, time_interval))
+            averaged = [my_max_min_function(chunk)[2] for chunk in chunks]
+            reply.append({'stationName': station, 'output': averaged})
 
-            x = list(divide_chunks(output, time1))
+    # Add max, min, avg, and Duration
+    for i, item in enumerate(reply):
+        max_v, min_v, avg_v = my_max_min_function(item['output'])
 
-            for item in x:
-                max_1, min_1, avg_1 = my_max_min_function(item)
-                temp_output.append(avg_1)
-
-            data = {'stationName': station,
-                    'output': temp_output}
-            reply.append(data)
-
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("Generator.xlsx", index=None)
-
-    for i in range(len(reply)):
-
-        max, min, avg = my_max_min_function(reply[i]['output'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_v[0] == 0 and min_v[0] == 0:
+            max_v = [[0], []]
+            min_v = [[0], []]
+        elif len(max_v) > 50 and len(min_v) > 50:
+            max_v = [[max_v[0]], []]
+            min_v = [[min_v[0]], []]
         else:
-            l1 = []
-            l2 = []
+            max_times = [max_v[0]] * (len(max_v) - 1)
+            max_labels = [allDateTime[x] for x in range(1, len(max_v))]
+            max_v = [max_times, max_labels]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+            min_times = [min_v[0]] * (len(min_v) - 1)
+            min_labels = [allDateTime[y] for y in range(1, len(min_v))]
+            min_v = [min_times, min_labels]
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
+        item['max'] = max_v
+        item['min'] = min_v
+        item['avg'] = avg_v
 
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["output"].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        sorted_output = sorted(item['output'], reverse=True)
+        linspace = list(np.linspace(0, 100, len(sorted_output)))
+        item['Duration'] = [sorted_output, linspace]
 
     reply.append({'Date_Time': allDateTime})
 
-    for x in range(len(reply)-1):
-        df1 = pd.DataFrame.from_dict(
-            {reply[x]['stationName']: reply[x]['output']})
-        merge_list.append(df1)
+    # Prepare Excel data
+    for item in reply[:-1]:
+        df = pd.DataFrame({item['stationName']: item['output']})
+        merge_list.append(df)
 
     global ThGenerator_excel_data
     ThGenerator_excel_data = merge_list
-
-    names = names[:-2]
 
     return jsonify(reply)
 
 
 @app.route('/GetMultiThGeneratorData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400, query_string=True)
 def GetMultiThGeneratorData():
+    multistart_dates = request.args.get('MultistartDate')
+    multistation_names = request.args.get('MultistationName')
+    data_type = request.args.get('Type')
+    time_interval = request.args.get('time')
 
-    MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    MultistationName = request.args['MultistationName']
-    stationName = MultistationName.split(',')
-    Type = request.args['Type']
+    if not all([multistart_dates, multistation_names, data_type, time_interval]):
+        return jsonify({'error': 'Missing required parameters'}), 400
 
-    time1 = int(request.args['time'])
+    try:
+        multistart_dates = multistart_dates.split(',')
+        station_list = multistation_names.split(',')
+        time_interval = int(time_interval)
+    except:
+        return jsonify({'error': 'Invalid input format'}), 400
 
-    listofzeros = [0] * 1440
+    list_of_zeros = [0] * 1440
+    reply = []
+    allDateTime = []
 
-    if Type == "Date":
+    if data_type == "Date":
+        allDateTime = [
+            dt.strftime("%H:%M:%S") for dt in datetime_range(
+                datetime.strptime(multistart_dates[0], "%Y-%m-%d"),
+                datetime.strptime(multistart_dates[0], "%Y-%m-%d"),
+                timedelta(minutes=time_interval)
+            )
+        ]
 
-        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-
-        # date_range= [startDateObj+timedelta(days=x) for x in range((endDateObj-startDateObj).days+1)]
-
-        reply = []
-
-        dts = [dt.strftime("%H:%M:%S") for dt in
-               datetime_range(startDateObj, endDateObj,
-                              timedelta(minutes=time1))]
-
-        allDateTime = dts
-
-        for station in stationName:
-
-            for dateval in MultistartDate:
-
-                DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
-                output = []
-
+        for station in station_list:
+            for date_str in multistart_dates:
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
                 filter = {
                     'd': {
-                        '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
+                        '$gte': datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0, tzinfo=timezone.utc),
+                        '$lte': datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0, tzinfo=timezone.utc)
                     },
                     'n': station
                 }
-                project = {
-                    '_id': 0,
-                    'p': 1,
+                projection = {'_id': 0, 'p': 1}
+                result = list(Th_Gen_DB.find(filter=filter, projection=projection))
+                output = result[0]['p'] if result else list_of_zeros[:]
 
-                }
-
-                generator_result = Th_Gen_DB.find(
-                    filter=filter,
-                    projection=project
-                )
-
-                generator_list = list(generator_result)
-
-                if len(generator_list) == 0:
-                    output = output + listofzeros
-
-                else:
-
-                    output = output + generator_list[0]['p']
-
-                for i in range(1, len(output)):
-                    x = float(output[i])
-                    math.isnan(x)
-                    if math.isnan(x):
+                for i in range(len(output)):
+                    try:
+                        if math.isnan(float(output[i])):
+                            output[i] = 0
+                    except:
                         output[i] = 0
 
-                if time1 == 1:
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': DateObj}
-                    reply.append(data)
-
+                if time_interval == 1:
+                    reply.append({'stationName': station, 'output': output, 'Date_Time': date_obj})
                 else:
-                    temp_output = []
+                    chunks = list(divide_chunks(output, time_interval))
+                    averaged = [my_max_min_function(chunk)[2] for chunk in chunks]
+                    reply.append({'stationName': station, 'output': averaged, 'Date_Time': date_obj})
 
-                    x = list(divide_chunks(output, time1))
+        reply.append({'Date_Time': allDateTime})
 
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_output.append(avg_1)
+    elif data_type == "Month":
+        for station in station_list:
+            for date_str in multistart_dates:
+                start_date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                end_date_obj = pd.Timestamp(date_str) + MonthEnd(1)
 
-                    data = {'stationName': station, 'output': temp_output,
-                            'Date_Time': DateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
-
-    elif Type == "Month":
-
-        reply = []
-
-        allDateTime = []
-
-        # listofzeros = [0] * 96
-
-        for station in stationName:
-
-            for dateval in MultistartDate:
-
-                startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
-                endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
-
-                # temp_allDateTime = []
-
-                # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-                #     temp_allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
-
-                # if (len(temp_allDateTime)>=len(allDateTime)):
-                #     allDateTime= temp_allDateTime
-
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-                       datetime_range(startDateObj, endDateObj,
-                                      timedelta(minutes=time1))]
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(
+                    start_date_obj, end_date_obj, timedelta(minutes=time_interval)
+                )]
 
                 if len(allDateTime) < len(dts):
                     allDateTime = dts
 
-                output = []
-
                 filter = {
                     'd': {
-                        '$gte': datetime(startDateObj.year, startDateObj.month, startDateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(endDateObj.year, endDateObj.month, endDateObj.day, 0, 0, 0, tzinfo=timezone.utc)
+                        '$gte': datetime(start_date_obj.year, start_date_obj.month, start_date_obj.day, 0, 0, 0, tzinfo=timezone.utc),
+                        '$lte': datetime(end_date_obj.year, end_date_obj.month, end_date_obj.day, 0, 0, 0, tzinfo=timezone.utc)
                     },
                     'n': station
                 }
-                project = {
-                    '_id': 0,
-                    'p': 1,
+                projection = {'_id': 0, 'p': 1}
+                result = list(Th_Gen_DB.find(filter=filter, projection=projection))
+                output = []
 
-                }
+                for entry in result:
+                    output.extend(entry['p'])
 
-                generator_result = Th_Gen_DB.find(
-                    filter=filter,
-                    projection=project
-                )
-
-                generator_list = list(generator_result)
-
-                for item in generator_list:
-
-                    output = output + item['p']
-                # print('generator ',len(generator))
-
-                for i in range(1, len(output)):
-                    x = float(output[i])
-                    math.isnan(x)
-                    if math.isnan(x):
+                for i in range(len(output)):
+                    try:
+                        if math.isnan(float(output[i])):
+                            output[i] = 0
+                    except:
                         output[i] = 0
 
-                if time1 == 1:
-
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': startDateObj}
-                    reply.append(data)
-
+                if time_interval == 1:
+                    reply.append({'stationName': station, 'output': output, 'Date_Time': start_date_obj})
                 else:
-                    temp_output = []
+                    chunks = list(divide_chunks(output, time_interval))
+                    averaged = [my_max_min_function(chunk)[2] for chunk in chunks]
+                    reply.append({'stationName': station, 'output': averaged, 'Date_Time': start_date_obj})
 
-                    x = list(divide_chunks(output, time1))
+        reply.append({'Date_Time': allDateTime})
 
-                    for item in x:
-                        max_1, min_1, avg_1 = my_max_min_function(item)
-                        temp_output.append(avg_1)
+    for i in range(len(reply) - 1):
+        max_v, min_v, avg_v = my_max_min_function(reply[i]['output'])
 
-                    data = {'stationName': station, 'output': output,
-                            'Date_Time': startDateObj}
-                    reply.append(data)
-
-        temp_dict = {
-            'Date_Time': allDateTime
-        }
-
-        reply.append(temp_dict)
-
-    for i in range(len(reply)-1):
-
-        max, min, avg = my_max_min_function(reply[i]['output'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_v[0] == 0 and min_v[0] == 0:
+            max_v = [[0], []]
+            min_v = [[0], []]
+        elif len(max_v) > 50 and len(min_v) > 50:
+            max_v = [[max_v[0]], []]
+            min_v = [[min_v[0]], []]
         else:
-            l1 = []
-            l2 = []
+            max_vals = [max_v[0]] * (len(max_v) - 1)
+            max_times = [allDateTime[j] for j in range(1, len(max_v))]
+            max_v = [max_vals, max_times]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+            min_vals = [min_v[0]] * (len(min_v) - 1)
+            min_times = [allDateTime[j] for j in range(1, len(min_v))]
+            min_v = [min_vals, min_times]
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
+        reply[i]['max'] = max_v
+        reply[i]['min'] = min_v
+        reply[i]['avg'] = avg_v
 
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["output"].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        freq_sorted = sorted(reply[i]['output'], reverse=True)
+        freq_percent = list(np.linspace(0, 100, len(freq_sorted)))
+        reply[i]['Duration'] = [freq_sorted, freq_percent]
 
     return jsonify(reply)
+
 
 
 @app.route('/GetThGeneratorDataExcel', methods=['GET', 'POST'])
@@ -4997,204 +2808,121 @@ def MultiISGSNames():
 
 
 @app.route('/GetISGSData', methods=['GET', 'POST'])
+@cache.cached(timeout=86400, query_string=True)
 def GetISGSData():
+    # Parameter extraction with fallback for POST data
+    startDateStr = request.args.get('startDate') or request.form.get('startDate')
+    endDateStr = request.args.get('endDate') or request.form.get('endDate')
+    stationNames = request.args.get('stationName') or request.form.get('stationName')
+    time_interval = request.args.get('time') or request.form.get('time')
 
-    startDate1 = request.args['startDate']
-    endDate1 = request.args['endDate']
+    # Validate required parameters
+    if not all([startDateStr, endDateStr, stationNames, time_interval]):
+        return jsonify({"error": "Missing one or more required parameters"}), 400
 
-    stationName = request.args['stationName']
+    try:
+        station_list = stationNames.split(',')
+        time_interval = int(time_interval)
+        startTime = datetime.strptime(startDateStr + ":00", "%Y-%m-%d %H:%M:%S")
+        endTime = datetime.strptime(endDateStr + ":00", "%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        return jsonify({"error": f"Invalid date or time format: {e}"}), 400
 
-    stationName = stationName.split(',')
+    # Duration check
+    total_minutes = int((endTime - startTime).total_seconds() / 60)
+    if time_interval > (total_minutes + 1):
+        return jsonify("Time ERROR"), 400
 
-    time1 = int(request.args['time'])
-
-    startTime = startDate1+":00"
-    endTime = endDate1+":00"
-
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
-
-    startDate = startDate1[0]
-    endDate = endDate1[0]
-
-    startTime = (datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-                 ).strftime("%d-%m-%Y %H:%M:%S")
-    endTime = ((datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-                ).strftime("%d-%m-%Y %H:%M:%S"))
-
+    # Generate datetime points
     allDateTime = []
+    dt_cursor = startTime
+    while dt_cursor <= endTime:
+        allDateTime.append(dt_cursor.strftime("%d-%m-%Y %H:%M:%S"))
+        dt_cursor += timedelta(minutes=time_interval)
 
-    index1 = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")
-              ).hour*60+(datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).minute
+    # Calculate index range
+    index_start = startTime.hour * 60 + startTime.minute
+    index_end = index_start + total_minutes
 
-    index2 = index1 + int((datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S") -
-                           datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60)
-
-    if time1 > 1+(datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S")-datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S")).total_seconds() / 60:
-        return jsonify("Time ERROR")
-
-    startTime = (datetime.strptime(startTime, "%d-%m-%Y %H:%M:%S"))
-    endTime = (datetime.strptime(endTime, "%d-%m-%Y %H:%M:%S"))
-
-    while startTime <= endTime:
-
-        allDateTime.append(startTime.strftime("%d-%m-%Y %H:%M:%S"))
-
-        startTime = (startTime + timedelta(hours=0, minutes=time1))
-
-    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
-    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
-
-    date_range = [startDateObj+timedelta(days=x)
-                  for x in range((endDateObj-startDateObj).days+1)]
-
-    # dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in
-    #        datetime_range(startDateObj, endDateObj,
-    #                       timedelta(minutes=time1))]
-
-    # allDateTime = dts
-
-    # allDateTime = allDateTime[allDateTime.index(
-    #     startTime):allDateTime.index(endTime)+1]
-    # allDateTime = []
-    # for i in range(((endDateObj - startDateObj).days + 1)*24*60) :
-    #     allDateTime.append((startDateObj + timedelta(seconds = 900*i)).strftime("%d-%m-%Y %H:%M:%S"))
-
+    # Generate list of all dates in the range
+    date_range = [startTime.date() + timedelta(days=i) for i in range((endTime.date() - startTime.date()).days + 1)]
+    
     reply = []
-    listofzeros = [0] * 1440
+    zeros_per_day = [0] * 1440
+    merge_list = [pd.DataFrame.from_dict({'Date_Time': allDateTime})]
 
-    names = ''
+    for station in station_list:
+        full_output = []
 
-    merge_list = []
-
-    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-
-    merge_list.append(df1)
-
-    for station in stationName:
-
-        names = names+station+', '
-
-        output = []
-
-        for it in date_range:
-
+        for single_date in date_range:
             filter = {
                 'd': {
-                    '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                    '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
+                    '$gte': datetime(single_date.year, single_date.month, single_date.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(single_date.year, single_date.month, single_date.day, 0, 0, 0, tzinfo=timezone.utc)
                 },
                 'n': station
-
             }
-            project = {
-                '_id': 0,
-                'p': 1,
+            project = {'_id': 0, 'p': 1}
+            results = list(ISGS_DB.find(filter=filter, projection=project))
 
-            }
-
-            ISGS_result = ISGS_DB.find(
-                filter=filter,
-                projection=project
-            )
-
-            ISGS_list = list(ISGS_result)
-
-            if len(ISGS_list) == 0:
-                output = output + listofzeros
-
+            if not results:
+                full_output += zeros_per_day
             else:
+                full_output += results[0]['p']
 
-                output = output + ISGS_list[0]['p']
+        # Handle NaN and invalid entries
+        for i in range(len(full_output)):
+            try:
+                if math.isnan(float(full_output[i])):
+                    full_output[i] = 0
+            except:
+                full_output[i] = 0
 
-        for i in range(1, len(output)):
-            x = float(output[i])
-            math.isnan(x)
-            if math.isnan(x):
-                output[i] = 0
+        output_slice = full_output[index_start:index_end + 1]
 
-        output = output[index1:index2+1]
-
-        # df1 = pd.DataFrame.from_dict({station: output})
-
-        # merge_list.append(df1)
-
-        if time1 == 1:
-
-            data = {'stationName': station,
-                    'output': output}
-            reply.append(data)
-
+        if time_interval == 1:
+            reply.append({'stationName': station, 'output': output_slice})
         else:
-            temp_output = []
+            grouped = list(divide_chunks(output_slice, time_interval))
+            averaged = [my_max_min_function(chunk)[2] for chunk in grouped]
+            reply.append({'stationName': station, 'output': averaged})
 
-            x = list(divide_chunks(output, time1))
+    # Calculate max, min, avg, duration for each station
+    for i, item in enumerate(reply):
+        max_v, min_v, avg_v = my_max_min_function(item['output'])
 
-            for item in x:
-                max_1, min_1, avg_1 = my_max_min_function(item)
-                temp_output.append(avg_1)
-
-            data = {'stationName': station,
-                    'output': temp_output}
-            reply.append(data)
-
-    # merged = pd.concat(merge_list, axis=1, join="inner")
-
-    # merged.to_excel("ISGS.xlsx", index=None)
-
-    for i in range(len(reply)):
-
-        max, min, avg = my_max_min_function(reply[i]['output'])
-
-        if max[0] == 0 and min[0] == 0:
-            max = [[0], []]
-            min = [[0], []]
-
-        elif len(max) > 50 and len(min) > 50:
-            max = [[max[0]], []]
-            min = [[min[0]], []]
-
+        if max_v[0] == 0 and min_v[0] == 0:
+            max_v = [[0], []]
+            min_v = [[0], []]
+        elif len(max_v) > 50 and len(min_v) > 50:
+            max_v = [[max_v[0]], []]
+            min_v = [[min_v[0]], []]
         else:
-            l1 = []
-            l2 = []
+            max_times = [max_v[0]] * (len(max_v) - 1)
+            max_labels = [allDateTime[x] for x in range(1, len(max_v))]
+            max_v = [max_times, max_labels]
 
-            for x in range(1, len(max)):
-                l1.append(max[0])
-                l2.append(allDateTime[x])
+            min_times = [min_v[0]] * (len(min_v) - 1)
+            min_labels = [allDateTime[y] for y in range(1, len(min_v))]
+            min_v = [min_times, min_labels]
 
-            max = [l1, l2]
-            l1 = []
-            l2 = []
+        item['max'] = max_v
+        item['min'] = min_v
+        item['avg'] = avg_v
 
-            for y in range(1, len(min)):
-                l1.append(min[0])
-                l2.append(allDateTime[y])
-
-            min = [l1, l2]
-
-        reply[i]['max'] = max
-        reply[i]['min'] = min
-        reply[i]['avg'] = avg
-
-        temp_freq_lst = reply[i]["output"].copy()
-        temp_freq_lst.sort()
-        z = list(np.linspace(0, 100, len(temp_freq_lst)))
-        temp_freq_lst.reverse()
-        temp_list = [temp_freq_lst, z]
-
-        reply[i]['Duration'] = temp_list
+        sorted_output = sorted(item['output'], reverse=True)
+        linspace = list(np.linspace(0, 100, len(sorted_output)))
+        item['Duration'] = [sorted_output, linspace]
 
     reply.append({'Date_Time': allDateTime})
 
-    for x in range(len(reply)-1):
-        df1 = pd.DataFrame.from_dict(
-            {reply[x]['stationName']: reply[x]['output']})
-        merge_list.append(df1)
+    # Prepare for Excel download (global var if needed)
+    for item in reply[:-1]:
+        df = pd.DataFrame.from_dict({item['stationName']: item['output']})
+        merge_list.append(df)
 
     global ISGS_excel_data
     ISGS_excel_data = merge_list
-
-    names = names[:-2]
 
     return jsonify(reply)
 
@@ -5298,53 +3026,37 @@ def GetMultiISGSData():
     return jsonify(reply)
 
 
-
 @app.route('/GetISGSDataExcel', methods=['GET', 'POST'])
 def GetISGSDataExcel():
+    # Merge and save Excel
+    output_path = os.path.join(dir_path, "Excel_Files", "ISGS.xlsx")
+    pd.concat(ISGS_excel_data, axis=1, join="inner").to_excel(output_path, index=False)
 
-    merged = pd.concat(ISGS_excel_data, axis=1, join="inner")
+    # Parse request parameters
+    startDateStr = request.args.get('startDate', '').split(" ")[0]
+    endDateStr = request.args.get('endDate', '').split(" ")[0]
+    stationNames = request.args.get('stationName', '').split(',')
 
-    merged.to_excel(dir_path+"Excel_Files/ISGS.xlsx", index=None)
+    # Clean station names
+    names = ', '.join([name.strip() for name in stationNames if name.strip()])
 
-    path = dir_path+"Excel_Files/ISGS.xlsx"
-
-    startDate1 = request.args['startDate']
-    endDate1 = request.args['endDate']
-
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
-
-    startDate = startDate1[0]
-    endDate = endDate1[0]
-
-    # startTime = startDate1[1]
-    # endTime = endDate1[1]
-
-    stationName = request.args['stationName']
-    stationName = stationName.split(',')
-
-    names = ''
-    for i in stationName:
-        names = names+i+', '
-
-    names = names[:-2]
-
-    if startDate == endDate:
-        custom = startDate+' '+' ISGS Data of '+names+'.xlsx'
-
+    # Generate download file name
+    if startDateStr == endDateStr:
+        filename = f"{startDateStr} ISGS Data of {names}.xlsx"
     else:
-        custom = startDate+' to '+endDate+' '+' ISGS Data of '+names+'.xlsx'
+        filename = f"{startDateStr} to {endDateStr} ISGS Data of {names}.xlsx"
 
-    if os.path.exists(path):
-        with open(path, "rb") as excel:
-            data = excel.read()
-
-        response = Response(
-            data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        return send_file(dir_path+'Excel_Files/ISGS.xlsx', as_attachment=True, download_name=custom)
-
+    # Return file if exists
+    if os.path.exists(output_path):
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
     else:
         return jsonify("No Data to Download")
+
 
 # /////////////////////////////////////////////Reports////////////////////////////////////////////////////////////////////////////////
 
