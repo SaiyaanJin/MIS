@@ -151,12 +151,12 @@ def VoltageNames():
     cache_key = f"VoltageNames_{startDate}_{endDate}"
     cached_res = cache.get(cache_key)
     if cached_res:
-        print("cache hit")
+        
         return cached_res
 
     res = Names(startDate, endDate, "Voltage")
     cache.set(cache_key, res, timeout=86400)
-    print("cache miss")
+    
     return res
 
 
@@ -168,13 +168,13 @@ def MultiVoltageNames():
     cache_key = f"MultiVoltageNames_{dates_key}"
     cached_res = cache.get(cache_key)
     if cached_res:
-        print("cache hit")
+        
         return cached_res
 
     date_list = MultistartDate.split(',')
     res = MultiNames(date_list, "Voltage")
     cache.set(cache_key, res, timeout=86400)
-    print("cache miss")
+    
     return res
 
 
@@ -805,29 +805,39 @@ def LinesFileInsert():
 
 @app.route('/LinesNames', methods=['GET', 'POST'])
 def LinesNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"LinesNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        
+        return cached_res
 
-    res= Names(startDate,endDate,"Lines")
-
+    res = Names(startDate, endDate, "Lines")
+    cache.set(cache_key, res, timeout=86400)
+    
     return res
 
 
 @app.route('/MultiLinesNames', methods=['GET', 'POST'])
 def MultiLinesNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
+    dates_sorted = "_".join(sorted(MultistartDate.split(',')))
 
-    res= MultiNames(MultistartDate,"Lines")
+    cache_key = f"MultiLinesNames_{dates_sorted}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        
+        return cached_res
 
+    date_list = MultistartDate.split(',')
+    res = MultiNames(date_list, "Lines")
+    cache.set(cache_key, res, timeout=86400)
+    
     return res
 
 
@@ -1400,31 +1410,39 @@ def ICTFileInsert():
 
 @app.route('/ICTNames', methods=['GET', 'POST'])
 def ICTNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"ICTNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
 
-    res= Names(startDate,endDate,"ICT")
-
+    res = Names(startDate, endDate, "ICT")
+    cache.set(cache_key, res, timeout=86400)
     return res
 
 
 @app.route('/MultiICTNames', methods=['GET', 'POST'])
 def MultiICTNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
     Type = request.args['Type']
 
-    res= MultiNames([MultistartDate,Type],"ICT")
+    dates_sorted = "_".join(sorted(MultistartDate.split(',')))
+    cache_key = f"MultiICTNames_{dates_sorted}_{Type}"
 
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    date_list = MultistartDate.split(',')
+    res = MultiNames([date_list, Type], "ICT")
+    cache.set(cache_key, res, timeout=86400)
     return res
+
 
 
 @app.route('/GetICTData', methods=['GET', 'POST'])
@@ -1922,29 +1940,37 @@ def FrequencyFileInsert():
 
 @app.route('/FrequencyNames', methods=['GET', 'POST'])
 def FrequencyNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"FrequencyNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
 
-    res= Names(startDate,endDate,"Frequency")
-
+    res = Names(startDate, endDate, "Frequency")
+    cache.set(cache_key, res, timeout=86400)
     return res
 
 @app.route('/MultiFrequencyNames', methods=['GET', 'POST'])
 def MultiFrequencyNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    
-    res= MultiNames(MultistartDate,"Frequency")
+    date_list = MultistartDate.split(',')
 
+    dates_sorted = "_".join(sorted(date_list))
+    cache_key = f"MultiFrequencyNames_{dates_sorted}"
+
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = MultiNames(date_list, "Frequency")
+    cache.set(cache_key, res, timeout=86400)
     return res
+
 
 @app.route('/GetFrequencyData', methods=['GET', 'POST'])
 def GetFrequencyData():
@@ -2444,30 +2470,38 @@ def GetFrequencyDataExcel():
 
 @app.route('/LinesMWMVARNames', methods=['GET', 'POST'])
 def LinesMWMVARNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"LinesMWMVARNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
 
-    res= Names(startDate,endDate,"LinesMWMVAR")
-
+    res = Names(startDate, endDate, "LinesMWMVAR")
+    cache.set(cache_key, res, timeout=86400)
     return res
 
 
 @app.route('/MultiLinesMWMVARNames', methods=['GET', 'POST'])
 def MultiLinesMWMVARNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
+    date_list = MultistartDate.split(',')
 
-    res= MultiNames(MultistartDate,"LinesMWMVAR")
+    dates_sorted = "_".join(sorted(date_list))
+    cache_key = f"MultiLinesMWMVARNames_{dates_sorted}"
 
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = MultiNames(date_list, "LinesMWMVAR")
+    cache.set(cache_key, res, timeout=86400)
     return res
+
 
 
 @app.route('/LinesMWMVARData', methods=['GET', 'POST'])
@@ -3259,33 +3293,39 @@ def DemandFileInsert():
 
     return res
 
-
 @app.route('/DemandMinNames', methods=['GET', 'POST'])
 def DemandMinNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"DemandMinNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
 
-    res= Names(startDate,endDate,"Demand")
-
+    res = Names(startDate, endDate, "Demand")
+    cache.set(cache_key, res, timeout=86400)
     return res
-
 
 @app.route('/MultiDemandMinNames', methods=['GET', 'POST'])
 def MultiDemandMinNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
-    
-    res= MultiNames(MultistartDate,"Demand")
+    date_list = MultistartDate.split(',')
 
+    dates_sorted = "_".join(sorted(date_list))
+    cache_key = f"MultiDemandMinNames_{dates_sorted}"
+
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = MultiNames(date_list, "Demand")
+    cache.set(cache_key, res, timeout=86400)
     return res
+
 
 
 @app.route('/GetDemandMinData', methods=['GET', 'POST'])
@@ -3859,30 +3899,37 @@ def GeneratorFileInsert():
 
 @app.route('/GeneratorNames', methods=['GET', 'POST'])
 def GeneratorNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"GeneratorNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
 
-    res= Names(startDate,endDate,"Generator")
-
+    res = Names(startDate, endDate, "Generator")
+    cache.set(cache_key, res, timeout=86400)
     return res
-
 
 @app.route('/MultiGeneratorNames', methods=['GET', 'POST'])
 def MultiGeneratorNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
+    date_list = MultistartDate.split(',')
 
-    res= MultiNames(MultistartDate,"Generator")
+    dates_sorted = "_".join(sorted(date_list))
+    cache_key = f"MultiGeneratorNames_{dates_sorted}"
 
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = MultiNames(date_list, "Generator")
+    cache.set(cache_key, res, timeout=86400)
     return res
+
 
 
 @app.route('/GetGeneratorData', methods=['GET', 'POST'])
@@ -4381,30 +4428,39 @@ def ThGeneratorFileInsert():
 
 @app.route('/ThGeneratorNames', methods=['GET', 'POST'])
 def ThGeneratorNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"ThGeneratorNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
 
-    res= Names(startDate,endDate,"ThGenerator")
-
+    res = Names(startDate, endDate, "ThGenerator")
+    cache.set(cache_key, res, timeout=86400)
     return res
+
 
 
 @app.route('/MultiThGeneratorNames', methods=['GET', 'POST'])
 def ThMultiGeneratorNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
+    date_list = MultistartDate.split(',')
 
-    res= MultiNames(MultistartDate,"ThGenerator")
+    dates_sorted = "_".join(sorted(date_list))
+    cache_key = f"MultiThGeneratorNames_{dates_sorted}"
 
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = MultiNames(date_list, "ThGenerator")
+    cache.set(cache_key, res, timeout=86400)
     return res
+
 
 
 
@@ -4906,30 +4962,38 @@ def ISGSFileInsert():
 
 @app.route('/ISGSNames', methods=['GET', 'POST'])
 def ISGSNames():
-
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
 
-    startDate1 = startDate1.split(" ")
-    endDate1 = endDate1.split(" ")
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
 
-    startDate = startDate1[0]
-    endDate = endDate1[0]
+    cache_key = f"ISGSNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
 
-    res= Names(startDate,endDate,"ISGS")
-
+    res = Names(startDate, endDate, "ISGS")
+    cache.set(cache_key, res, timeout=86400)
     return res
 
 
 @app.route('/MultiISGSNames', methods=['GET', 'POST'])
 def MultiISGSNames():
-
     MultistartDate = request.args['MultistartDate']
-    MultistartDate = MultistartDate.split(',')
+    date_list = MultistartDate.split(',')
 
-    res= MultiNames(MultistartDate,"ISGS")
+    dates_sorted = "_".join(sorted(date_list))
+    cache_key = f"MultiISGSNames_{dates_sorted}"
 
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = MultiNames(date_list, "ISGS")
+    cache.set(cache_key, res, timeout=86400)
     return res
+
 
 
 @app.route('/GetISGSData', methods=['GET', 'POST'])
