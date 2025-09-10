@@ -179,7 +179,6 @@ def MultiVoltageNames():
 
 
 @app.route('/GetVoltageData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400, query_string=True)
 def GetVoltageData():
 
     startDate1 = request.args['startDate']
@@ -195,9 +194,6 @@ def GetVoltageData():
 
     startTimeObj = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
     endTimeObj = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-
-    startTimeStr = startTimeObj.strftime("%d-%m-%Y %H:%M:%S")
-    endTimeStr = endTimeObj.strftime("%d-%m-%Y %H:%M:%S")
 
     index1 = startTimeObj.hour * 60 + startTimeObj.minute
     index2 = index1 + int((endTimeObj - startTimeObj).total_seconds() / 60)
@@ -301,7 +297,6 @@ def GetVoltageData():
 
 
 @app.route('/GetMultiVoltageData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400)
 def GetMultiVoltageData():
 
     MultistartDate = request.args['MultistartDate'].split(',')
@@ -534,7 +529,7 @@ def MultiLinesNames():
     
     return res
 
-@cache.cached(timeout=86400, query_string=True)
+
 @app.route('/GetLinesData', methods=['GET', 'POST'])
 def GetLinesData():
     startDate1 = request.args['startDate']
@@ -633,7 +628,6 @@ def GetLinesData():
 
 
 @app.route('/GetMultiLinesData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400, query_string=True)
 def GetMultiLinesData():
     MultistartDate = request.args['MultistartDate'].split(',')
     stationName = request.args['MultistationName'].split(',')
@@ -897,7 +891,6 @@ def MultiICTNames():
 
 
 @app.route('/GetICTData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400, query_string=True)
 def GetICTData():
 
     startDate1 = request.args['startDate']
@@ -1012,7 +1005,6 @@ def GetICTData():
 
 
 @app.route('/GetMultiICTData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400, query_string=True)
 def GetMultiICTData():
 
     MultistartDate = request.args['MultistartDate'].split(',')
@@ -1234,6 +1226,12 @@ def GetFrequencyData():
     stationName = request.args['stationName'].split(',')
     time1 = int(request.args['time'])
 
+    cache_key = f"FrequencyData_{startDate1}_{endDate1}_{stationName}_{time1}"
+
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
     startTime = startDate1 + ":00"
     endTime = endDate1 + ":00"
 
@@ -1333,12 +1331,13 @@ def GetFrequencyData():
     global Frequency_excel_data
     Frequency_excel_data = merge_list
 
+    cache.set(cache_key, reply, timeout=86400)
+
     return jsonify(reply)
 
 
 
 @app.route('/GetMultiFrequencyData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400)
 def GetMultiFrequencyData():
     MultistartDate = request.args['MultistartDate'].split(',')
     stationName = request.args['MultistationName'].split(',')
@@ -1531,7 +1530,6 @@ def MultiLinesMWMVARNames():
 
 
 @app.route('/LinesMWMVARData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400)
 def LinesMWMVARData():
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
@@ -1546,9 +1544,6 @@ def LinesMWMVARData():
 
     startTimeFmt = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
     endTimeFmt = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-
-    startTimeStr = startTimeFmt.strftime("%d-%m-%Y %H:%M:%S")
-    endTimeStr = endTimeFmt.strftime("%d-%m-%Y %H:%M:%S")
 
     index1 = startTimeFmt.hour * 60 + startTimeFmt.minute
     duration_minutes = int((endTimeFmt - startTimeFmt).total_seconds() / 60)
@@ -1647,7 +1642,6 @@ def LinesMWMVARData():
 
 
 @app.route('/MultiLinesMWMVARData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400)
 def MultiLinesMWMVARData():
     MultistartDate = request.args['MultistartDate'].split(',')
     stationNames = request.args['MultistationName'].split(',')
@@ -2449,7 +2443,6 @@ def ThMultiGeneratorNames():
 
 
 @app.route('/GetThGeneratorData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400, query_string=True)
 def GetThGeneratorData():
     # Extract and validate parameters
     start_str = request.args.get('startDate') or request.form.get('startDate')
@@ -2570,7 +2563,6 @@ def GetThGeneratorData():
 
 
 @app.route('/GetMultiThGeneratorData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400, query_string=True)
 def GetMultiThGeneratorData():
     multistart_dates = request.args.get('MultistartDate')
     multistation_names = request.args.get('MultistationName')
@@ -2808,7 +2800,6 @@ def MultiISGSNames():
 
 
 @app.route('/GetISGSData', methods=['GET', 'POST'])
-@cache.cached(timeout=86400, query_string=True)
 def GetISGSData():
     # Parameter extraction with fallback for POST data
     startDateStr = request.args.get('startDate') or request.form.get('startDate')
