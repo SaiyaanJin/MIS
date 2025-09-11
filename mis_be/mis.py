@@ -1,11 +1,10 @@
 import pandas as pd
 import os
-from pymongo import MongoClient, ASCENDING, DESCENDING, errors
-from datetime import date, timedelta, datetime, timezone
+from pymongo import MongoClient, ASCENDING, DESCENDING
+from datetime import timedelta, datetime, timezone
 from flask import Flask, jsonify, request, Response, send_file
 from flask_cors import CORS
 import math
-from flask_cors import CORS
 from pandas.tseries.offsets import MonthEnd
 import numpy as np
 from flask_caching import Cache
@@ -50,6 +49,7 @@ Generator_excel_data = []
 ThGenerator_excel_data = []
 ISGS_excel_data = []
 MVAR_excel_data = []
+Exchange_excel_data = []
 
 cwd = os.getcwd()
 dir_path = (cwd[0].upper() + cwd[1:]).replace('\\', '/')+'/'
@@ -110,10 +110,12 @@ def divide_chunks(l, n):
 def GetCollection():
     client = MongoClient("mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV")
     db = client['mis']
+    Exchange_Data= db['Exchange_Data']
+    Exchange_Data.create_index([('n',DESCENDING),('d',DESCENDING)], unique= True)
     collection_names = [
         'voltage_data', 'line_mw_data_p1', 'line_mw_data_p2', 'line_mw_data_400_above',
         'MVAR_p1', 'MVAR_p2', 'Lines_MVAR_400_above', 'ICT_data', 'ICT_data_MW',
-        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'Thermal_Generator', 'ISGS_Data'
+        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'Thermal_Generator', 'ISGS_Data', 'Exchange_Data'
     ]
     return [db[name] for name in collection_names]
 
@@ -121,7 +123,7 @@ def GetCollection():
 (
     voltage_data_collection, line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2,
     MVAR_P1, MVAR_P2, Lines_MVAR_400_above, ICT_data1, ICT_data2,
-    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, Th_Gen_DB, ISGS_DB
+    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, Th_Gen_DB, ISGS_DB, Exchange_DB
 ) = GetCollection()
 
 
@@ -3049,6 +3051,311 @@ def GetISGSDataExcel():
         return jsonify("No Data to Download")
 
 
+
+# /////////////////////////////////////////////////////////////////////////////////////////////Exchange///////////////////////////////////////////////////////////////////////////////////////
+
+
+@app.route('/ExchangeFileInsert', methods=['GET', 'POST'])
+def ExchangeFileInsert():
+
+    startDate = request.args['startDate']
+    endDate = request.args['endDate']
+
+    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
+    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
+
+    path= "http://10.3.100.24/ScadaData/er_web/"
+
+    res= Exchange(startDateObj,endDateObj,path)
+
+    return res
+
+
+@app.route('/ExchangeNames', methods=['GET', 'POST'])
+def ExchangeNames():
+    startDate1 = request.args['startDate']
+    endDate1 = request.args['endDate']
+
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
+
+    cache_key = f"ExchangeNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = Names(startDate, endDate, "Exchange")
+    cache.set(cache_key, res, timeout=86400)
+    return res
+
+
+@app.route('/MultiExchangeNames', methods=['GET', 'POST'])
+def MultiExchangeNames():
+    MultistartDate = request.args['MultistartDate']
+    date_list = MultistartDate.split(',')
+
+    dates_sorted = "_".join(sorted(date_list))
+    cache_key = f"MultiExchangeNames_{dates_sorted}"
+
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = MultiNames(date_list, "ISGS")
+    cache.set(cache_key, res, timeout=86400)
+    return res
+
+
+
+@app.route('/GetExchangeData', methods=['GET', 'POST'])
+def GetExchangeData():
+    # Parameter extraction with fallback for POST data
+    startDateStr = request.args.get('startDate') or request.form.get('startDate')
+    endDateStr = request.args.get('endDate') or request.form.get('endDate')
+    stationNames = request.args.get('stationName') or request.form.get('stationName')
+    time_interval = request.args.get('time') or request.form.get('time')
+
+    # Validate required parameters
+    if not all([startDateStr, endDateStr, stationNames, time_interval]):
+        return jsonify({"error": "Missing one or more required parameters"}), 400
+
+    try:
+        station_list = stationNames.split(',')
+        time_interval = int(time_interval)
+        startTime = datetime.strptime(startDateStr + ":00", "%Y-%m-%d %H:%M:%S")
+        endTime = datetime.strptime(endDateStr + ":00", "%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        return jsonify({"error": f"Invalid date or time format: {e}"}), 400
+
+    # Duration check
+    total_minutes = int((endTime - startTime).total_seconds() / 60)
+    if time_interval > (total_minutes + 1):
+        return jsonify("Time ERROR"), 400
+
+    # Generate datetime points
+    allDateTime = []
+    dt_cursor = startTime
+    while dt_cursor <= endTime:
+        allDateTime.append(dt_cursor.strftime("%d-%m-%Y %H:%M:%S"))
+        dt_cursor += timedelta(minutes=time_interval)
+
+    # Calculate index range
+    index_start = startTime.hour * 60 + startTime.minute
+    index_end = index_start + total_minutes
+
+    # Generate list of all dates in the range
+    date_range = [startTime.date() + timedelta(days=i) for i in range((endTime.date() - startTime.date()).days + 1)]
+    
+    reply = []
+    zeros_per_day = [0] * 1440
+    merge_list = [pd.DataFrame.from_dict({'Date_Time': allDateTime})]
+
+    for station in station_list:
+        full_output = []
+
+        for single_date in date_range:
+            filter = {
+                'd': {
+                    '$gte': datetime(single_date.year, single_date.month, single_date.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(single_date.year, single_date.month, single_date.day, 0, 0, 0, tzinfo=timezone.utc)
+                },
+                'n': station
+            }
+            project = {'_id': 0, 'p': 1}
+            results = list(Exchange_DB.find(filter=filter, projection=project))
+
+            if not results:
+                full_output += zeros_per_day
+            else:
+                full_output += results[0]['p']
+
+        # Handle NaN and invalid entries
+        for i in range(len(full_output)):
+            try:
+                if math.isnan(float(full_output[i])):
+                    full_output[i] = 0
+            except:
+                full_output[i] = 0
+
+        output_slice = full_output[index_start:index_end + 1]
+
+        if time_interval == 1:
+            reply.append({'stationName': station, 'output': output_slice})
+        else:
+            grouped = list(divide_chunks(output_slice, time_interval))
+            averaged = [my_max_min_function(chunk)[2] for chunk in grouped]
+            reply.append({'stationName': station, 'output': averaged})
+
+    # Calculate max, min, avg, duration for each station
+    for i, item in enumerate(reply):
+        max_v, min_v, avg_v = my_max_min_function(item['output'])
+
+        if max_v[0] == 0 and min_v[0] == 0:
+            max_v = [[0], []]
+            min_v = [[0], []]
+        elif len(max_v) > 50 and len(min_v) > 50:
+            max_v = [[max_v[0]], []]
+            min_v = [[min_v[0]], []]
+        else:
+            max_times = [max_v[0]] * (len(max_v) - 1)
+            max_labels = [allDateTime[x] for x in range(1, len(max_v))]
+            max_v = [max_times, max_labels]
+
+            min_times = [min_v[0]] * (len(min_v) - 1)
+            min_labels = [allDateTime[y] for y in range(1, len(min_v))]
+            min_v = [min_times, min_labels]
+
+        item['max'] = max_v
+        item['min'] = min_v
+        item['avg'] = avg_v
+
+        sorted_output = sorted(item['output'], reverse=True)
+        linspace = list(np.linspace(0, 100, len(sorted_output)))
+        item['Duration'] = [sorted_output, linspace]
+
+    reply.append({'Date_Time': allDateTime})
+
+    # Prepare for Excel download (global var if needed)
+    for item in reply[:-1]:
+        df = pd.DataFrame.from_dict({item['stationName']: item['output']})
+        merge_list.append(df)
+
+    global Exchange_excel_data
+    Exchange_excel_data = merge_list
+
+    return jsonify(reply)
+
+@app.route('/GetMultiExchangeData', methods=['GET', 'POST'])
+def GetMultiExchangeData():
+    # Parse request arguments
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationNames = request.args['MultistationName'].split(',')
+    query_type = request.args['Type']
+    time_interval = int(request.args['time'])
+
+    listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
+
+    def fetch_data(station, start_date, end_date):
+        """Fetch ISGS data from DB for a station and date range"""
+        filter_query = {
+            'd': {
+                '$gte': datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0, tzinfo=timezone.utc),
+                '$lte': datetime(end_date.year, end_date.month, end_date.day, 0, 0, 0, tzinfo=timezone.utc)
+            },
+            'n': station
+        }
+        projection = {'_id': 0, 'p': 1}
+        return list(Exchange_DB.find(filter=filter_query, projection=projection))
+
+    def clean_output(raw_output):
+        """Replace NaNs with zero"""
+        for i in range(1, len(raw_output)):
+            try:
+                if math.isnan(float(raw_output[i])):
+                    raw_output[i] = 0
+            except:
+                raw_output[i] = 0
+        return raw_output
+
+    def process_output(station, output, date_obj):
+        """Aggregate and compute stats for the output"""
+        if time_interval == 1:
+            return {'stationName': station, 'output': output, 'Date_Time': date_obj}
+        else:
+            chunks = list(divide_chunks(output, time_interval))
+            avg_output = [my_max_min_function(chunk)[2] for chunk in chunks]
+            return {'stationName': station, 'output': avg_output, 'Date_Time': date_obj}
+
+    if query_type == "Date":
+        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        endDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time_interval))]
+
+        for station in stationNames:
+            for date_str in MultistartDate:
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                result = fetch_data(station, date_obj, date_obj)
+
+                output = result[0]['p'] if result else listofzeros
+                output = clean_output(output)
+                reply.append(process_output(station, output, date_obj))
+
+    elif query_type == "Month":
+        for station in stationNames:
+            for date_str in MultistartDate:
+                startDateObj = datetime.strptime(date_str, "%Y-%m-%d")
+                endDateObj = pd.Timestamp(date_str) + MonthEnd(1)
+
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time_interval))]
+                if len(dts) > len(allDateTime):
+                    allDateTime = dts
+
+                result = fetch_data(station, startDateObj, endDateObj)
+                output = [val for entry in result for val in entry['p']]
+                output = clean_output(output)
+                reply.append(process_output(station, output, startDateObj))
+
+    # Append Date_Time metadata
+    reply.append({'Date_Time': allDateTime})
+
+    # Post-process: compute max, min, avg, duration
+    for i in range(len(reply) - 1):  # Skip the last one (Date_Time)
+        stats_max, stats_min, stats_avg = my_max_min_function(reply[i]['output'])
+
+        if stats_max[0] == 0 and stats_min[0] == 0:
+            stats_max = [[0], []]
+            stats_min = [[0], []]
+        elif len(stats_max) > 50 and len(stats_min) > 50:
+            stats_max = [[stats_max[0]], []]
+            stats_min = [[stats_min[0]], []]
+        else:
+            stats_max = [[stats_max[0]] * (len(allDateTime) - 1), allDateTime[1:]]
+            stats_min = [[stats_min[0]] * (len(allDateTime) - 1), allDateTime[1:]]
+
+        reply[i]['max'] = stats_max
+        reply[i]['min'] = stats_min
+        reply[i]['avg'] = stats_avg
+
+        sorted_output = sorted(reply[i]['output'], reverse=True)
+        percentile = list(np.linspace(0, 100, len(sorted_output)))
+        reply[i]['Duration'] = [sorted_output, percentile]
+
+    return jsonify(reply)
+
+
+@app.route('/GetExchangeDataExcel', methods=['GET', 'POST'])
+def GetExchangeDataExcel():
+    # Merge and save Excel
+    output_path = os.path.join(dir_path, "Excel_Files", "Exchange.xlsx")
+    pd.concat(Exchange_excel_data, axis=1, join="inner").to_excel(output_path, index=False)
+
+    # Parse request parameters
+    startDateStr = request.args.get('startDate', '').split(" ")[0]
+    endDateStr = request.args.get('endDate', '').split(" ")[0]
+    stationNames = request.args.get('stationName', '').split(',')
+
+    # Clean station names
+    names = ', '.join([name.strip() for name in stationNames if name.strip()])
+
+    # Generate download file name
+    if startDateStr == endDateStr:
+        filename = f"{startDateStr} ISGS Data of {names}.xlsx"
+    else:
+        filename = f"{startDateStr} to {endDateStr} ISGS Data of {names}.xlsx"
+
+    # Return file if exists
+    if os.path.exists(output_path):
+        return send_file(
+            output_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    else:
+        return jsonify("No Data to Download")
+
 # /////////////////////////////////////////////Reports////////////////////////////////////////////////////////////////////////////////
 
 
@@ -3172,3 +3479,5 @@ if __name__ == '__main__':
     # app.debug = True
 
     app.run(debug=True, host='0.0.0.0', port=5010)
+
+

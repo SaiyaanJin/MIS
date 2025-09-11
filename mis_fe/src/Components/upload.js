@@ -38,6 +38,7 @@ export default function Upload() {
 		"Generator",
 		"Thermal Generator",
 		"ISGS",
+		"Exchange",
 	];
 
 	const uploaddata = () => {
@@ -149,6 +150,18 @@ export default function Upload() {
 						)
 						.then((response) => {
 							alert("Frequency data inserted for " + response.data);
+						})
+						.catch((error) => {});
+				} else if (Selected_lines_states[i] === "Exchange") {
+					axios
+						.post(
+							"/ExchangeFileInsert?startDate=" +
+								moment(start_date).format("YYYY-MM-DD") +
+								"&endDate=" +
+								moment(end_date).format("YYYY-MM-DD")
+						)
+						.then((response) => {
+							alert("Exchange data inserted for " + response.data);
 						})
 						.catch((error) => {});
 				}

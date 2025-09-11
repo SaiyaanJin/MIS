@@ -15,6 +15,7 @@ import Demand from "./Components/demand";
 import Combined from "./Components/combined";
 import Generator from "./Components/generator";
 import ISGS from "./Components/isgs";
+import Exchange from "./Components/Exchange";
 import Dc from "./Components/dc";
 import Outage from "./Components/outage";
 import ThermalGenerator from "./Components/thermalGenerator";
@@ -115,14 +116,14 @@ function App() {
 									<b>Generator</b>
 								</div>
 
-								<div className="dropdown-content">
+								<div className="dropdown-content" style={{ minWidth: "280%" }}>
 									<Link to="ThermalGenerator">
 										<Avatar
 											icon="pi pi-bolt"
 											style={{ backgroundColor: "#FF0000", color: "#ffffff" }}
 											shape="circle"
 										/>
-										<b>Thermal Generator</b>
+										<b>Plant-wise Generation</b>
 									</Link>
 								</div>
 							</div>
@@ -135,6 +136,15 @@ function App() {
 								shape="circle"
 							/>
 							<b>ISGS</b>
+						</Link>
+
+						<Link to="Exchange">
+							<Avatar
+								icon="pi pi-globe"
+								style={{ backgroundColor: "#00d9ffff", color: "#ffffff" }}
+								shape="circle"
+							/>
+							<b>Exchange</b>
 						</Link>
 
 						<Link to="WeeklyReports">
@@ -226,6 +236,7 @@ function App() {
 					<Route exact path="Generator" element={<Generator />} />
 					<Route exact path="ThermalGenerator" element={<ThermalGenerator />} />
 					<Route exact path="ISGS" element={<ISGS />} />
+					<Route exact path="Exchange" element={<Exchange />} />
 					<Route exact path="WeeklyReports" element={<WeeklyReports />} />
 					<Route exact path="MonthlyReports" element={<MonthlyReports />} />
 					<Route exact path="MonthlyReports2" element={<MonthlyReports2 />} />

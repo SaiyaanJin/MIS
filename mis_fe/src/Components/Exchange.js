@@ -11,14 +11,17 @@ import { MultiSelect } from "primereact/multiselect";
 import axios from "axios";
 import moment from "moment";
 import { Button } from "primereact/button";
-import Generatorgraph from "../graphs/generatorgraph";
+import Exchangegraph from "../graphs/Exchangegraph";
 import { Divider } from "primereact/divider";
 import { BlockUI } from "primereact/blockui";
+
 import { InputSwitch } from "primereact/inputswitch";
+
 import { InputNumber } from "primereact/inputnumber";
+
 import { Checkbox } from "primereact/checkbox";
 
-export default function ThermalGenerator() {
+export default function Exchange() {
 	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const [start_date, setStart_Date] = useState(
 		new Date(
@@ -38,19 +41,19 @@ export default function ThermalGenerator() {
 				.subtract(2, "day")._d
 		)
 	);
-	const [generator_states, setgenerator_states] = useState();
-	const [Selected_generator_states, setSelected_generator_states] = useState();
-	const [generator_data, setgenerator_data] = useState();
+	const [exchange_states, setexchange_states] = useState();
+	const [Selected_exchange_states, setSelected_exchange_states] = useState();
+	const [exchange_data, setexchange_data] = useState();
 	const [enable, setenable] = useState(true);
 	const [graphenable, setgraphenable] = useState(true);
 
 	const [multiple_date, setMultiple_Date] = useState();
-	const [multiple_generator_states, setmultiplegenerator_states] = useState();
+	const [multiple_exchange_states, setmultipleexchange_states] = useState();
 	const [
-		multiple_Selected_generator_states,
-		setmultipleSelected_generator_states,
+		multiple_Selected_exchange_states,
+		setmultipleSelected_exchange_states,
 	] = useState();
-	const [multiple_generator_data, setmultiplegenerator_data] = useState();
+	const [multiple_exchange_data, setmultipleexchange_data] = useState();
 	const [graphenable2, setgraphenable2] = useState(true);
 
 	const [multiple_month, setMultiple_Month] = useState();
@@ -69,18 +72,19 @@ export default function ThermalGenerator() {
 	const [freq_region1, setfreq_region1] = useState([]);
 	const [blocked, setBlocked] = useState(false);
 	const [loading_show, setloading_show] = useState(false);
+
 	useEffect(() => {
 		if (start_date && end_date) {
 			axios
 				.post(
-					"/ThGeneratorNames?startDate=" +
+					"/ExchangeNames?startDate=" +
 						moment(start_date).format("YYYY-MM-DD HH:mm") +
 						"&endDate=" +
 						moment(end_date).format("YYYY-MM-DD HH:mm"),
 					{}
 				)
 				.then((response) => {
-					setgenerator_states(response.data);
+					setexchange_states(response.data);
 				})
 				.catch((error) => {});
 		}
@@ -93,9 +97,9 @@ export default function ThermalGenerator() {
 
 			if (i === multiple_date.length) {
 				axios
-					.post("/MultiThGeneratorNames?MultistartDate=" + temp_multi_date, {})
+					.post("/MultiExchangeNames?MultistartDate=" + temp_multi_date, {})
 					.then((response) => {
-						setmultiplegenerator_states(response.data);
+						setmultipleexchange_states(response.data);
 					})
 					.catch((error) => {});
 			}
@@ -104,38 +108,47 @@ export default function ThermalGenerator() {
 		if (multiple_month) {
 			var temp_multi_month = [];
 
+			var temp_multi_month = [];
 			for (var j = 0; j < multiple_month.length; j++) {
 				temp_multi_month.push(moment(multiple_month[j]).format("YYYY-MM-DD"));
 			}
 
 			if (j === multiple_month.length) {
 				axios
-					.post("/MultiThGeneratorNames?MultistartDate=" + temp_multi_month, {})
+					.post("/MultiExchangeNames?MultistartDate=" + temp_multi_month, {})
 					.then((response) => {
-						setmultiplegenerator_states(response.data);
+						setmultipleexchange_states(response.data);
 					})
 					.catch((error) => {});
 			}
 		}
 	}, [start_date, end_date, multiple_date, multiple_month]);
 
-	const getgeneratordata = () => {
-		if (start_date && end_date && Selected_generator_states) {
+	const getexchangedata = () => {
+		if (start_date && end_date && Selected_exchange_states) {
+			for (var k = 0; k < Selected_exchange_states.length; k++) {
+				if (Selected_exchange_states[k].split("&").length > 1) {
+					Selected_exchange_states[k] = Selected_exchange_states[k]
+						.split("&")
+						.join("%26");
+				}
+			}
+
 			if (minutes && checked3) {
 				axios
 					.post(
-						"/GetThGeneratorData?startDate=" +
+						"/GetExchangeData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
 							"&stationName=" +
-							Selected_generator_states +
+							Selected_exchange_states +
 							"&time=" +
 							minutes,
 						{}
 					)
 					.then((response) => {
-						setgenerator_data(response.data);
+						setexchange_data(response.data);
 						setenable(false);
 						setgraphenable(false);
 						setBlocked(false);
@@ -159,17 +172,17 @@ export default function ThermalGenerator() {
 			} else {
 				axios
 					.post(
-						"/GetThGeneratorData?startDate=" +
+						"/GetExchangeData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
 							"&stationName=" +
-							Selected_generator_states +
+							Selected_exchange_states +
 							"&time=1",
 						{}
 					)
 					.then((response) => {
-						setgenerator_data(response.data);
+						setexchange_data(response.data);
 						setenable(false);
 						setgraphenable(false);
 						setBlocked(false);
@@ -194,7 +207,7 @@ export default function ThermalGenerator() {
 		}
 	};
 
-	const getmultigeneratordata = () => {
+	const getmultiexchangedata = () => {
 		if (multiple_date && checked1) {
 			if (multiminutes && checked4) {
 				var temp1 = [];
@@ -203,13 +216,20 @@ export default function ThermalGenerator() {
 					temp1.push(moment(multiple_date[i]).format("YYYY-MM-DD"));
 				}
 
-				if (temp1 && multiple_Selected_generator_states) {
+				if (temp1 && multiple_Selected_exchange_states) {
+					for (var k = 0; k < multiple_Selected_exchange_states.length; k++) {
+						if (multiple_Selected_exchange_states[k].split("&").length > 1) {
+							multiple_Selected_exchange_states[k] =
+								multiple_Selected_exchange_states[k].split("&").join("%26");
+						}
+					}
+
 					axios
 						.post(
-							"/GetMultiThGeneratorData?MultistartDate=" +
+							"/GetMultiExchangeData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
-								multiple_Selected_generator_states +
+								multiple_Selected_exchange_states +
 								"&Type=Date" +
 								"&time=" +
 								multiminutes,
@@ -217,7 +237,7 @@ export default function ThermalGenerator() {
 						)
 						.then((response) => {
 							// console.log(response);
-							setmultiplegenerator_data(response.data);
+							setmultipleexchange_data(response.data);
 							// setenable(false);
 							setgraphenable2(false);
 							setBlocked(false);
@@ -246,20 +266,26 @@ export default function ThermalGenerator() {
 					temp1.push(moment(multiple_date[i]).format("YYYY-MM-DD"));
 				}
 
-				if (temp1 && multiple_Selected_generator_states) {
+				if (temp1 && multiple_Selected_exchange_states) {
+					for (var k = 0; k < multiple_Selected_exchange_states.length; k++) {
+						if (multiple_Selected_exchange_states[k].split("&").length > 1) {
+							multiple_Selected_exchange_states[k] =
+								multiple_Selected_exchange_states[k].split("&").join("%26");
+						}
+					}
 					axios
 						.post(
-							"/GetMultiThGeneratorData?MultistartDate=" +
+							"/GetMultiExchangeData?MultistartDate=" +
 								temp1 +
 								"&MultistationName=" +
-								multiple_Selected_generator_states +
+								multiple_Selected_exchange_states +
 								"&Type=Date" +
 								"&time=1",
 							{}
 						)
 						.then((response) => {
 							// console.log(response);
-							setmultiplegenerator_data(response.data);
+							setmultipleexchange_data(response.data);
 							// setenable(false);
 							setgraphenable2(false);
 							setBlocked(false);
@@ -291,13 +317,19 @@ export default function ThermalGenerator() {
 					temp2.push(moment(multiple_month[i]).format("YYYY-MM-DD"));
 				}
 
-				if (temp2 && multiple_Selected_generator_states) {
+				if (temp2 && multiple_Selected_exchange_states) {
+					for (var k = 0; k < multiple_Selected_exchange_states.length; k++) {
+						if (multiple_Selected_exchange_states[k].split("&").length > 1) {
+							multiple_Selected_exchange_states[k] =
+								multiple_Selected_exchange_states[k].split("&").join("%26");
+						}
+					}
 					axios
 						.post(
-							"/GetMultiThGeneratorData?MultistartDate=" +
+							"/GetMultiExchangeData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
-								multiple_Selected_generator_states +
+								multiple_Selected_exchange_states +
 								"&Type=Month" +
 								"&time=" +
 								multiminutes,
@@ -305,7 +337,7 @@ export default function ThermalGenerator() {
 						)
 						.then((response) => {
 							// console.log(response);
-							setmultiplegenerator_data(response.data);
+							setmultipleexchange_data(response.data);
 							// setenable(false);
 							setgraphenable2(false);
 							setBlocked(false);
@@ -334,20 +366,26 @@ export default function ThermalGenerator() {
 					temp2.push(moment(multiple_month[i]).format("YYYY-MM-DD"));
 				}
 
-				if (temp2 && multiple_Selected_generator_states) {
+				if (temp2 && multiple_Selected_exchange_states) {
+					for (var k = 0; k < multiple_Selected_exchange_states.length; k++) {
+						if (multiple_Selected_exchange_states[k].split("&").length > 1) {
+							multiple_Selected_exchange_states[k] =
+								multiple_Selected_exchange_states[k].split("&").join("%26");
+						}
+					}
 					axios
 						.post(
-							"/GetMultiThGeneratorData?MultistartDate=" +
+							"/GetMultiExchangeData?MultistartDate=" +
 								temp2 +
 								"&MultistationName=" +
-								multiple_Selected_generator_states +
+								multiple_Selected_exchange_states +
 								"&Type=Month" +
 								"&time=1",
 							{}
 						)
 						.then((response) => {
 							// console.log(response);
-							setmultiplegenerator_data(response.data);
+							setmultipleexchange_data(response.data);
 							// setenable(false);
 							setgraphenable2(false);
 							setBlocked(false);
@@ -402,14 +440,14 @@ export default function ThermalGenerator() {
 			<Divider align="left">
 				<span
 					className="p-tag"
-					style={{ backgroundColor: "#FF0000", fontSize: "large" }}
+					style={{ backgroundColor: "#00d9ffff", fontSize: "large" }}
 				>
 					<Avatar
-						icon="pi pi-spin pi-bolt"
-						style={{ backgroundColor: "#FF0000", color: "#ffffff" }}
+						icon="pi pi-spin pi-globe"
+						style={{ backgroundColor: "#00d9ffff", color: "#ffffff" }}
 						shape="square"
 					/>
-					Plant-wise Generation Tab
+					Exchange Tab
 				</span>
 			</Divider>
 			<div className="grid">
@@ -431,7 +469,7 @@ export default function ThermalGenerator() {
 								setStart_Date(e.value);
 							}}
 							// onClick={() => {
-							//   GeneratorNames();
+							//   ExchangeNames();
 							// }}
 							monthNavigator
 							yearNavigator
@@ -458,7 +496,7 @@ export default function ThermalGenerator() {
 								setEnd_Date(e.value);
 							}}
 							// onClick={() => {
-							//   GeneratorNames();
+							//   ExchangeNames();
 							// }}
 							monthNavigator
 							yearNavigator
@@ -496,37 +534,37 @@ export default function ThermalGenerator() {
 					</div>
 				</div>
 				<div className="col">
-					<label htmlFor="range">Select Generator : </label>
+					<label htmlFor="range">Select Exchange : </label>
 					<br />
 					<MultiSelect
-						filterPlaceholder="Search Generators here"
+						filterPlaceholder="Search Exchanges here"
 						showSelectAll
 						showClear
 						resetFilterOnHide
 						maxSelectedLabels={5}
 						selectionLimit={5}
 						display="chip"
-						placeholder="Select Generators(s)"
-						value={Selected_generator_states}
-						options={generator_states}
-						onChange={(e) => setSelected_generator_states(e.value)}
+						placeholder="Select Exchange(s)"
+						value={Selected_exchange_states}
+						options={exchange_states}
+						onChange={(e) => setSelected_exchange_states(e.value)}
 						filter
 					/>{" "}
 				</div>
 				<div className="col">
 					<br />
 					<Button
-						severity="danger"
+						severity="primary"
 						size="small"
 						rounded
-						style={{ backgroundColor: "#FF0000" }}
+						style={{ backgroundColor: "#00d9ffff" }}
 						raised
-						label="Get Plant-wise Generation Data"
-						aria-label="Generator Data"
+						label="Get Exchange Data"
+						aria-label="Exchange Data"
 						onClick={() => {
 							// setBlocked(true);
 							setloading_show(true);
-							getgeneratordata();
+							getexchangedata();
 						}}
 					/>
 					<div className="field-checkbox" style={{ marginTop: "5%" }}>
@@ -534,11 +572,11 @@ export default function ThermalGenerator() {
 						<Checkbox
 							inputId="1"
 							name="city"
-							value="Generator"
+							value="Exchange"
 							onChange={frequency_region_change1}
-							checked={freq_region1.indexOf("Generator") !== -1}
+							checked={freq_region1.indexOf("Exchange") !== -1}
 						/>
-						<label htmlFor="1">Generator</label>
+						<label htmlFor="1">Exchange</label>
 						<Checkbox
 							inputId="2"
 							name="city"
@@ -552,12 +590,12 @@ export default function ThermalGenerator() {
 						<a
 							hidden={enable}
 							href={
-								`${baseUrl}/GetThGeneratorDataExcel?startDate=` +
+								`${baseUrl}/GetExchangeDataExcel?startDate=` +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD") +
 								"&stationName=" +
-								Selected_generator_states
+								Selected_exchange_states
 							}
 						>
 							{" "}
@@ -596,9 +634,9 @@ export default function ThermalGenerator() {
 
 			<div hidden={graphenable}>
 				<Divider />
-				<Generatorgraph
-					generator_data={generator_data}
-					Selected_generator_states={Selected_generator_states}
+				<Exchangegraph
+					exchange_data={exchange_data}
+					Selected_exchange_states={Selected_exchange_states}
 					frequency={frequency}
 					freq_region={freq_region}
 					freq_region1={freq_region1}
@@ -648,7 +686,7 @@ export default function ThermalGenerator() {
 								setMultiple_Date(e.value);
 							}}
 							// onClick={() => {
-							//   GeneratorNames();
+							//   exchangeNames();
 							// }}
 							monthNavigator
 							yearNavigator
@@ -681,7 +719,7 @@ export default function ThermalGenerator() {
 								setMultiple_Month(e.value);
 							}}
 							// onClick={() => {
-							//   GeneratorNames();
+							//   exchangeNames();
 							// }}
 							monthNavigator
 							yearNavigator
@@ -719,37 +757,37 @@ export default function ThermalGenerator() {
 					</div>
 				</div>
 				<div className="col" style={{ marginTop: "1%" }}>
-					<label htmlFor="range">Select Generator : </label>
+					<label htmlFor="range">Select Exchange : </label>
 					<br />
 					<MultiSelect
-						filterPlaceholder="Search Generators here"
+						filterPlaceholder="Search Exchanges here"
 						showSelectAll
 						showClear
 						resetFilterOnHide
 						maxSelectedLabels={5}
 						selectionLimit={5}
 						display="chip"
-						placeholder="Select Generator(s)"
-						value={multiple_Selected_generator_states}
-						options={multiple_generator_states}
-						onChange={(e) => setmultipleSelected_generator_states(e.value)}
+						placeholder="Select Exchange(s)"
+						value={multiple_Selected_exchange_states}
+						options={multiple_exchange_states}
+						onChange={(e) => setmultipleSelected_exchange_states(e.value)}
 						filter
 					/>{" "}
 				</div>{" "}
 				<div className="col">
 					<br />
 					<Button
-						severity="danger"
+						severity="primary"
 						size="small"
 						rounded
-						style={{ backgroundColor: "#FF0000" }}
+						style={{ backgroundColor: "#00d9ffff" }}
 						raised
-						label="Get Multi-Plant-wise Generation Data"
-						aria-label="multi-plant-wise-generation Data"
+						label="Get Multi-Exchange Data"
+						aria-label="multiExchange Data"
 						onClick={() => {
 							// setBlocked(true);
 							setloading_show(true);
-							getmultigeneratordata();
+							getmultiexchangedata();
 						}}
 					/>
 					<div className="field-checkbox" style={{ marginTop: "5%" }}>
@@ -757,11 +795,11 @@ export default function ThermalGenerator() {
 						<Checkbox
 							inputId="1"
 							name="city"
-							value="Generator"
+							value="Exchange"
 							onChange={frequency_region_change1}
-							checked={freq_region1.indexOf("Generator") !== -1}
+							checked={freq_region1.indexOf("Exchange") !== -1}
 						/>
-						<label htmlFor="1">Generator</label>
+						<label htmlFor="1">Exchange</label>
 						<Checkbox
 							inputId="2"
 							name="city"
@@ -803,9 +841,9 @@ export default function ThermalGenerator() {
 			</div>
 			<Divider />
 			<div hidden={graphenable2}>
-				<Generatorgraph
-					generator_data={multiple_generator_data}
-					Selected_generator_states={multiple_Selected_generator_states}
+				<Exchangegraph
+					exchange_data={multiple_exchange_data}
+					Selected_exchange_states={multiple_Selected_exchange_states}
 					date_time={true}
 					check1={checked1}
 					check2={checked2}

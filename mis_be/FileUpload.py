@@ -11,20 +11,21 @@ def GetCollection():
     CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
-    Thermal_Generator= db['Thermal_Generator']
-
-    # Thermal_Generator.create_index([('n',DESCENDING),('d',DESCENDING)], unique= True)
+    Exchange_Data= db['Exchange_Data']
+    Exchange_Data.create_index([('n',DESCENDING),('d',DESCENDING)], unique= True)
     collections = [
         'voltage_data', 'line_mw_data_p1', 'line_mw_data_p2', 'line_mw_data_400_above',
         'MVAR_p1', 'MVAR_p2', 'Lines_MVAR_400_above', 'ICT_data', 'ICT_data_MW',
-        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 'Thermal_Generator', 'ISGS_Data'
+        'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data', 
+        'Thermal_Generator', 'ISGS_Data', 'Exchange_Data'
     ]
     return [db[collection] for collection in collections]
 
 (
-    voltage_data_collection, line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2,
-    MVAR_P1, MVAR_P2, Lines_MVAR_400_above, ICT_data1, ICT_data2,
-    frequency_data_collection, demand_collection, drawal_collection, Generator_DB, Th_Gen_DB, ISGS_DB
+    voltage_data_collection, line_mw_data_collection, line_mw_data_collection1, 
+    line_mw_data_collection2, MVAR_P1, MVAR_P2, Lines_MVAR_400_above, ICT_data1, 
+    ICT_data2, frequency_data_collection, demand_collection, drawal_collection, 
+    Generator_DB, Th_Gen_DB, ISGS_DB, Exchange_DB
 ) = GetCollection()
 
 # /////////////////////////////////////////////////////////////////////////////Voltage////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1115,5 +1116,85 @@ def ISGS(startDateObj,endDateObj,PATH):
 
         except:
             print('ISGS File read problem', for_date1)
+
+    return jsonify(op)
+
+# //////////////////////////////////////////////////////////////////////Exchange////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+def Exchange(startDateObj,endDateObj,PATH):
+
+    def insertFlowDfIntoDB(df, for_date):
+
+        doc_list = []
+        name_dict = {'NR_NIC':'NR EXCHANGE', 
+                    'SR_NIC':'SR EXCHANGE', 
+                    'WR_NIC':'WR EXCHANGE', 
+                    'NE_NIC':'NER EXCHANGE', 
+                    'NEPAL ACTUAL':'NEPAL(ISTS) EXCHANGE', 
+                    'BDESH_NIC':'BDESH EXCHANGE', 
+                    'IR ACTUAL':'IR ACTUAL', 
+                    'BHUTAN EXCHANGE':'BHUTAN EXCHANGE', 
+                    'NEA_BIHAR EXCHANGE':'NEA_BIHAR EXCHANGE'}
+
+        checklist= ['NR EXCHANGE', 'SR EXCHANGE', 'WR EXCHANGE', 'NER EXCHANGE', 'NEPAL(ISTS) EXCHANGE', 'BDESH EXCHANGE', 'IR ACTUAL', 'BHUTAN EXCHANGE', 'NEA_BIHAR EXCHANGE']
+
+        df = df.astype('double').reset_index(drop=True)
+        df.index = df.index.astype('str')
+        if (len(df) != 1440):
+
+            raise Exception("Error")
+
+        try:
+
+            for col in set(df.columns):
+                checklist.remove(name_dict[col])
+                a = {
+                    "p": df[col].round(3).to_list(),
+                    "d": pd.to_datetime(for_date1),
+                    "ym": for_date1.strftime("%Y%m"),
+                    "n": name_dict[col]}
+                doc_list.append(a)
+        except:
+            pass
+
+        for item in checklist:
+            doc_list.append({
+                "p": [0]*1440,
+                "d": pd.to_datetime(for_date1),
+                "ym": for_date1.strftime("%Y%m"),
+                "n": item
+            })
+
+        try:
+            print("here",for_date)
+            res = Exchange_DB.insert_many(doc_list)
+            print("Successfully inserted Exchange Files", for_date)
+
+        except errors.DuplicateKeyError:
+            print("Exchange File Insert problem in Database ")
+
+        return 'res'
+
+
+    op = []
+    for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
+
+        try:
+            FILE = PATH+"Er_web_ir_int_exch_{}.xlsx".format(
+                for_date1.strftime("%d%m%Y"))
+            
+            df = pd.read_excel(FILE, sheet_name='Sheet1')
+            
+            df = df.drop(0)
+            df = df.drop(columns=['Unnamed: 0'], axis=1)
+            df.index = pd.date_range(
+                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+
+            insertFlowDfIntoDB(df, for_date1)
+            op.append(for_date1)
+
+        except:
+            print('Exchange File read problem', for_date1)
 
     return jsonify(op)
