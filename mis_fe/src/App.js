@@ -140,7 +140,7 @@ function App() {
 
 						<Link to="Exchange">
 							<Avatar
-								icon="pi pi-globe"
+								icon="pi pi-sync"
 								style={{ backgroundColor: "#00d9ffff", color: "#ffffff" }}
 								shape="circle"
 							/>

@@ -443,7 +443,7 @@ export default function Exchange() {
 					style={{ backgroundColor: "#00d9ffff", fontSize: "large" }}
 				>
 					<Avatar
-						icon="pi pi-spin pi-globe"
+						icon="pi pi-spin pi-sync"
 						style={{ backgroundColor: "#00d9ffff", color: "#ffffff" }}
 						shape="square"
 					/>
