@@ -130,7 +130,7 @@ def GetCollection():
 @app.route('/VoltageFileInsert', methods=['GET', 'POST'])
 def VoltageFileInsert():
 
-    PATH = "http://10.3.100.24/DAILY_DUMP_FILES_SCADA/"
+    PATH = "http://10.3.200.95/DAILY_DUMP_FILES_SCADA/"
 
     startDate = request.args['startDate']
     endDate = request.args['endDate']
@@ -488,7 +488,7 @@ def LinesFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path = "http://10.3.100.24/DAILY_DUMP_FILES_SCADA/"
+    path = "http://10.3.200.95/DAILY_DUMP_FILES_SCADA/"
     res = Lines(startDateObj,endDateObj,path)
 
     return res
@@ -828,7 +828,7 @@ def MVARFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path = "http://10.3.100.24/DAILY_DUMP_FILES_SCADA/"
+    path = "http://10.3.200.95/DAILY_DUMP_FILES_SCADA/"
 
     res= LinesMVARFileInsert(startDateObj,endDateObj,path)
 
@@ -849,7 +849,7 @@ def ICTFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path = "http://10.3.100.24/DAILY_DUMP_FILES_SCADA/"
+    path = "http://10.3.200.95/DAILY_DUMP_FILES_SCADA/"
 
     res= ICT(startDateObj,endDateObj,path)
 
@@ -1178,7 +1178,7 @@ def FrequencyFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path= "http://10.3.100.24/DAILY_DUMP_FILES_SCADA/"
+    path= "http://10.3.200.95/DAILY_DUMP_FILES_SCADA/"
 
     res= Frequency(startDateObj,endDateObj,path)
 
@@ -1757,7 +1757,7 @@ def DemandFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path= "http://10.3.100.24/ScadaData/er_web/"
+    path= "http://10.3.200.95/ScadaData/er_web/"
 
     res = Demand(startDateObj,endDateObj,path)
 
@@ -2103,7 +2103,7 @@ def GeneratorFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path= "http://10.3.100.24/DAILY_DUMP_FILES_SCADA/"
+    path= "http://10.3.200.95/DAILY_DUMP_FILES_SCADA/"
 
     res= Generator(startDateObj,endDateObj,path)
 
@@ -2401,7 +2401,7 @@ def ThGeneratorFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path = "http://10.3.100.24/ScadaData/er_web/"
+    path = "http://10.3.200.95/ScadaData/er_web/"
 
     res= Thermal_Generator(startDateObj,endDateObj,path)
 
@@ -2758,7 +2758,7 @@ def ISGSFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path= "http://10.3.100.24/ScadaData/er_web/"
+    path= "http://10.3.200.95/ScadaData/er_web/"
 
     res= ISGS(startDateObj,endDateObj,path)
 
@@ -3064,7 +3064,7 @@ def ExchangeFileInsert():
     startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
 
-    path= "http://10.3.100.24/ScadaData/er_web/"
+    path= "http://10.3.200.95/ScadaData/er_web/"
 
     res= Exchange(startDateObj,endDateObj,path)
 
