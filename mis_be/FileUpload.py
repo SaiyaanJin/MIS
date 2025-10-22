@@ -8,7 +8,8 @@ from datetime import date, timedelta
 
 
 def GetCollection():
-    CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
+    # CONNECTION_STRING = "mongodb://mongodb0.erldc.in:27017,mongodb1.erldc.in:27017,mongodb10.erldc.in:27017/?replicaSet=CONSERV"
+    CONNECTION_STRING = "mongodb://mongodb10.erldc.in:27017,mongodb11.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
     Exchange_Data= db['Exchange_Data']
@@ -67,7 +68,7 @@ def Voltage(startDateObj,endDateObj,PATH):
         df = df.loc[:, (slice(None), ('Bus-1 Voltage (kV)',
                         'Bus-2 Voltage (kV)'))]
         df.index = pd.date_range(
-            for_date, for_date + timedelta(days=1), freq='1T')[:-1]
+            for_date, for_date + timedelta(days=1), freq='1min')[:-1]
         if len(df) != 1440:
             raise Exception("Length Mismatch")
         return df
@@ -93,7 +94,7 @@ def Voltage(startDateObj,endDateObj,PATH):
         df = df.loc[:, (slice(None), ('Bus-1 Voltage (kV)',
                         'Bus-2 Voltage (kV)'))][1:]
         df.index = pd.date_range(
-            for_date, for_date + timedelta(days=1), freq='1T')[:-1]
+            for_date, for_date + timedelta(days=1), freq='1min')[:-1]
         if len(df) != 1440:
             print("VoltageFileInsert Length Mismatch")
         return df
@@ -176,7 +177,7 @@ def Frequency(startDateObj,endDateObj,PATH):
             df = df.drop(0)
             df = df.drop(columns=['Date'], axis=1)
             df.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
             insertFlowDfIntoDB(df, for_date1)
 
@@ -343,7 +344,7 @@ def Lines(startDateObj,endDateObj,PATH):
                 df = df.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
                 df = df[17:1440+17]
                 df.index = pd.date_range(
-                    for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                    for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
                 df.columns = df.columns.map(
                     lambda x: x[0]+": " + x[1] if 'Unnamed' not in x[1] else x[0]+': '+((x[0].split('-'))[0].split(' '))[-1] + ' end')
 
@@ -358,7 +359,7 @@ def Lines(startDateObj,endDateObj,PATH):
                 df1 = df1.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
                 df1 = df1[17:1440+17]
                 df1.index = pd.date_range(
-                    for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                    for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
                 df1.columns = df1.columns.map(
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
@@ -377,7 +378,7 @@ def Lines(startDateObj,endDateObj,PATH):
                 df2 = df2.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
                 df2.index = pd.date_range(
-                    for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                    for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
                 df2.columns = df2.columns.map(
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
@@ -396,7 +397,7 @@ def Lines(startDateObj,endDateObj,PATH):
                 df2 = df2.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
                 df2.index = pd.date_range(
-                    for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                    for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
                 df2.columns = df2.columns.map(
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
@@ -414,7 +415,7 @@ def Lines(startDateObj,endDateObj,PATH):
                 df3 = df3.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
                 df3.index = pd.date_range(
-                    for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                    for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
                 df3.columns = df3.columns.map(
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
@@ -431,7 +432,7 @@ def Lines(startDateObj,endDateObj,PATH):
                 df3 = df3.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
                 df3.index = pd.date_range(
-                    for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                    for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
                 df3.columns = df3.columns.map(
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
@@ -573,7 +574,7 @@ def LinesMVARFileInsert(startDateObj,endDateObj,PATH):
             df = df.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
             df.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
             df.columns = df.columns.map(
                 lambda x: x[0]+": " + x[1] if 'Unnamed' not in x[1] else x[0]+': '+((x[0].split('-'))[0].split(' '))[-1] + ' end')
 
@@ -583,7 +584,7 @@ def LinesMVARFileInsert(startDateObj,endDateObj,PATH):
             df1 = df1.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
             df1.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
             df1.columns = df1.columns.map(
                 lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
@@ -595,7 +596,7 @@ def LinesMVARFileInsert(startDateObj,endDateObj,PATH):
             df2 = df2.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
             df2.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
             df2.columns = df2.columns.map(
                 lambda x: x[0]+": " + x[1] if 'Unnamed' not in x[1] else x[0]+': '+((x[0].split('-'))[0].split(' '))[-1] + ' end')
@@ -607,7 +608,7 @@ def LinesMVARFileInsert(startDateObj,endDateObj,PATH):
             df3 = df3.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
             df3.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
             df3.columns = df3.columns.map(
                 lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
@@ -668,7 +669,7 @@ def ICT(startDateObj,endDateObj,PATH):
             df = df.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
             df.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')
+                for_date1, for_date1 + timedelta(days=1), freq='1min')
 
             columns_list = []
 
@@ -755,7 +756,7 @@ def ICT(startDateObj,endDateObj,PATH):
                 # print(df)
 
                 # df.index = pd.date_range(
-                #     for_date1, for_date1 + timedelta(days=1), freq='1T')
+                #     for_date1, for_date1 + timedelta(days=1), freq='1min')
 
                 columns_list = []
                 data_list = []
@@ -897,7 +898,7 @@ def Demand(startDateObj,endDateObj,PATH):
             df = df.drop(columns=['Unnamed: 0'])
 
             df.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
             FILE1 = PATH+"Er_web_state_exchange_{}.xlsx".format(
                 for_date1.strftime("%d%m%Y"))
@@ -908,7 +909,7 @@ def Demand(startDateObj,endDateObj,PATH):
             df1 = df1.drop(columns=['Unnamed: 0'])
 
             df1.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
             # df.columns = df.columns.map(
             #     lambda x: x[0]+": " + x[1] if 'Unnamed' not in x[1] else x[0]+': '+((x[0].split('-'))[0].split(' '))[-1] + ' end')
@@ -971,7 +972,7 @@ def Generator(startDateObj,endDateObj,PATH):
             df = df.drop(1)
             df = df.drop(2)
             df.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
             temp1 = df.columns.tolist()
 
@@ -1108,7 +1109,7 @@ def ISGS(startDateObj,endDateObj,PATH):
             df = df.drop(columns=['Unnamed: 0',])[0:1442]
 
             df.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
             insertFlowDfIntoDB(ISGS_DB, df, for_date1)
 
@@ -1189,7 +1190,7 @@ def Exchange(startDateObj,endDateObj,PATH):
             df = df.drop(0)
             df = df.drop(columns=['Unnamed: 0'], axis=1)
             df.index = pd.date_range(
-                for_date1, for_date1 + timedelta(days=1), freq='1T')[:-1]
+                for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
             insertFlowDfIntoDB(df, for_date1)
             op.append(for_date1)
