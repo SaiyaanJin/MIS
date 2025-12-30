@@ -12,8 +12,6 @@ def GetCollection():
     CONNECTION_STRING = "mongodb://mongodb10.erldc.in:27017,mongodb11.erldc.in:27017/?replicaSet=CONSERV"
     client = MongoClient(CONNECTION_STRING)
     db = client['mis']
-    Exchange_Data= db['Exchange_Data']
-    Exchange_Data.create_index([('n',DESCENDING),('d',DESCENDING)], unique= True)
     collections = [
         'voltage_data', 'line_mw_data_p1', 'line_mw_data_p2', 'line_mw_data_400_above',
         'MVAR_p1', 'MVAR_p2', 'Lines_MVAR_400_above', 'ICT_data', 'ICT_data_MW',
@@ -1168,8 +1166,9 @@ def Exchange(startDateObj,endDateObj,PATH):
             })
 
         try:
-            print("here",for_date)
+            
             res = Exchange_DB.insert_many(doc_list)
+            
             print("Successfully inserted Exchange Files", for_date)
 
         except errors.DuplicateKeyError:
