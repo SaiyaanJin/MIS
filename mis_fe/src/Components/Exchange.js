@@ -620,8 +620,8 @@ export default function Exchange() {
                             <div className="col-12 md:col-5">
                                 <div className="gen-field-label"><i className="pi pi-bolt" />Select Exchange(s)</div>
                                 <MultiSelect filterPlaceholder="Search generators…" showSelectAll showClear resetFilterOnHide
-                                    maxSelectedLabels={3} selectionLimit={5} display="chip"
-                                    placeholder="Pick up to 5 elements…"
+                                    maxSelectedLabels={7} selectionLimit={7} display="chip"
+                                    placeholder="Pick up to 7 elements…"
                                     value={Selected_exchange_states} options={exchange_states}
                                     onChange={(e) => setSelected_exchange_states(e.value)}
                                     filter className="w-full modern-multiselect"
@@ -817,8 +817,8 @@ export default function Exchange() {
                                 <div className="mb-3">
                                     <div className="gen-field-label"><i className="pi pi-bolt" />Select Exchange(s)</div>
                                     <MultiSelect filterPlaceholder="Search generators…" showSelectAll showClear resetFilterOnHide
-                                        maxSelectedLabels={3} selectionLimit={5} display="chip"
-                                        placeholder="Pick generators…"
+                                        maxSelectedLabels={7} selectionLimit={7} display="chip"
+                                        placeholder="pick elements…"
                                         value={multiple_Selected_exchange_states} options={multiple_exchange_states}
                                         onChange={(e) => setmultipleSelected_exchange_states(e.value)}
                                         filter className="w-full modern-multiselect"

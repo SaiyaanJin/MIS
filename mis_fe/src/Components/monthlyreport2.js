@@ -1451,8 +1451,8 @@ function MonthlyReports2() {
 									showSelectAll
 									showClear
 									resetFilterOnHide
-									maxSelectedLabels={3}
-									selectionLimit={5}
+									maxSelectedLabels={7}
+									selectionLimit={7}
 									display="chip"
 									placeholder="Pick up to 5 meters…"
 									value={selected_meter_number}

@@ -801,7 +801,7 @@ export default function Combined() {
 								</div>
 								<div className="comb-input-group" style={{ opacity: checkedF ? 1 : 0.6 }}>
 									<MultiSelect filterPlaceholder="Search BUS here" showSelectAll showClear resetFilterOnHide
-										maxSelectedLabels={5} disabled={!checkedF} selectionLimit={5} display="chip"
+										maxSelectedLabels={7} disabled={!checkedF} selectionLimit={7} display="chip"
 										placeholder="Select 220/400/765KV BUS" value={Selected_f_states} options={f_states}
 										onChange={(e) => setSelected_f_states(e.value)} filter className="w-full modern-multiselect" panelClassName="modern-multiselect-panel" />
 								</div>
@@ -814,7 +814,7 @@ export default function Combined() {
 								</div>
 								<div className="comb-input-group" style={{ opacity: checkedV ? 1 : 0.6 }}>
 									<MultiSelect filterPlaceholder="Search BUS here" showSelectAll showClear resetFilterOnHide
-										maxSelectedLabels={5} disabled={!checkedV} selectionLimit={5} display="chip"
+										maxSelectedLabels={7} disabled={!checkedV} selectionLimit={7} display="chip"
 										placeholder="Select 220/400/765KV BUS" value={Selected_v_states} options={v_states}
 										onChange={(e) => setSelected_v_states(e.value)} filter className="w-full modern-multiselect" panelClassName="modern-multiselect-panel" />
 								</div>
@@ -827,7 +827,7 @@ export default function Combined() {
 								</div>
 								<div className="comb-input-group" style={{ opacity: checkedD ? 1 : 0.6 }}>
 									<MultiSelect filterPlaceholder="Search Regions here" showSelectAll showClear resetFilterOnHide
-										maxSelectedLabels={5} disabled={!checkedD} selectionLimit={5} display="chip"
+										maxSelectedLabels={7} disabled={!checkedD} selectionLimit={7} display="chip"
 										placeholder="Select Regions" value={Selected_d_states} options={d_states}
 										onChange={(e) => setSelected_d_states(e.value)} filter className="w-full modern-multiselect" panelClassName="modern-multiselect-panel" />
 								</div>
@@ -840,7 +840,7 @@ export default function Combined() {
 								</div>
 								<div className="comb-input-group" style={{ opacity: checkedI ? 1 : 0.6 }}>
 									<MultiSelect filterPlaceholder="Search ICT-Names here" showSelectAll showClear resetFilterOnHide
-										maxSelectedLabels={5} disabled={!checkedI} selectionLimit={5} display="chip"
+										maxSelectedLabels={7} disabled={!checkedI} selectionLimit={7} display="chip"
 										placeholder="Select 220/400/765KV BUS" value={Selected_i_states} options={i_states}
 										onChange={(e) => setSelected_i_states(e.value)} filter className="w-full modern-multiselect" panelClassName="modern-multiselect-panel" />
 								</div>
@@ -853,7 +853,7 @@ export default function Combined() {
 								</div>
 								<div className="comb-input-group" style={{ opacity: checkedL ? 1 : 0.6 }}>
 									<MultiSelect filterPlaceholder="Search Lines here" showSelectAll showClear resetFilterOnHide
-										maxSelectedLabels={5} disabled={!checkedL} selectionLimit={5} display="chip"
+										maxSelectedLabels={7} disabled={!checkedL} selectionLimit={7} display="chip"
 										placeholder="Select 220/400/765KV BUS" value={Selected_l_states} options={l_states}
 										onChange={(e) => setSelected_l_states(e.value)} filter className="w-full modern-multiselect" panelClassName="modern-multiselect-panel" />
 								</div>

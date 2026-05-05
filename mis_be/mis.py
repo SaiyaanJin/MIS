@@ -911,7 +911,7 @@ def GetDemandDataExcel():
     return jsonify("No Data to Download")
 
 
-@app.route('/GetICTData', methods=['GET', 'POST'])
+@app.route('/GetIctData', methods=['GET', 'POST'])
 def GetICTData():
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']

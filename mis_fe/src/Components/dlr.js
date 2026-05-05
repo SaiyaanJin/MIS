@@ -94,7 +94,7 @@ export default function Dlr() {
                     <div className="field col-12 md:col-6">
                         <label className="pc-label"><i className="pi pi-building"></i> Select Entities</label>
                         <div className="modern-multiselect">
-                            <MultiSelect selectionLimit={5} display="chip" placeholder="Select Line(s)"
+                            <MultiSelect selectionLimit={7} display="chip" placeholder="Select Line(s)"
                                 value={selectedDlrStates} options={dlrStates} onChange={(e) => setSelectedDlrStates(e.value)}
                                 filter className="pc-multiselect" panelClassName="modern-multiselect-panel" />
                         </div>

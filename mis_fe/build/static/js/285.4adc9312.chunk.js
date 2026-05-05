@@ -804,11 +804,11 @@
 																		showSelectAll: !0,
 																		showClear: !0,
 																		resetFilterOnHide: !0,
-																		maxSelectedLabels: 3,
+																		maxSelectedLabels: 7,
 																		selectionLimit: 5,
 																		display: "chip",
 																		placeholder:
-																			"Pick up to 5 elements\u2026",
+																			"Pick up to 7 elements\u2026",
 																		value: Z,
 																		options: Y,
 																		onChange: function (e) {
@@ -1398,10 +1398,10 @@
 																			showSelectAll: !0,
 																			showClear: !0,
 																			resetFilterOnHide: !0,
-																			maxSelectedLabels: 3,
+																			maxSelectedLabels: 7,
 																			selectionLimit: 5,
 																			display: "chip",
-																			placeholder: "Pick generators\u2026",
+																			placeholder: "pick elements\u2026",
 																			value: te,
 																			options: K,
 																			onChange: function (e) {
