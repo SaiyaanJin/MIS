@@ -267,3 +267,58 @@ body {
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 3px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2) !important;
 }
+
+/* ── PrimeReact Calendar: month/year navigator <select> dropdowns ───────────
+   Fixes the invisible white-text-on-white-background bug in the header
+   navigation selects when monthNavigator / yearNavigator are enabled.
+   Applied globally here so it works across ALL pages in the app.
+   ─────────────────────────────────────────────────────────────────────────── */
+.p-datepicker .p-datepicker-header .p-datepicker-month,
+.p-datepicker .p-datepicker-header .p-datepicker-year {
+    color: #1e293b !important;
+    background-color: #f8fafc !important;
+    border: 1.5px solid rgba(148, 163, 184, 0.55) !important;
+    border-radius: 7px !important;
+    padding: 4px 26px 4px 10px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    font-family: 'Inter', sans-serif !important;
+    cursor: pointer !important;
+    transition: border-color 0.15s, box-shadow 0.15s !important;
+    -webkit-appearance: auto !important;
+    appearance: auto !important;
+    outline: none !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-month:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-year:hover {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14) !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-month:focus,
+.p-datepicker .p-datepicker-header .p-datepicker-year:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Ensure native OS <option> items are readable */
+.p-datepicker .p-datepicker-header .p-datepicker-month option,
+.p-datepicker .p-datepicker-header .p-datepicker-year option {
+    color: #1e293b !important;
+    background-color: #ffffff !important;
+}
+
+/* Dark mode variant */
+[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-month,
+[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-year {
+    color: #e2e8f0 !important;
+    background-color: #1e293b !important;
+    border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-month option,
+[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-year option {
+    color: #e2e8f0 !important;
+    background-color: #1e293b !important;
+}

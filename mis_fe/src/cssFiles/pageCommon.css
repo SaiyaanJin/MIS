@@ -357,6 +357,62 @@
   margin-top: 5px;
 }
 
+/* ── PrimeReact Calendar — month/year navigator dropdowns ─────────────────
+   Fixes the white-on-white visibility bug in the <select> pickers that appear
+   in the calendar header when monthNavigator / yearNavigator are enabled.
+   ─────────────────────────────────────────────────────────────────────────── */
+.p-datepicker .p-datepicker-header .p-datepicker-month,
+.p-datepicker .p-datepicker-header .p-datepicker-year {
+  /* Readable colours */
+  color: #1e293b !important;
+  background-color: #ffffff !important;
+  /* Clean border & shape */
+  border: 1.5px solid rgba(148, 163, 184, 0.5) !important;
+  border-radius: 7px !important;
+  /* Spacing & typography */
+  padding: 4px 28px 4px 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', sans-serif !important;
+  /* Smooth interaction */
+  cursor: pointer !important;
+  transition: border-color 0.15s, box-shadow 0.15s !important;
+  /* Ensure the native arrow is visible */
+  -webkit-appearance: auto !important;
+  appearance: auto !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-month:hover,
+.p-datepicker .p-datepicker-header .p-datepicker-year:hover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+  outline: none !important;
+}
+
+.p-datepicker .p-datepicker-header .p-datepicker-month:focus,
+.p-datepicker .p-datepicker-header .p-datepicker-year:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+  outline: none !important;
+}
+
+/* Dark-mode support — keep legible when the app is in dark theme */
+[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-month,
+[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-year,
+.dark .p-datepicker .p-datepicker-header .p-datepicker-month,
+.dark .p-datepicker .p-datepicker-header .p-datepicker-year {
+  color: #e2e8f0 !important;
+  background-color: #1e293b !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* Dropdown <option> items should always be readable in native OS picker */
+.p-datepicker .p-datepicker-header .p-datepicker-month option,
+.p-datepicker .p-datepicker-header .p-datepicker-year option {
+  color: #1e293b !important;
+  background-color: #ffffff !important;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .pc-hero-inner { flex-wrap: wrap; }
