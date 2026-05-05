@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Calendar } from "primereact/calendar";
 import "../cssFiles/PasswordDemo.css";
 import "primeflex/primeflex.css";
@@ -667,15 +667,12 @@ export default function Lines() {
                         <div className="gen-action-row">
                             <Button icon="pi pi-chart-bar" label="Generate Graph" className="gen-btn-primary"
                                 onClick={() => { setloading_show(true); getlinesdata(); }} />
-                            <Button icon="pi pi-download" label="Export Graph Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-download" label="Download Excel Data" className="gen-btn-secondary"
                                 disabled={!lines_data}
                                 tooltip="Export plotted data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => exportGraphToExcel(lines_data,
                                     `${moment(start_date).format("YYYYMMDD")}_${moment(end_date).format("YYYYMMDD")}`)} />
-                            <Button icon="pi pi-file-excel" label="Export Raw Data" className="gen-btn-secondary"
-                                disabled={enable}
-                                tooltip="Download from server" tooltipOptions={{ position: "top" }}
-                                onClick={() => { window.location.href = `${baseUrl}/GetLinesDataExcel?startDate=${moment(start_date).format("YYYY-MM-DD")}&endDate=${moment(end_date).format("YYYY-MM-DD")}&stationName=${(Selected_lines_states || []).map(s => String(s).replace(/&/g, "%26")).join(",")}`; }} />
+                            
                             {!graphenable && lines_data && (
                                 <Chip label={`${lines_data.length - 1} trace(s) loaded`}
                                     icon="pi pi-check-circle"
@@ -865,7 +862,7 @@ export default function Lines() {
                             <Button icon="pi pi-chart-bar" label="Generate Comparison" className="gen-btn-primary"
                                 style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9) !important" }}
                                 onClick={() => { setloading_show(true); getmultilinesdata(); }} />
-                            <Button icon="pi pi-download" label="Export Graph Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-download" label="Download Excel Data" className="gen-btn-secondary"
                                 disabled={!multiple_lines_data}
                                 tooltip="Export plotted comparison data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => {
