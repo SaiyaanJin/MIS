@@ -51,6 +51,11 @@ export default function Linesgraph(props) {
                 pointHoverRadius: 5,
                 pointHoverBackgroundColor: color,
                 yAxisID: "y",
+                _maxIdx: _mxI,
+                _minIdx: _mnI,
+                _maxVal: _mxV,
+                _minVal: _mnV,
+                _unit: unit,
                 _hex: color,
                 _fill: isMW,
             });

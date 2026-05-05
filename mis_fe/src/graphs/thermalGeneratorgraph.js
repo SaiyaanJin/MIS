@@ -118,10 +118,10 @@ export default function ThermalGeneratorgraph(props) {
                 yAxisID: "y",
                 _hex: color,   // stored for gradient plugin
                 _isMW: isMW,
-                _maxIdx: isMW ? _mxI : undefined,
-                _minIdx: isMW ? _mnI : undefined,
-                _maxVal: isMW ? _mxV : undefined,
-                _minVal: isMW ? _mnV : undefined,
+                _maxIdx: _mxI,
+                _minIdx: _mnI,
+                _maxVal: _mxV,
+                _minVal: _mnV,
                 _unit: "MW",
             });
             traceIdx++;
