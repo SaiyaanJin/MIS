@@ -5,6 +5,7 @@ from datetime import timedelta, datetime, timezone
 from flask import Flask, jsonify, request, Response, send_file
 from flask_cors import CORS
 import math
+import bisect
 from pandas.tseries.offsets import MonthEnd
 import numpy as np
 from flask_caching import Cache
@@ -630,8 +631,17 @@ def GetLinesData():
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
     date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
 
-    dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
-    allDateTime = dts[dts.index(startTime_fmt):dts.index(endTime_fmt) + 1]
+    dts      = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
+    dts_1min = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=1))]
+
+    # Use bisect to find the nearest start/end index — avoids ValueError when the
+    # exact timestamp isn't on a time1-minute boundary (e.g. 23:59 with time1=2).
+    dt_start_idx = bisect.bisect_left(dts, startTime_fmt)
+    dt_end_idx   = min(bisect.bisect_right(dts, endTime_fmt), len(dts) - 1)
+    allDateTime  = dts[dt_start_idx:dt_end_idx + 1]
+
+    raw_start_idx = bisect.bisect_left(dts_1min, startTime_fmt)
+    raw_end_idx   = min(bisect.bisect_right(dts_1min, endTime_fmt), len(dts_1min) - 1)
 
     listofzeros = [11111] * 1440
     reply = []
@@ -669,7 +679,7 @@ def GetLinesData():
             if math.isnan(val):
                 line[i] = 0
 
-        line = line[dts.index(startTime_fmt):dts.index(endTime_fmt) + 1]
+        line = line[raw_start_idx:raw_end_idx + 1]
 
         if time1 == 1:
             reply.append({'stationName': station_clean, 'line': line})
