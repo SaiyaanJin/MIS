@@ -1,30 +1,169 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Calendar } from "primereact/calendar";
-import "../cssFiles/PasswordDemo.css";
-import "../cssFiles/Animation.css";
-import "primereact/resources/themes/lara-light-indigo/theme.css"; //theme
-import "primereact/resources/primereact.min.css"; //core css
-import "primeicons/primeicons.css"; //icons
-import "../cssFiles/ButtonDemo.css";
-import { Avatar } from "primereact/avatar";
 import { MultiSelect } from "primereact/multiselect";
 import axios from "axios";
 import moment from "moment";
 import { Button } from "primereact/button";
 import { BlockUI } from "primereact/blockui";
-
-import { Fieldset } from "primereact/fieldset";
 import { Divider } from "primereact/divider";
+import { useTheme } from "../context/ThemeContext";
 
-import CircularProgress from "@mui/material/CircularProgress";
-import Box from "@mui/material/Box";
+const uploadStyles = `
+@keyframes upload-reveal {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-axios.defaults.headers.post["Access-Control-Allow-Origin"] = "*";
+@keyframes upload-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.upload-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+  box-shadow: 0 20px 40px -12px rgba(59, 130, 246, 0.4);
+  animation: upload-reveal 0.6s cubic-bezier(.16,1,.3,1) both;
+}
+
+.upload-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15), transparent 30%);
+}
+
+.upload-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 30px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.upload-title {
+  color: white;
+  font-size: 2.25rem;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+
+.upload-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  margin-top: 8px;
+  max-width: 600px;
+}
+
+.upload-ctrl-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+  animation: upload-reveal 0.8s cubic-bezier(.16,1,.3,1) 0.1s both;
+}
+
+.dark-mode .upload-ctrl-card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+}
+
+.upload-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upload-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 4px;
+}
+
+.dark-mode .upload-label {
+  color: #94a3b8;
+}
+
+.upload-field-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.dark-mode .upload-field-container {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.upload-field-container:focus-within {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.dark-mode .upload-field-container:focus-within {
+  background: #1e293b;
+}
+
+.execute-btn {
+  background: #2563eb !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 18px 48px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  transition: all 0.4s cubic-bezier(.16,1,.3,1) !important;
+  animation: upload-pulse 2s infinite;
+}
+
+.execute-btn:hover {
+  background: #1d4ed8 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -8px rgba(37, 99, 235, 0.5) !important;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 30px;
+  border: 1px dashed rgba(59, 130, 246, 0.3);
+  margin-top: 24px;
+}
+`;
 
 export default function Upload() {
-	const [start_date, setStart_Date] = useState();
-	const [end_date, setEnd_Date] = useState();
-
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
+	const { isDarkMode } = useTheme();
+	const [date_range, set_date_range] = useState(null);
 	const [Selected_lines_states, setSelected_lines_states] = useState();
 	const [blocked, setBlocked] = useState(false);
 	const [loading_show, setloading_show] = useState(false);
@@ -42,15 +181,20 @@ export default function Upload() {
 	];
 
 	const uploaddata = () => {
-		if (Selected_lines_states && start_date && end_date) {
+		if (Selected_lines_states && date_range && date_range[0] && date_range[1]) {
+			setloading_show(true);
+			const start_date = date_range[0];
+			const end_date = date_range[1];
+
 			for (var i = 0; i < Selected_lines_states.length; i++) {
 				if (Selected_lines_states[i] === "Voltage") {
 					axios
 						.post(
-							"/VoltageFileInsert?startDate=" +
+							baseUrl +
+								"/VoltageFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
-								moment(end_date).format("YYYY-MM-DD")
+								moment(end_date).format("YYYY-MM-DD"),
 						)
 						.then((response) => {
 							alert("Voltage data inserted for " + response.data["dates"]);
@@ -59,21 +203,23 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Lines") {
 					axios
 						.post(
-							"/LinesFileInsert?startDate=" +
+							baseUrl +
+								"/LinesFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD"),
-							"Lines MW"
+							"Lines MW",
 						)
 						.then((response) => {})
 						.catch((error) => {});
 
 					axios
 						.post(
-							"/MVARFileInsert?startDate=" +
+							baseUrl +
+								"/MVARFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
-								moment(end_date).format("YYYY-MM-DD")
+								moment(end_date).format("YYYY-MM-DD"),
 						)
 						.then((response) => {
 							alert("Lines data inserted for " + response.data);
@@ -82,11 +228,12 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "ICT") {
 					axios
 						.post(
-							"/ICTFileInsert?startDate=" +
+							baseUrl +
+								"/ICTFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
 								moment(end_date).format("YYYY-MM-DD"),
-							{}
+							{},
 						)
 						.then((response) => {
 							alert("ICT data inserted for " + response.data);
@@ -95,10 +242,11 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Demand") {
 					axios
 						.post(
-							"/DemandFileInsert?startDate=" +
+							baseUrl +
+								"/DemandFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
-								moment(end_date).format("YYYY-MM-DD")
+								moment(end_date).format("YYYY-MM-DD"),
 						)
 						.then((response) => {
 							alert("Demand data inserted for " + response.data);
@@ -107,10 +255,11 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Generator") {
 					axios
 						.post(
-							"/GeneratorFileInsert?startDate=" +
+							baseUrl +
+								"/GeneratorFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
-								moment(end_date).format("YYYY-MM-DD")
+								moment(end_date).format("YYYY-MM-DD"),
 						)
 						.then((response) => {
 							alert("Generator data inserted for " + response.data);
@@ -119,10 +268,11 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Thermal Generator") {
 					axios
 						.post(
-							"/ThGeneratorFileInsert?startDate=" +
+							baseUrl +
+								"/ThGeneratorFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
-								moment(end_date).format("YYYY-MM-DD")
+								moment(end_date).format("YYYY-MM-DD"),
 						)
 						.then((response) => {
 							alert("Thermal Generator data inserted for " + response.data);
@@ -131,10 +281,11 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "ISGS") {
 					axios
 						.post(
-							"/ISGSFileInsert?startDate=" +
+							baseUrl +
+								"/ISGSFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
-								moment(end_date).format("YYYY-MM-DD")
+								moment(end_date).format("YYYY-MM-DD"),
 						)
 						.then((response) => {
 							alert("Frequency data inserted for " + response.data);
@@ -143,10 +294,11 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Frequency") {
 					axios
 						.post(
-							"/FrequencyFileInsert?startDate=" +
+							baseUrl +
+								"/FrequencyFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
-								moment(end_date).format("YYYY-MM-DD")
+								moment(end_date).format("YYYY-MM-DD"),
 						)
 						.then((response) => {
 							alert("Frequency data inserted for " + response.data);
@@ -155,10 +307,11 @@ export default function Upload() {
 				} else if (Selected_lines_states[i] === "Exchange") {
 					axios
 						.post(
-							"/ExchangeFileInsert?startDate=" +
+							baseUrl +
+								"/ExchangeFileInsert?startDate=" +
 								moment(start_date).format("YYYY-MM-DD") +
 								"&endDate=" +
-								moment(end_date).format("YYYY-MM-DD")
+								moment(end_date).format("YYYY-MM-DD"),
 						)
 						.then((response) => {
 							alert("Exchange data inserted for " + response.data);
@@ -168,11 +321,18 @@ export default function Upload() {
 			}
 			setBlocked(false);
 			setloading_show(false);
+		} else {
+			alert("Please select both Date Range and Grid Data Streams.");
 		}
 	};
 
 	return (
-		<>
+		<div
+			className={`p-4 min-h-screen ${isDarkMode ? "dark-mode" : ""}`}
+			style={{ background: isDarkMode ? "#0f172a" : "#f1f5f9" }}
+		>
+			<style>{uploadStyles}</style>
+
 			<div hidden={!loading_show}>
 				<div className="loader">
 					<div className="spinner"></div>
@@ -180,100 +340,89 @@ export default function Upload() {
 			</div>
 
 			<BlockUI blocked={blocked} fullScreen />
-			<Divider align="left">
-				<span
-					className="p-tag"
-					style={{ backgroundColor: "#ff6347", fontSize: "large" }}
-				>
-					<Avatar
-						icon="pi pi-spin pi-upload"
-						style={{ backgroundColor: "#ff6347", color: "#ffffff" }}
-						shape="square"
-					/>
-					Upload Tab
-				</span>
-			</Divider>
-			<div className="grid">
-				<div className="col">
-					{" "}
-					<div className="field col-12 md:col-6">
-						<label htmlFor="range">From :</label> <br />
-						<Calendar
-							showIcon
-							placeholder="Start Date"
-							dateFormat="dd-mm-yy"
-							value={start_date}
-							onChange={(e) => {
-								setStart_Date(e.value);
-							}}
-							// onClick={() => {
-							//   linesNames();
-							// }}
-							monthNavigator
-							yearNavigator
-							yearRange="2015:2030"
-							showButtonBar
-						></Calendar>
-					</div>
+
+			<div className="upload-hero">
+				<div className="upload-hero-badge">
+					<i className="pi pi-bolt text-xs"></i>
+					<span>Grid Synchronization</span>
 				</div>
-				<div className="col">
-					{" "}
-					<div className="field col-12 md:col-6">
-						<label htmlFor="range">To :</label> <br />
-						<Calendar
-							showIcon
-							placeholder="End Date"
-							dateFormat="dd-mm-yy"
-							value={end_date}
-							onChange={(e) => {
-								setEnd_Date(e.value);
-							}}
-							// onClick={() => {
-							//   linesNames();
-							// }}
-							monthNavigator
-							yearNavigator
-							yearRange="2015:2030"
-							showButtonBar
-						></Calendar>
-					</div>
-				</div>
-				<div className="col">
-					<label htmlFor="range">Select Files : </label>
-					<br />
-					<MultiSelect
-						display="chip"
-						placeholder="choose File(s)"
-						value={Selected_lines_states}
-						options={values}
-						onChange={(e) => setSelected_lines_states(e.value)}
-						filter
-					/>{" "}
-				</div>{" "}
-				<div className="col">
-					<br />
-					<Button
-						severity="danger"
-						size="small"
-						rounded
-						style={{ backgroundColor: "#ff6347" }}
-						label="Upload Data"
-						aria-label="Upload Data"
-						onClick={() => {
-							// setBlocked(true);
-							setloading_show(true);
-							uploaddata();
-						}}
-					/>
-				</div>
+				<h4 className="upload-title">DATA INGESTION ENGINE</h4>
+				<p className="upload-subtitle text-lg">
+					Synchronize real-time grid telemetry from tele-metering systems to
+					core data storage.
+				</p>
 			</div>
 
-			{/* <Linesgraph
-          lines_data={lines_data}
-          Selected_lines_states={Selected_lines_states}
-        /> */}
-		</>
+			<div className="max-w-4xl mx-auto">
+				<div className="upload-ctrl-card">
+					<div className="grid">
+						<div className="col-12 md:col-6 lg:col-5">
+							<div className="upload-input-group">
+								<label className="upload-label">
+									Temporal Range (Origin & Target)
+								</label>
+								<div className="upload-field-container">
+									<i className="pi pi-calendar text-blue-500 text-lg"></i>
+									<Calendar
+										className="w-full"
+										placeholder="Select Date Range"
+										dateFormat="dd-mm-yy"
+										value={date_range}
+										onChange={(e) => set_date_range(e.value)}
+										selectionMode="range"
+										readOnlyInput
+										hideOnRangeSelection
+										showIcon={false}
+										inputClassName="bg-transparent border-none p-0 ml-1 text-sm font-bold w-full"
+									/>
+								</div>
+							</div>
+						</div>
+
+						<div className="col-12 md:col-6 lg:col-7">
+							<div className="upload-input-group">
+								<label className="upload-label">Metric Stream Discovery</label>
+								<div className="upload-field-container">
+									<i className="pi pi-map text-blue-500 text-lg"></i>
+									<MultiSelect
+										className="w-full border-none"
+										display="chip"
+										placeholder="Choose Grid Data Streams"
+										value={Selected_lines_states}
+										options={values}
+										onChange={(e) => setSelected_lines_states(e.value)}
+										filter
+										panelClassName="modern-multiselect-panel"
+										inputClassName="bg-transparent"
+										style={{ background: "transparent" }}
+									/>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<Divider className="my-6 opacity-30" />
+
+					<div className="flex flex-column align-items-center">
+						<Button
+							icon="pi pi-cloud-upload"
+							className="execute-btn"
+							label="EXECUTE SYNCHRONIZATION"
+							onClick={uploaddata}
+							loading={loading_show}
+						/>
+
+						<div className="status-indicator">
+							<i className="pi pi-info-circle text-blue-500"></i>
+							<span className="text-sm font-bold tracking-tight opacity-80">
+								{date_range && date_range[1]
+									? `READY: Synchronizing ${Selected_lines_states?.length || 0} streams for target period.`
+									: "AWAITING: Select ingestion parameters to begin synchronization."}
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	);
-	// </div>
-	// );
 }

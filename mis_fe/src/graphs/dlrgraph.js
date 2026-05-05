@@ -1,63 +1,86 @@
-import React from "react";
-
-import Plot from "react-plotly.js";
+import React, { useMemo, useRef } from "react";
+import { Chart } from "primereact/chart";
+import { useTheme } from "../context/ThemeContext";
+import {
+    TRACE_COLORS,
+    hexRgba, makeGradientPlugin, buildOptions, formatXLabels
+} from "./_chartUtils";
 
 export default function Dlrgraph(props) {
-  var data = [];
-  if (props.Selected_dlr_states && props.dlr_data) {
-    for (var i = 0; i < props.dlr_data.length - 1; i++) {
-      let dlr_actual = {
-        y: props.dlr_data[i]["actual"],
-        x: props.dlr_data[props.dlr_data.length - 1]["Date_Time"],
-        name: props.Selected_dlr_states[i] + " Actual Data",
-        type: "line",
-      };
-      let dlr_forecast = {
-        y: props.dlr_data[i]["forecast"],
-        x: props.dlr_data[props.dlr_data.length - 1]["Date_Time"],
-        name: props.Selected_dlr_states[i] + " Forecast Data",
-        type: "line",
-        line: {
-          dash: "dashdot",
-          width: 4,
-        },
-      };
-      data.push(dlr_actual, dlr_forecast);
-    }
-  }
-  return (
-    <Plot
-      data={data}
-      layout={{
-        showlegend: true,
-        legend: {
-          orientation: "h",
-          bgcolor: "white",
-          xanchor: "center",
-          yanchor: "center",
-          y: 1.4,
-          x: 0.5,
-        },
-        width: 1900,
-        height: 800,
-        title: "name",
-        xaxis: {
-          title: "x Axis",
-          titlefont: {
-            family: "Courier New, monospace",
-            size: 18,
-            color: "#7f7f7f",
-          },
-        },
-        yaxis: {
-          title: "MW Data",
-          titlefont: {
-            family: "Courier New, monospace",
-            size: 18,
-            color: "#7f7f7f",
-          },
-        },
-      }}
-    />
-  );
+    const { isDarkMode } = useTheme();
+    const chartRef = useRef(null);
+
+    const { chartData, chartOptions } = useMemo(() => {
+        if (!props.dlr_data || !props.Selected_dlr_states) return { chartData: {}, chartOptions: {} };
+
+        const dateArr = props.dlr_data[props.dlr_data.length - 1]["Date_Time"] || [];
+        const labels  = formatXLabels(dateArr);
+        const datasets = [];
+
+        for (let i = 0; i < props.dlr_data.length - 1; i++) {
+            const name  = props.Selected_dlr_states[i] || `Line ${i + 1}`;
+            const c     = TRACE_COLORS[i * 2 % TRACE_COLORS.length];
+            const cFore = TRACE_COLORS[(i * 2 + 1) % TRACE_COLORS.length];
+
+            // Actual (solid + fill)
+            datasets.push({
+                label: `${name} â€” Actual`,
+                data: props.dlr_data[i]["actual"] || [],
+                borderColor: c,
+                backgroundColor: hexRgba(c, 0.12),
+                borderWidth: 2.2,
+                tension: 0.35,
+                fill: true,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: c,
+                yAxisID: "y",
+                _hex: c,
+                _fill: true,
+            });
+
+            // Forecast (dashed, no fill)
+            datasets.push({
+                label: `${name} â€” Forecast`,
+                data: props.dlr_data[i]["forecast"] || [],
+                borderColor: cFore,
+                backgroundColor: hexRgba(cFore, 0),
+                borderWidth: 1.8,
+                borderDash: [8, 4],
+                tension: 0.35,
+                fill: false,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHoverBackgroundColor: cFore,
+                yAxisID: "y",
+                _hex: cFore,
+                _fill: false,
+            });
+        }
+
+        const data = { labels, datasets };
+        const options = buildOptions({
+            isDarkMode,
+            yLabel: "DLR Capacity (MW)",
+            yCallback: (v) => `${v} MW`,
+        });
+
+        return { chartData: data, chartOptions: options };
+    }, [props.dlr_data, props.Selected_dlr_states, isDarkMode]);
+
+    if (!props.dlr_data) return null;
+
+    return (
+        <div style={{ position: "relative", width: "100%", height: "650px", padding: "8px 0" }}>
+            <Chart
+                ref={chartRef}
+                type="line"
+                data={chartData}
+                options={chartOptions}
+                plugins={[makeGradientPlugin()]}
+                style={{ width: "100%", height: "100%" }}
+            />
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom · Drag to pan · Dbl-click to reset</div>
+        </div>
+    );
 }

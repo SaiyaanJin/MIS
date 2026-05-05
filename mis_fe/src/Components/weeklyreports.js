@@ -15,8 +15,150 @@ import { Skeleton } from "primereact/skeleton";
 import { ProgressBar } from "primereact/progressbar";
 import { Toast } from "primereact/toast";
 import { DownloadTableExcel } from "react-export-table-to-excel";
+import { useTheme } from "../context/ThemeContext";
+
+const weeklyStyles = `
+@keyframes weekly-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes weekly-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  70%  { box-shadow: 0 0 0 12px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+.weekly-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 16px 22px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #065f46 0%, #10b981 45%, #34d399 100%);
+  box-shadow: 0 12px 28px -8px rgba(16,185,129,0.3);
+  animation: weekly-fade-up 0.5s cubic-bezier(.16,1,.3,1) both;
+}
+.weekly-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.8;
+}
+.weekly-hero-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  animation: weekly-pulse-ring 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.weekly-hero-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 10px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 100px;
+  font-size: 10px; font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.weekly-ctrl-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 8px 32px -4px rgba(0,0,0,0.06);
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+.dark-mode .weekly-ctrl-card {
+  background: rgba(15,23,42,0.6);
+  border-borderColor: rgba(255,255,255,0.08);
+}
+.weekly-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+}
+.dark-mode .weekly-input-group {
+  background: #1e293b;
+  border-color: #334155;
+}
+.weekly-input-group:focus-within {
+  border-color: #10b981;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(16,185,129,0.1);
+}
+.dark-mode .weekly-input-group:focus-within {
+  background: #0f172a;
+}
+.weekly-title {
+  font-size: 1.25rem; font-weight: 700; color: #ffffff; margin: 0;
+}
+.weekly-subtitle {
+  font-size: 0.85rem; color: rgba(255,255,255,0.8); margin: 0;
+}
+.p-head {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.025em;
+}
+.p-head1 {
+  background: #f0fdf4 !important;
+  color: #047857 !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+.dark-mode .p-head {
+  background: #064e3b !important;
+  color: #ffffff !important;
+}
+.dark-mode .p-head1 {
+  background: #065f46 !important;
+  color: #d1fae5 !important;
+}
+.weekly-tabview .p-tabview-nav {
+  background: transparent !important;
+  border: none !important;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.weekly-tabview .p-tabview-nav li .p-tabview-nav-link {
+  border-radius: 10px !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s ease !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+}
+.weekly-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #059669 !important;
+}
+.dark-mode .weekly-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  background: #064e3b !important;
+  border-color: #34d399 !important;
+  color: #ffffff !important;
+}
+`;
 
 export default function WeeklyReports() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const report_table = useRef(null);
 	const [date, setDate] = useState([]);
 	const [freq_data, setfreq_data] = useState();
@@ -106,7 +248,7 @@ export default function WeeklyReports() {
 		if (date && type) {
 			axios
 				.post(
-					"/reports?date_val=" +
+					baseUrl + "/reports?date_val=" +
 						date_range +
 						"&category=" +
 						type,
@@ -1334,131 +1476,129 @@ export default function WeeklyReports() {
 	const rowClassName = (data) =>
 		data.length === 2 ? (data[1] ? "p-voltequals" : "") : "";
 
+	const { isDarkMode } = useTheme();
+
 	return (
-		<>
+		<div className={isDarkMode ? "dark-mode" : ""}>
+			<style>{weeklyStyles}</style>
 			<Toast ref={toast} />
-			<Divider align="left">
-				<span
-					className="p-tag"
-					style={{
-						backgroundColor: "#4bf0a5",
-						fontSize: "large",
-						color: "#000000",
-					}}
-				>
-					<Avatar
-						icon="pi pi-spin pi-file-pdf"
-						style={{ backgroundColor: "#4bf0a5", color: "#000000" }}
-						shape="square"
-					/>
-					Weekly Reports Tab
-				</span>
-			</Divider>
 
-			<div className="flex flex-wrap gap-1 justify-content-between align-items-center">
-				<div className="field"> </div>
-				<div className="field"></div>
-				<div className="field">
-					<span className="p-float-label">
-						Date Range:{" "}
-						<Calendar
-							placeholder="Select Date Range"
-							dateFormat="dd/mm/yy"
-							value={date}
-							onChange={(e) => setDate(e.value)}
-							showIcon
-							selectionMode="range"
-							readOnlyInput
-						/>
-					</span>
+			{/* ─── Hero Section ────────────────────────────────────────────────── */}
+			<div className="weekly-hero">
+				<div className="flex align-items-center gap-4">
+					<div className="weekly-hero-icon">
+						<i className="pi pi-file-pdf text-white"></i>
+					</div>
+					<div className="flex-grow-1">
+						<div className="weekly-hero-badge">
+							<i className="pi pi-check-circle" style={{ fontSize: "8px" }}></i>
+							Live Reports Manager
+						</div>
+						<h1 className="weekly-title">Weekly Operational Reports</h1>
+						<p className="weekly-subtitle">Generate and audit comprehensive weekly power system performance metrics</p>
+					</div>
+					<div className="hidden md:flex align-items-center gap-3">
+						<Avatar icon="pi pi-chart-bar" className="bg-white-alpha-20 text-white" shape="circle" />
+						<Avatar icon="pi pi-calendar" className="bg-white-alpha-20 text-white" shape="circle" />
+					</div>
 				</div>
-				<div className="field">
-					<Button
-						severity="success"
-						size="small"
-						rounded
-						raised
-						style={{ backgroundColor: "#4bf0a5", color: "#000000" }}
-						label="Generate Report"
-						onClick={() => {
-							setshow_freq_skeleton(true);
-							setshow_volt_skeleton(true);
-							setshow_gen_skeleton(true);
-							setshow_line_skeleton(true);
-							setshow_element_skeleton(true);
-							setshow_iegc_skeleton(true);
-							generate_report("Frequency");
-							generate_report("Voltage");
-							generate_report("ElementBreakdown");
-							generate_report("GeneratorBreakdown");
-							generate_report("LineTripping");
-							generate_report("NC_IEGC_Report");
-							setshow_report(true);
-						}}
-					/>
-				</div>
-
-				<div
-					className="field"
-					hidden={
-						!show_freq_table ||
-						!show_volt_table ||
-						!show_element_table ||
-						!show_gen_table ||
-						!show_line_table ||
-						!show_iegc_table
-					}
-				>
-					<DownloadTableExcel
-						filename={
-							"MIS-Report:" +
-							moment(date[0]).format("DD/MM/YY") +
-							" to " +
-							moment(date[1]).format("DD/MM/YY")
-						}
-						sheet="Reports"
-						currentTableRef={report_table.current}
-					>
-						<Button
-							disabled={
-								!show_freq_table ||
-								!show_volt_table ||
-								!show_element_table ||
-								!show_gen_table ||
-								!show_line_table ||
-								!show_iegc_table
-							}
-							type="button"
-							icon="pi pi-download"
-							severity="success"
-							rounded
-							raised
-							tooltip="Download whole report"
-						/>
-					</DownloadTableExcel>{" "}
-				</div>
-				<div className="field"></div>
-				<div className="field"></div>
-				<div className="field"></div>
 			</div>
-			<div hidden={!show_report}>
-				<Divider align="center">
-					<span className="p-tag">Report Type</span>
+
+			{/* ─── Control Card ────────────────────────────────────────────────── */}
+			<div className="weekly-ctrl-card">
+				<div className="flex flex-wrap align-items-center justify-content-between gap-4">
+					<div className="flex flex-wrap align-items-center gap-4">
+						<div className="flex flex-column gap-2">
+							<label className="text-xs font-semibold text-500 uppercase tracking-wider ml-1">Report Time Range</label>
+							<div className="weekly-input-group">
+								<i className="pi pi-calendar text-primary text-sm"></i>
+								<Calendar
+									placeholder="Select Date Range"
+									dateFormat="dd/mm/yy"
+									value={date}
+									onChange={(e) => {
+										const val = e.value || [];
+										const newRange = [...val];
+										if (newRange[0] && (!date || !date[0] || newRange[0].toDateString() !== date[0].toDateString())) {
+											newRange[0] = new Date(newRange[0]);
+											newRange[0].setHours(0, 0, 0, 0);
+										}
+										if (newRange[1] && (!date || !date[1] || newRange[1].toDateString() !== date[1].toDateString())) {
+											newRange[1] = new Date(newRange[1]);
+											newRange[1].setHours(23, 59, 0, 0);
+										}
+										setDate(newRange);
+									}}
+									showIcon={false}
+									selectionMode="range"
+									readOnlyInput
+									className="border-none"
+									style={{ height: '32px' }}
+								/>
+							</div>
+						</div>
+					</div>
+
+					<div className="flex align-items-center gap-3">
+						<Button
+							label="Generate Report"
+							icon="pi pi-cog"
+							loading={show_freq_skeleton}
+							onClick={() => {
+								setshow_freq_skeleton(true);
+								setshow_volt_skeleton(true);
+								setshow_gen_skeleton(true);
+								setshow_line_skeleton(true);
+								setshow_element_skeleton(true);
+								setshow_iegc_skeleton(true);
+								generate_report("Frequency");
+								generate_report("Voltage");
+								generate_report("ElementBreakdown");
+								generate_report("GeneratorBreakdown");
+								generate_report("LineTripping");
+								generate_report("NC_IEGC_Report");
+								setshow_report(true);
+							}}
+							className="p-button-success p-button-raised border-round-xl px-4 py-2"
+						/>
+
+						<div hidden={!show_report || !show_freq_table}>
+							<DownloadTableExcel
+								filename={"Weekly_Report_" + moment(date[0]).format("DDMMYY")}
+								sheet="Reports"
+								currentTableRef={report_table.current}
+							>
+								<Button
+									type="button"
+									icon="pi pi-download"
+									tooltip="Export Full Data"
+									className="p-button-outlined p-button-secondary border-round-xl"
+								/>
+							</DownloadTableExcel>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div hidden={!show_report} className="mb-4">
+				<Divider align="left">
+					<span className="text-sm font-bold text-500 uppercase tracking-widest px-3 border-left-3 border-primary">Report Analytics View</span>
 				</Divider>
 			</div>
 
 			<div className="card" hidden={!show_report}>
-				<TabView>
+				<TabView className="weekly-tabview">
 					<TabPanel header="Frequency Report" leftIcon="pi pi-bolt mr-2">
-						<div className="card">
+						<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1">
 							<DataTable
 								hidden={!show_freq_skeleton}
 								value={items}
 								headerColumnGroup={freq_headerGroup}
 								footerColumnGroup={freq_footerGroup}
-								className="p-datatable-striped"
+								className="p-datatable-sm"
 								stripedRows
 								showGridlines
+								responsiveLayout="scroll"
 							>
 								<Column
 									field="1"
@@ -1579,22 +1719,27 @@ export default function WeeklyReports() {
 					</TabPanel>
 					<TabPanel header="Voltage Report" leftIcon="pi pi-sliders-v ml-2">
 						<div className="card" hidden={!show_volt_skeleton}>
-							<ProgressBar value={value}></ProgressBar>
+							<ProgressBar value={value} style={{ height: '6px' }}></ProgressBar>
 						</div>
-						<div className="card" hidden={!show_volt_table}>
-							<Button
-								size="small"
-								severity="help"
-								rounded
-								raised
-								label="Copy all Tables"
-								onClick={() => {
-									copyTable();
-								}}
-							/>
-							<Divider align="center">
-								<span className="p-tag">400 kv Stations</span>
-							</Divider>
+						<div hidden={!show_volt_table}>
+							<div className="flex justify-content-end mb-3">
+								<Button
+									size="small"
+									severity="help"
+									rounded
+									raised
+									icon="pi pi-copy"
+									label="Copy all Tables"
+									className="p-button-outlined border-round-xl"
+									onClick={() => copyTable()}
+								/>
+							</div>
+							
+							<div className="mb-4">
+								<Divider align="center">
+									<span className="text-xs font-bold text-500 uppercase tracking-widest px-3">400 kv Stations</span>
+								</Divider>
+							</div>
 
 							{volt_data_400.map((e) => e[e.length-1].Name1!==''? (e[e.length-1].Name2!==''?(
 								<div className="flex flex-wrap gap-1 justify-content-between align-items-center">
@@ -1827,12 +1972,11 @@ export default function WeeklyReports() {
 						header="Generator's Tripping Report"
 						leftIcon="pi pi-building mr-2"
 					>
-						<div className="card">
+						<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1" hidden={!show_gen_skeleton}>
 							<DataTable
-								hidden={!show_gen_skeleton}
 								value={items}
 								headerColumnGroup={generator_headerGroup}
-								className="p-datatable-striped"
+								className="p-datatable-sm"
 								stripedRows
 								showGridlines
 							>
@@ -1898,29 +2042,33 @@ export default function WeeklyReports() {
 								></Column>
 							</DataTable>
 						</div>
-						<div hidden={!show_gen_table} className="card">
-							<Button
-								size="small"
-								severity="help"
-								rounded
-								raised
-								label="Copy this Table"
-								onClick={() => {
-									copyTable();
-								}}
-							/>
-							<DataTable
-								paginator
-								rows={10}
-								rowsPerPageOptions={[10, 25, 50, gen_breakdown.length]}
-								paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-								currentPageReportTemplate="Showing {first} to {last} of {totalRecords} Generators"
-								value={gen_breakdown}
-								showGridlines
-								tableStyle={{ minWidth: "50rem" }}
-								removableSort
-								headerColumnGroup={generator_headerGroup}
-							>
+						<div hidden={!show_gen_table}>
+							<div className="flex justify-content-end mb-3">
+								<Button
+									size="small"
+									severity="help"
+									rounded
+									raised
+									icon="pi pi-copy"
+									label="Copy this Table"
+									className="p-button-outlined border-round-xl"
+									onClick={() => copyTable()}
+								/>
+							</div>
+							<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1">
+								<DataTable
+									paginator
+									rows={10}
+									rowsPerPageOptions={[10, 25, 50, gen_breakdown.length]}
+									paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+									currentPageReportTemplate="Showing {first} to {last} of {totalRecords} Generators"
+									value={gen_breakdown}
+									showGridlines
+									className="p-datatable-sm"
+									tableStyle={{ minWidth: "50rem" }}
+									removableSort
+									headerColumnGroup={generator_headerGroup}
+								>
 								<Column
 									headerClassName="p-head"
 									bodyStyle={{ textAlign: "center" }}
@@ -1997,17 +2145,17 @@ export default function WeeklyReports() {
 								></Column>
 							</DataTable>
 						</div>
+						</div>
 					</TabPanel>
 					<TabPanel
 						header="Transmission Elements Tripped"
 						leftIcon="pi pi-list mr-2"
 					>
-						<div className="card">
+						<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1" hidden={!show_line_skeleton}>
 							<DataTable
-								hidden={!show_line_skeleton}
 								value={items}
 								headerColumnGroup={Lines_headerGroup}
-								className="p-datatable-striped"
+								className="p-datatable-sm"
 								stripedRows
 								showGridlines
 							>
@@ -2055,29 +2203,33 @@ export default function WeeklyReports() {
 								></Column>
 							</DataTable>
 						</div>
-						<div hidden={!show_line_table} className="card">
-							<Button
-								size="small"
-								severity="help"
-								rounded
-								raised
-								label="Copy this Table"
-								onClick={() => {
-									copyTable();
-								}}
-							/>
-							<DataTable
-								paginator
-								rows={10}
-								rowsPerPageOptions={[10, 25, 50, line_tripping.length]}
-								paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-								currentPageReportTemplate="Showing {first} to {last} of {totalRecords} Elements"
-								value={line_tripping}
-								showGridlines
-								tableStyle={{ minWidth: "50rem" }}
-								removableSort
-								headerColumnGroup={Lines_headerGroup}
-							>
+						<div hidden={!show_line_table}>
+							<div className="flex justify-content-end mb-3">
+								<Button
+									size="small"
+									severity="help"
+									rounded
+									raised
+									icon="pi pi-copy"
+									label="Copy this Table"
+									className="p-button-outlined border-round-xl"
+									onClick={() => copyTable()}
+								/>
+							</div>
+							<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1">
+								<DataTable
+									paginator
+									rows={10}
+									rowsPerPageOptions={[10, 25, 50, line_tripping.length]}
+									paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+									currentPageReportTemplate="Showing {first} to {last} of {totalRecords} Elements"
+									value={line_tripping}
+									showGridlines
+									className="p-datatable-sm"
+									tableStyle={{ minWidth: "50rem" }}
+									removableSort
+									headerColumnGroup={Lines_headerGroup}
+								>
 								<Column
 									headerClassName="p-head"
 									bodyStyle={{ textAlign: "center" }}
@@ -2132,17 +2284,17 @@ export default function WeeklyReports() {
 								></Column>
 							</DataTable>
 						</div>
+						</div>
 					</TabPanel>
 					<TabPanel
 						header="Elements Under Breakdown"
 						leftIcon="pi pi-globe mr-2"
 					>
-						<div className="card">
+						<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1" hidden={!show_element_skeleton}>
 							<DataTable
-								hidden={!show_element_skeleton}
 								value={items}
 								headerColumnGroup={element_headerGroup}
-								className="p-datatable-striped"
+								className="p-datatable-sm"
 								stripedRows
 								showGridlines
 							>
@@ -2178,30 +2330,34 @@ export default function WeeklyReports() {
 								></Column>
 							</DataTable>
 						</div>
-						<div hidden={!show_element_table} className="card">
-							<Button
-								size="small"
-								severity="help"
-								rounded
-								raised
-								label="Copy this Table"
-								onClick={() => {
-									copyTable();
-								}}
-							/>
-							<DataTable
-								paginator
-								rows={10}
-								rowsPerPageOptions={[10, 25, 50, elements_breakdown.length]}
-								paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-								currentPageReportTemplate="Showing {first} to {last} of {totalRecords} Elements"
-								value={elements_breakdown}
-								showGridlines
-								tableStyle={{ minWidth: "50rem" }}
-								removableSort
-								headerColumnGroup={element_headerGroup}
-								sortable
-							>
+						<div hidden={!show_element_table}>
+							<div className="flex justify-content-end mb-3">
+								<Button
+									size="small"
+									severity="help"
+									rounded
+									raised
+									icon="pi pi-copy"
+									label="Copy this Table"
+									className="p-button-outlined border-round-xl"
+									onClick={() => copyTable()}
+								/>
+							</div>
+							<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1">
+								<DataTable
+									paginator
+									rows={10}
+									rowsPerPageOptions={[10, 25, 50, elements_breakdown.length]}
+									paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+									currentPageReportTemplate="Showing {first} to {last} of {totalRecords} Elements"
+									value={elements_breakdown}
+									showGridlines
+									className="p-datatable-sm"
+									tableStyle={{ minWidth: "50rem" }}
+									removableSort
+									headerColumnGroup={element_headerGroup}
+									sortable
+								>
 								<Column
 									style={{
 										maxWidth: "4rem",
@@ -2267,18 +2423,18 @@ export default function WeeklyReports() {
 								></Column>
 							</DataTable>
 						</div>
+						</div>
 					</TabPanel>
 					<TabPanel
 						header="NON-COMPLIANCE OF IEGC"
 						leftIcon="pi pi-exclamation-triangle mr-2"
 					>
-						<div className="card">
+						<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1" hidden={!show_iegc_skeleton}>
 							<DataTable
-								hidden={!show_iegc_skeleton}
 								value={items}
 								headerColumnGroup={iegc_headerGroup}
 								footerColumnGroup={iegc_footerGroup}
-								className="p-datatable-striped"
+								className="p-datatable-sm"
 								stripedRows
 								showGridlines
 							>
@@ -2338,31 +2494,35 @@ export default function WeeklyReports() {
 								></Column>
 							</DataTable>
 						</div>
-						<div hidden={!show_iegc_table} className="card">
-							<Button
-								size="small"
-								severity="help"
-								rounded
-								raised
-								label="Copy this Table"
-								onClick={() => {
-									copyTable();
-								}}
-							/>
-							<DataTable
-								paginator
-								rows={10}
-								rowsPerPageOptions={[10, 25, 50, nc_iegc.length]}
-								paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-								currentPageReportTemplate="Showing {first} to {last} of {totalRecords} Non-Compliance"
-								value={nc_iegc}
-								showGridlines
-								tableStyle={{ minWidth: "50rem" }}
-								removableSort
-								headerColumnGroup={iegc_headerGroup}
-								footerColumnGroup={iegc_footerGroup}
-								sortable
-							>
+						<div hidden={!show_iegc_table}>
+							<div className="flex justify-content-end mb-3">
+								<Button
+									size="small"
+									severity="help"
+									rounded
+									raised
+									icon="pi pi-copy"
+									label="Copy this Table"
+									className="p-button-outlined border-round-xl"
+									onClick={() => copyTable()}
+								/>
+							</div>
+							<div className="weekly-ctrl-card p-0 overflow-hidden border-none shadow-1">
+								<DataTable
+									paginator
+									rows={10}
+									rowsPerPageOptions={[10, 25, 50, nc_iegc.length]}
+									paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+									currentPageReportTemplate="Showing {first} to {last} of {totalRecords} Non-Compliance"
+									value={nc_iegc}
+									showGridlines
+									className="p-datatable-sm"
+									tableStyle={{ minWidth: "50rem" }}
+									removableSort
+									headerColumnGroup={iegc_headerGroup}
+									footerColumnGroup={iegc_footerGroup}
+									sortable
+								>
 								<Column
 									style={{
 										maxWidth: "4rem",
@@ -2476,6 +2636,7 @@ export default function WeeklyReports() {
 									sortable
 								></Column>
 							</DataTable>
+						</div>
 						</div>
 					</TabPanel>
 				</TabView>
@@ -3070,6 +3231,6 @@ export default function WeeklyReports() {
 					></Column>
 				</DataTable>
 			</div>
-		</>
+		</div>
 	);
 }

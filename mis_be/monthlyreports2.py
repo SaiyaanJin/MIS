@@ -180,7 +180,7 @@ def ReportMeterData2(startDate,endDate,time,folder):
 
     if (folder == "no"):
 
-        CONNECTION_STRING = "mongodb://10.3.101.179:1434"
+        CONNECTION_STRING = "mongodb://10.3.230.94:1434"
         client = MongoClient(CONNECTION_STRING)
         db = client['meterDataArchival']
         Data_Table = db["meterData"+str(startDate_obj.year)]

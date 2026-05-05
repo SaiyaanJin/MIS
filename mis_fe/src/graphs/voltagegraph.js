@@ -1,385 +1,111 @@
-import React from "react";
+import React, { useMemo, useRef } from "react";
 import moment from "moment";
+import { Chart } from "primereact/chart";
+import { useTheme } from "../context/ThemeContext";
+import {
+    TRACE_COLORS,
+    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels
+} from "./_chartUtils";
 
-// import Plotly from "plotly.js-dist-min";
-import Plot from "react-plotly.js";
+// Bus-1 = solid+fill, Bus-2 = dashed+no-fill with shifted palette
+const BUS1_COLORS = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#06b6d4","#f97316"];
+const BUS2_COLORS = ["#818cf8","#34d399","#fbbf24","#a78bfa","#22d3ee","#fb923c"];
 
 export default function Voltagegraph(props) {
-	var name = "Voltage Data of ";
-	var data = [];
-	var datatype = "KV";
+    const { isDarkMode } = useTheme();
+    const chartRef = useRef(null);
 
-	if (props.voltage_data) {
-		var stsn = "";
-		var temp_max_x1 = [];
-		var temp_min_x1 = [];
-		var temp_max_y1 = [];
-		var temp_min_y1 = [];
+    const { chartData, chartOptions } = useMemo(() => {
+        if (!props.voltage_data) return { chartData: {}, chartOptions: {} };
 
-		var temp_max_x2 = [];
-		var temp_min_x2 = [];
-		var temp_max_y2 = [];
-		var temp_min_y2 = [];
+        const dateArr = props.voltage_data[props.voltage_data.length - 1]["Date_Time"] || [];
+        const labels  = formatXLabels(dateArr);
+        const datasets = [];
+        let hasFreqAxis = false;
 
-		for (var i = 0; i < props.voltage_data.length - 1; i++) {
-			var max_v1 = props.voltage_data[i]["max_v1"];
-			var min_v1 = props.voltage_data[i]["min_v1"];
-			var avg_v1 = props.voltage_data[i]["avg_v1"];
-			var max_v2 = props.voltage_data[i]["max_v2"];
-			var min_v2 = props.voltage_data[i]["min_v2"];
-			var avg_v2 = props.voltage_data[i]["avg_v2"];
+        for (let i = 0; i < props.voltage_data.length - 1; i++) {
+            const entry   = props.voltage_data[i];
+            const max_v1  = entry["max_v1"];
+            const min_v1  = entry["min_v1"];
+            const avg_v1  = entry["avg_v1"];
+            const max_v2  = entry["max_v2"];
+            const min_v2  = entry["min_v2"];
+            const avg_v2  = entry["avg_v2"];
+            const c1 = BUS1_COLORS[i % BUS1_COLORS.length];
+            const c2 = BUS2_COLORS[i % BUS2_COLORS.length];
 
-			if (i === 0) {
-				temp_max_y1 = max_v1[0];
-				temp_max_x1 = max_v1[1];
-				temp_min_y1 = min_v1[0];
-				temp_min_x1 = min_v1[1];
+            let nameSuffix = "";
+            if (props.date_time && props.check1) nameSuffix = " · " + moment(entry["Date_Time"]).format("DD MMM YY");
+            if (props.date_time && props.check2) nameSuffix = " · " + moment(entry["Date_Time"]).format("MMM YYYY");
 
-				temp_max_y2 = max_v2[0];
-				temp_max_x2 = max_v2[1];
-				temp_min_y2 = min_v2[0];
-				temp_min_x2 = min_v2[1];
-			} else {
-				temp_max_y1 = [...temp_max_y1, ...max_v1[0]];
-				temp_max_x1 = [...temp_max_x1, ...max_v1[1]];
-				temp_min_y1 = [...temp_min_y1, ...min_v1[0]];
-				temp_min_x1 = [...temp_min_x1, ...min_v1[1]];
+            const f = (v) => v != null ? Number(v).toFixed(2) : "N/A";
 
-				temp_max_y2 = [...temp_max_y2, ...max_v2[0]];
-				temp_max_x2 = [...temp_max_x2, ...max_v2[1]];
-				temp_min_y2 = [...temp_min_y2, ...min_v2[0]];
-				temp_min_x2 = [...temp_min_x2, ...min_v2[1]];
-			}
+            // Bus-1 (solid + gradient fill)
+            datasets.push({
+                label: `${entry["stationName"]} BUS-1${nameSuffix}  ▲${f(max_v1?.[0]?.[0])} ▼${f(min_v1?.[0]?.[0])} ⌀${f(avg_v1)} kV`,
+                data: entry["voltageBus1"] || [],
+                borderColor: c1,
+                backgroundColor: hexRgba(c1, 0.12),
+                borderWidth: 2.2,
+                tension: 0.35,
+                fill: true,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: c1,
+                yAxisID: "y",
+                _hex: c1,
+                _fill: true,
+            });
 
-			var name_suffix = "";
+            // Bus-2 (dashed, no fill)
+            datasets.push({
+                label: `${entry["stationName"]} BUS-2${nameSuffix}  ▲${f(max_v2?.[0]?.[0])} ▼${f(min_v2?.[0]?.[0])} ⌀${f(avg_v2)} kV`,
+                data: entry["voltageBus2"] || [],
+                borderColor: c2,
+                backgroundColor: hexRgba(c2, 0),
+                borderWidth: 1.8,
+                borderDash: [7, 3],
+                tension: 0.35,
+                fill: false,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHoverBackgroundColor: c2,
+                yAxisID: "y",
+                _hex: c2,
+                _fill: false,
+            });
+        }
 
-			if (props.date_time && props.check1) {
-				name_suffix =
-					": " +
-					moment(props.voltage_data[i]["Date_Time"]).format("DD-MM-YYYY");
-				name = "Date-wise Voltage Data of ";
-				datatype = "Date-wise KV Data";
-			}
+        // Frequency overlays
+        if (props.freq_region && props.frequency) {
+            const freqDs = buildFreqDatasets(props.freq_region, props.frequency, labels);
+            if (freqDs.length) { datasets.push(...freqDs); hasFreqAxis = true; }
+        }
 
-			if (props.date_time && props.check2) {
-				name_suffix =
-					": " + moment(props.voltage_data[i]["Date_Time"]).format("MMMM YYYY");
+        const data = { labels, datasets };
+        const options = buildOptions({
+            isDarkMode,
+            yLabel: "Voltage (kV)",
+            yCallback: (v) => `${v} kV`,
+            hasFreqAxis,
+        });
 
-				name = " Month-wise Voltage Data of ";
-				datatype = "Month-wise KV Data";
-			}
+        return { chartData: data, chartOptions: options };
+    }, [props.voltage_data, props.freq_region, props.frequency, props.check1, props.check2, isDarkMode]);
 
-			if (i === 0) {
-				stsn = props.voltage_data[i]["stationName"];
-			} else {
-				if (
-					props.voltage_data[i]["stationName"] !==
-					props.voltage_data[i - 1]["stationName"]
-				) {
-					stsn = stsn + ", " + props.voltage_data[i]["stationName"];
-				}
-			}
+    if (!props.voltage_data) return null;
 
-			let voltage_actual = {
-				y: props.voltage_data[i]["voltageBus1"],
-				x: props.voltage_data[props.voltage_data.length - 1]["Date_Time"],
-				yaxis: "y1",
-				name:
-					props.voltage_data[i]["stationName"] +
-					" BUS-1" +
-					name_suffix +
-					"(Max:" +
-					max_v1[0][0] +
-					" KV, Min:" +
-					min_v1[0][0] +
-					" KV, Avg:" +
-					avg_v1 +
-					" KV)",
-
-				type: "line",
-			};
-
-			let voltage_forecast = {
-				y: props.voltage_data[i]["voltageBus2"],
-				x: props.voltage_data[props.voltage_data.length - 1]["Date_Time"],
-				yaxis: "y1",
-				name:
-					props.voltage_data[i]["stationName"] +
-					" BUS-2" +
-					name_suffix +
-					"(Max:" +
-					max_v2[0][0] +
-					" KV, Min:" +
-					min_v2[0][0] +
-					" KV, Avg:" +
-					avg_v2 +
-					" KV)",
-				type: "line",
-				line: {
-					dash: "dashdot",
-					width: 1.7,
-				},
-			};
-			data.push(voltage_actual, voltage_forecast);
-
-			if (props.freq_region1.indexOf("Voltage") > -1) {
-				let V_Duration1 = {
-					y: props.voltage_data[i]["voltageBus1 Duration"][0],
-					x: props.voltage_data[i]["voltageBus1 Duration"][1],
-					xaxis: "x2",
-					name:
-						props.voltage_data[i]["stationName"] +
-						" Bus-1 Duration of " +
-						moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY"),
-					type: "line",
-				};
-				data.push(V_Duration1);
-
-				let V_Duration2 = {
-					y: props.voltage_data[i]["voltageBus2 Duration"][0],
-					x: props.voltage_data[i]["voltageBus2 Duration"][1],
-					xaxis: "x2",
-					name:
-						props.voltage_data[i]["stationName"] +
-						" Bus-1 Duration of " +
-						moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY"),
-					type: "line",
-					line: {
-						dash: "dashdot",
-						width: 1.7,
-					},
-				};
-				data.push(V_Duration2);
-			}
-		}
-
-		if (props.freq_region.indexOf("Durgapur") > -1) {
-			let Durgapur = {
-				y: props.frequency[0]["frequency"],
-				x: props.frequency[3]["Date_Time"],
-				yaxis: "y2",
-				name:
-					props.frequency[0]["stationName"] +
-					" frequency data of " +
-					moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-					"(Max:" +
-					props.frequency[0]["max"][0][0] +
-					" HZ, Min:" +
-					props.frequency[0]["min"][0][0] +
-					" HZ, Avg:" +
-					props.frequency[0]["avg"] +
-					" HZ)",
-				type: "line",
-			};
-
-			data.push(Durgapur);
-
-			if (props.freq_region1.indexOf("Frequency") > -1) {
-				let F_Duration = {
-					y: props.frequency[0]["Duration"][0],
-					x: props.frequency[0]["Duration"][1],
-					xaxis: "x2",
-					yaxis: "y2",
-					name:
-						props.frequency[0]["stationName"] +
-						" frequency data of " +
-						moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-						" Duration",
-					type: "line",
-				};
-				data.push(F_Duration);
-			}
-		}
-
-		if (props.freq_region.indexOf("Jeypore") > -1) {
-			let Jeypore = {
-				y: props.frequency[1]["frequency"],
-				x: props.frequency[3]["Date_Time"],
-				yaxis: "y2",
-				name:
-					props.frequency[1]["stationName"] +
-					" frequency data of " +
-					moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-					"(Max:" +
-					props.frequency[1]["max"][0][0] +
-					" HZ, Min:" +
-					props.frequency[1]["min"][0][0] +
-					" HZ, Avg:" +
-					props.frequency[1]["avg"] +
-					" HZ)",
-				type: "line",
-			};
-			data.push(Jeypore);
-
-			if (props.freq_region1.indexOf("Frequency") > -1) {
-				let F_Duration = {
-					y: props.frequency[1]["Duration"][0],
-					x: props.frequency[1]["Duration"][1],
-					xaxis: "x2",
-					yaxis: "y2",
-					name:
-						props.frequency[1]["stationName"] +
-						" frequency data of " +
-						moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-						" Duration",
-					type: "line",
-				};
-				data.push(F_Duration);
-			}
-		}
-
-		if (props.freq_region.indexOf("Sasaram") > -1) {
-			let Sasaram = {
-				y: props.frequency[2]["frequency"],
-				x: props.frequency[3]["Date_Time"],
-				yaxis: "y2",
-				name:
-					props.frequency[2]["stationName"] +
-					" frequency data of " +
-					moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-					"(Max:" +
-					props.frequency[2]["max"][0][0] +
-					" HZ, Min:" +
-					props.frequency[2]["min"][0][0] +
-					" HZ, Avg:" +
-					props.frequency[2]["avg"] +
-					" HZ)",
-				type: "line",
-			};
-			data.push(Sasaram);
-
-			if (props.freq_region1.indexOf("Frequency") > -1) {
-				let F_Duration = {
-					y: props.frequency[2]["Duration"][0],
-					x: props.frequency[2]["Duration"][1],
-					xaxis: "x2",
-					yaxis: "y2",
-					name:
-						props.frequency[2]["stationName"] +
-						" frequency data of " +
-						moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-						" Duration",
-					type: "line",
-				};
-				data.push(F_Duration);
-			}
-		}
-
-		temp_max_y1 = [...temp_max_y1, ...temp_max_y2];
-		temp_max_x1 = [...temp_max_x1, ...temp_max_x2];
-		temp_min_y1 = [...temp_min_y1, ...temp_min_y2];
-		temp_min_x1 = [...temp_min_x1, ...temp_min_x2];
-
-		let max_in1 = {
-			y: temp_max_y1,
-			x: temp_max_x1,
-
-			name: "Maximums",
-			mode: "markers",
-			type: "scatter",
-			marker: { color: "#03ef01" },
-		};
-
-		let min_in1 = {
-			y: temp_min_y1,
-			x: temp_min_x1,
-
-			name: "Minimums",
-			mode: "markers",
-			type: "scatter",
-			marker: { color: "#000000" },
-		};
-
-		// let max_in2 = {
-		//   y: temp_max_y2,
-		//   x: temp_max_x2,
-
-		//   name: "Maximums",
-		//   mode: "markers",
-		//   type: "scatter",
-		//   marker: { color: "#101820FF" },
-		// };
-
-		// let min_in2 = {
-		//   y: temp_min_y2,
-		//   x: temp_min_x2,
-
-		//   name: "Minimums",
-		//   mode: "markers",
-		//   type: "scatter",
-		//   marker: { color: "#101820FF" },
-		// };
-
-		data.push(max_in1);
-		data.push(min_in1);
-		// data.push(max_in2);
-		// data.push(min_in2);
-	}
-
-	return (
-		<Plot
-			data={data}
-			onClick={(d) => {
-				alert(
-					d.points[0].y +
-						" at " +
-						d.points[0].x +
-						" of " +
-						d.points[0].data["name"]
-				);
-			}}
-			layout={{
-				showlegend: true,
-				legend: {
-					font: {
-						family: "Courier New, monospace",
-						size: 14,
-						color: "#7f7f7f",
-					},
-					orientation: "h",
-					bgcolor: "white",
-					xanchor: "center",
-					yanchor: "center",
-					y: -0.2,
-					x: 0.5,
-				},
-				width: 1900,
-				height: 800,
-				title: name + stsn,
-				xaxis: {
-					title: "Dates",
-					titlefont: {
-						family: "Courier New, monospace",
-						size: 10,
-						color: "#7f7f7f",
-					},
-					tickfont: { color: "#7f7f7f", size: 9 },
-				},
-				yaxis: {
-					title: datatype,
-					titlefont: {
-						family: "Courier New, monospace",
-						size: 18,
-						color: "#7f7f7f",
-					},
-				},
-				yaxis2: {
-					title: "Frequency (HZ)",
-					titlefont: { color: "#8B0000" },
-					tickfont: { color: "#8B0000" },
-					anchor: "free",
-					overlaying: "y",
-					side: "right",
-					position: 1,
-				},
-				xaxis2: {
-					title: "Duration Curve",
-					titlefont: { color: "rgb(148, 103, 189)" },
-					tickfont: { color: "rgb(148, 103, 189)" },
-					overlaying: "x",
-					side: "top",
-				},
-			}}
-		/>
-	);
+    return (
+        <div style={{ position: "relative", width: "100%", height: "650px", padding: "8px 0" }}>
+            <Chart
+                ref={chartRef}
+                type="line"
+                data={chartData}
+                options={chartOptions}
+                plugins={[makeGradientPlugin()]}
+                style={{ width: "100%", height: "100%" }}
+            />
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom � Drag to pan � Dbl-click to reset</div>
+        </div>
+    );
 }

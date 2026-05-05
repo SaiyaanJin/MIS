@@ -1,298 +1,86 @@
-import React from "react";
+import React, { useMemo, useRef } from "react";
 import moment from "moment";
-
-import Plot from "react-plotly.js";
+import { Chart } from "primereact/chart";
+import { useTheme } from "../context/ThemeContext";
+import {
+    TRACE_COLORS,
+    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels
+} from "./_chartUtils";
 
 export default function Exchangegraph(props) {
-	var name = "Exchange Data of ";
-	var data = [];
-	var datatype = "Exchange Data";
+    const { isDarkMode } = useTheme();
+    const chartRef = useRef(null);
 
-	if (props.exchange_data) {
-		var stsn = "";
-		var temp_max_x = [];
-		var temp_min_x = [];
-		var temp_max_y = [];
-		var temp_min_y = [];
+    const { chartData, chartOptions } = useMemo(() => {
+        if (!props.exchange_data) return { chartData: {}, chartOptions: {} };
 
-		for (var i = 0; i < props.exchange_data.length - 1; i++) {
-			var max = props.exchange_data[i]["max"];
-			var min = props.exchange_data[i]["min"];
-			var avg = props.exchange_data[i]["avg"];
+        const dateArr = props.exchange_data[props.exchange_data.length - 1]["Date_Time"] || [];
+        const labels  = formatXLabels(dateArr);
+        const datasets = [];
+        let hasFreqAxis = false;
 
-			if (i === 0) {
-				temp_max_y = max[0];
-				temp_max_x = max[1];
-				temp_min_y = min[0];
-				temp_min_x = min[1];
-			} else {
-				temp_max_y = [...temp_max_y, ...max[0]];
-				temp_max_x = [...temp_max_x, ...max[1]];
-				temp_min_y = [...temp_min_y, ...min[0]];
-				temp_min_x = [...temp_min_x, ...min[1]];
-			}
+        for (let i = 0; i < props.exchange_data.length - 1; i++) {
+            const entry = props.exchange_data[i];
+            const max   = entry["max"];
+            const min   = entry["min"];
+            const avg   = entry["avg"];
+            const color = TRACE_COLORS[i % TRACE_COLORS.length];
 
-			var name_suffix = "";
+            let nameSuffix = "";
+            if (props.date_time && props.check1) nameSuffix = " · " + moment(entry["Date_Time"]).format("DD MMM YY");
+            if (props.date_time && props.check2) nameSuffix = " · " + moment(entry["Date_Time"]).format("MMM YYYY");
 
-			if (props.date_time && props.check1) {
-				name_suffix =
-					": " +
-					moment(props.exchange_data[i]["Date_Time"]).format("DD-MM-YYYY");
-				name = "Day-wise exchange Data of ";
-				datatype = "Date-wise exchange Data ";
-			}
+            const maxVal = max?.[0]?.[0] != null ? Number(max[0][0]).toFixed(2) : "N/A";
+            const minVal = min?.[0]?.[0] != null ? Number(min[0][0]).toFixed(2) : "N/A";
+            const avgVal = avg != null ? Number(avg).toFixed(2) : "N/A";
 
-			if (props.date_time && props.check2) {
-				name_suffix =
-					": " +
-					moment(props.exchange_data[i]["Date_Time"]).format("MMMM YYYY");
+            datasets.push({
+                label: `${entry["stationName"]}${nameSuffix}  ▲${maxVal} ▼${minVal} ⌀${avgVal} MW`,
+                data: entry["output"] || [],
+                borderColor: color,
+                backgroundColor: hexRgba(color, 0.12),
+                borderWidth: 2,
+                tension: 0.35,
+                fill: true,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: color,
+                yAxisID: "y",
+                _hex: color,
+                _fill: true,
+            });
+        }
 
-				name = " Month-wise exchange Data of ";
-				datatype = "Month-wise exchange Data ";
-			}
+        // Frequency overlays
+        if (props.freq_region && props.frequency) {
+            const freqDs = buildFreqDatasets(props.freq_region, props.frequency, labels);
+            if (freqDs.length) { datasets.push(...freqDs); hasFreqAxis = true; }
+        }
 
-			if (i === 0) {
-				stsn = props.exchange_data[i]["stationName"];
-			} else {
-				if (
-					props.exchange_data[i]["stationName"] !==
-					props.exchange_data[i - 1]["stationName"]
-				) {
-					stsn = stsn + ", " + props.exchange_data[i]["stationName"];
-				}
-			}
+        const data = { labels, datasets };
+        const options = buildOptions({
+            isDarkMode,
+            yLabel: "Exchange Power (MW)",
+            yCallback: (v) => `${v} MW`,
+            hasFreqAxis,
+        });
 
-			let exchange = {
-				y: props.exchange_data[i]["output"],
-				x: props.exchange_data[props.exchange_data.length - 1]["Date_Time"],
-				name:
-					props.exchange_data[i]["stationName"] +
-					" Data" +
-					name_suffix +
-					"(Max:" +
-					max[0][0] +
-					" MW, Min:" +
-					min[0][0] +
-					" MW, Avg:" +
-					avg +
-					" MW)",
-				type: "line",
-			};
+        return { chartData: data, chartOptions: options };
+    }, [props.exchange_data, props.freq_region, props.frequency, props.check1, props.check2, isDarkMode]);
 
-			data.push(exchange);
+    if (!props.exchange_data) return null;
 
-			if (props.freq_region1.indexOf("exchange") > -1) {
-				let V_Duration = {
-					y: props.exchange_data[i]["Duration"][0],
-					x: props.exchange_data[i]["Duration"][1],
-					xaxis: "x2",
-					name:
-						props.exchange_data[i]["stationName"] +
-						" Duration of " +
-						moment(props.exchange_data[0]["Date_Time"]).format("DD-MM-YYYY"),
-					type: "line",
-				};
-				data.push(V_Duration);
-			}
-		}
-
-		if (props.freq_region.indexOf("Durgapur") > -1) {
-			let Durgapur = {
-				y: props.frequency[0]["frequency"],
-				x: props.frequency[3]["Date_Time"],
-				yaxis: "y2",
-				name:
-					props.frequency[0]["stationName"] +
-					" frequency data of " +
-					moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-					"(Max:" +
-					props.frequency[0]["max"][0][0] +
-					" HZ, Min:" +
-					props.frequency[0]["min"][0][0] +
-					" HZ, Avg:" +
-					props.frequency[0]["avg"] +
-					" HZ)",
-				type: "line",
-			};
-
-			data.push(Durgapur);
-
-			if (props.freq_region1.indexOf("Frequency") > -1) {
-				let F_Duration = {
-					y: props.frequency[0]["Duration"][0],
-					x: props.frequency[0]["Duration"][1],
-					xaxis: "x2",
-					yaxis: "y2",
-					name:
-						props.frequency[0]["stationName"] +
-						" Duration of " +
-						moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY"),
-					type: "line",
-				};
-				data.push(F_Duration);
-			}
-		}
-
-		if (props.freq_region.indexOf("Jeypore") > -1) {
-			let Jeypore = {
-				y: props.frequency[1]["frequency"],
-				x: props.frequency[3]["Date_Time"],
-				yaxis: "y2",
-				name:
-					props.frequency[1]["stationName"] +
-					" frequency data of " +
-					moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-					"(Max:" +
-					props.frequency[1]["max"][0][0] +
-					" HZ, Min:" +
-					props.frequency[1]["min"][0][0] +
-					" HZ, Avg:" +
-					props.frequency[1]["avg"] +
-					" HZ)",
-				type: "line",
-			};
-			data.push(Jeypore);
-
-			if (props.freq_region1.indexOf("Frequency") > -1) {
-				let F_Duration = {
-					y: props.frequency[0]["Duration"][0],
-					x: props.frequency[0]["Duration"][1],
-					xaxis: "x2",
-					yaxis: "y2",
-					name:
-						props.frequency[0]["stationName"] +
-						" Duration of " +
-						moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY"),
-					type: "line",
-				};
-				data.push(F_Duration);
-			}
-		}
-
-		if (props.freq_region.indexOf("Sasaram") > -1) {
-			let Sasaram = {
-				y: props.frequency[2]["frequency"],
-				x: props.frequency[3]["Date_Time"],
-				yaxis: "y2",
-				name:
-					props.frequency[2]["stationName"] +
-					" frequency data of " +
-					moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY") +
-					"(Max:" +
-					props.frequency[2]["max"][0][0] +
-					" HZ, Min:" +
-					props.frequency[2]["min"][0][0] +
-					" HZ, Avg:" +
-					props.frequency[2]["avg"] +
-					" HZ)",
-				type: "line",
-			};
-			data.push(Sasaram);
-
-			if (props.freq_region1.indexOf("Frequency") > -1) {
-				let F_Duration = {
-					y: props.frequency[0]["Duration"][0],
-					x: props.frequency[0]["Duration"][1],
-					xaxis: "x2",
-					yaxis: "y2",
-					name:
-						props.frequency[0]["stationName"] +
-						" Duration of " +
-						moment(props.frequency[0]["Date_Time"]).format("DD-MM-YYYY"),
-					type: "line",
-				};
-				data.push(F_Duration);
-			}
-		}
-
-		let max_in = {
-			y: temp_max_y,
-			x: temp_max_x,
-
-			name: "Maximums",
-			mode: "markers",
-			type: "scatter",
-			marker: { color: "#03ef01" },
-		};
-
-		let min_in = {
-			y: temp_min_y,
-			x: temp_min_x,
-
-			name: "Minimums",
-			mode: "markers",
-			type: "scatter",
-			marker: { color: "#000000" },
-		};
-
-		data.push(max_in);
-		data.push(min_in);
-	}
-	return (
-		<Plot
-			data={data}
-			onClick={(d) => {
-				alert(
-					d.points[0].y +
-						" at " +
-						d.points[0].x +
-						" of " +
-						d.points[0].data["name"]
-				);
-			}}
-			layout={{
-				showlegend: true,
-				legend: {
-					font: {
-						family: "Courier New, monospace",
-						size: 14,
-						color: "#7f7f7f",
-					},
-					orientation: "h",
-					bgcolor: "white",
-					xanchor: "center",
-					yanchor: "center",
-					y: -0.2,
-					x: 0.5,
-				},
-				width: 1900,
-				height: 800,
-				title: name + stsn,
-				xaxis: {
-					title: "Dates",
-					titlefont: {
-						family: "Courier New, monospace",
-						size: 10,
-						color: "#7f7f7f",
-					},
-					tickfont: { color: "#7f7f7f", size: 9 },
-				},
-				yaxis: {
-					title: datatype,
-					titlefont: {
-						family: "Courier New, monospace",
-						size: 18,
-						color: "#7f7f7f",
-					},
-				},
-				yaxis2: {
-					title: "Frequency (HZ)",
-					titlefont: { color: "#8B0000" },
-					tickfont: { color: "#8B0000" },
-					anchor: "free",
-					overlaying: "y",
-					side: "right",
-					position: 1,
-				},
-				xaxis2: {
-					title: "Duration Curve",
-					titlefont: { color: "rgb(148,103,189)" },
-					tickfont: { color: "rgb(148,103,189)" },
-
-					overlaying: "x",
-					side: "top",
-				},
-			}}
-		/>
-	);
+    return (
+        <div style={{ position: "relative", width: "100%", height: "650px", padding: "8px 0" }}>
+            <Chart
+                ref={chartRef}
+                type="line"
+                data={chartData}
+                options={chartOptions}
+                plugins={[makeGradientPlugin()]}
+                style={{ width: "100%", height: "100%" }}
+            />
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom � Drag to pan � Dbl-click to reset</div>
+        </div>
+    );
 }

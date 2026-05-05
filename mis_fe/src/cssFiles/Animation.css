@@ -31,118 +31,122 @@
 	}
 }
 .p-head {
-	background: #d2fdd2 !important;
-	color: #000000 !important;
+	background: var(--bg-card) !important;
+	color: var(--text-primary) !important;
+	border-bottom: 2px solid var(--border-bright) !important;
+	font-weight: 600 !important;
 }
 .p-head1 {
-	background: #b4ffb4 !important;
-	color: #000000 !important;
+	background: var(--bg-main) !important;
+	color: var(--text-primary) !important;
+	border-bottom: 2px solid var(--border-bright) !important;
+	font-weight: 600 !important;
 }
 .p-bhutan {
-	background: #b1a0c7 !important;
-	color: #000000 !important;
+	background: #f3e8ff !important;
+	color: #6b21a8 !important;
 }
 .p-bangladesh {
-	background: #92d050 !important;
-	color: #000000 !important;
+	background: #dcfce7 !important;
+	color: #166534 !important;
 }
 .p-nepal {
-	background: #ff0000 !important;
-	color: #000000 !important;
+	background: #fee2e2 !important;
+	color: #991b1b !important;
 }
 .p-eng {
-	background: #e0feff !important;
-	color: #000000 !important;
+	background: #e0f2fe !important;
+	color: #075985 !important;
 }
 .p-eng1 {
-	background: #f3fffe !important;
-	color: #000000 !important;
-}
-/* .p-hin {
-	background: #c5fdf1 !important;
-	color: #000000 !important;
-}*/
-.p-ner {
-	background: #dad8b6 !important;
-	color: #000000 !important;
-}
-.p-sr {
-	background: #e4ffd2 !important;
-	color: #000000 !important;
-}
-.p-wr {
-	background: #e3e0ff !important;
-	color: #000000 !important;
-}
-.p-nr {
-	background: #d4fcff !important;
-	color: #000000 !important;
-}
-.p-eng1 {
-	background: #ffdee9 !important;
-	color: #000000 !important;
+	background: #f0f9ff !important;
+	color: #00527e !important;
 }
 .p-eng11 {
-	background: #fef3ff !important;
-	color: #000000 !important;
+	background: #faeaff !important;
+	color: #3f0052 !important;
 }
-
+.p-ner {
+	background: #fef9c3 !important;
+	color: #854d0e !important;
+}
+.p-sr {
+	background: #ecfccb !important;
+	color: #3f6212 !important;
+}
+.p-wr {
+	background: #e0e7ff !important;
+	color: #3730a3 !important;
+}
+.p-nr {
+	background: #cffafe !important;
+	color: #155e75 !important;
+}
 .p-footer {
-	background: #ffe6e5 !important;
-	color: #000000 !important;
+	background: #f1f5f9 !important;
+	color: var(--text-primary) !important;
+	font-weight: 600 !important;
+	border-top: 2px solid var(--border-bright) !important;
 }
-
 .p-footer1 {
-	background: #e5fbff !important;
-	color: #000000 !important;
+	background: #f8fafc !important;
+	color: var(--text-primary) !important;
+	font-weight: 600 !important;
+	border-top: 2px solid var(--border-bright) !important;
 }
 .p-imp {
-	background: #fff0dc !important;
-	color: #000000 !important;
+	background: #fffbeb !important;
+	color: #b45309 !important;
 }
 .p-exp {
-	background: #e0ffe8 !important;
-	color: #000000 !important;
+	background: #ecfdf5 !important;
+	color: #065f46 !important;
 }
 .p-blank {
-	background: #ffffff !important;
-	color: #000000 !important;
+	background: transparent !important;
+	color: white !important;
 }
 .p-monthhead {
-	background: #a0eeff !important;
-	color: #000000 !important;
+	background: #e0f2fe !important;
+	color: #0369a1 !important;
+	font-weight: 600 !important;
 }
-
 .p-max-min {
-	background: #fcf4b3 !important;
-	color: #000000 !important;
+	background: #fef3c7 !important;
+	color: #92400e !important;
+	font-weight: 500 !important;
 }
 .p-tag {
-	background-color: #000000;
-	font-size: large;
+	background-color: var(--border-bright);
+	color: var(--text-primary);
+	font-size: 0.875rem;
+	border-radius: 4px;
+	padding: 2px 6px;
 }
 .p-voltequals {
-	background: #fccbcb !important;
-	color: #000000 !important;
+	background: #fee2e2 !important;
+	color: #991b1b !important;
+	font-weight: 500 !important;
 }
-
 .p-total {
-	background: #faffcc !important;
-	color: #000000 !important;
+	background: #eff6ff !important;
+	color: #1e40af !important;
+	font-weight: 600 !important;
 }
-
 .p-rowgroup {
-	background: #fffcec !important;
-	color: #000000 !important;
+	background: var(--bg-main) !important;
+	color: var(--text-primary) !important;
+	font-weight: 600 !important;
+	border-top: 1px solid var(--border-bright) !important;
 }
-
 .p-rowgroup1 {
-	background: #ffffff !important;
-	color: #000000 !important;
+	background: var(--bg-card) !important;
+	color: var(--text-primary) !important;
+	font-weight: 500 !important;
 }
-
 .p-outagehead {
-	background: #000000 !important;
-	color: #ffffff !important;
-	font-size: small;
+	background: var(--text-primary) !important;
+	color: var(--bg-card) !important;
+	font-size: 0.875rem !important;
+	font-weight: 600 !important;
 }

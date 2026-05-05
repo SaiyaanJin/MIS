@@ -111,7 +111,7 @@ def meternames(startDate,endDate,folder):
 
     if (folder == "no"):
 
-        CONNECTION_STRING = "mongodb://10.3.101.179:1434"
+        CONNECTION_STRING = "mongodb://10.3.230.94:1434"
         client = MongoClient(CONNECTION_STRING)
         db = client['meterDataArchival']
         Data_Table = db["meterData"+str(startDate_obj.year)]
@@ -218,7 +218,7 @@ def meter_check(startDate_obj,endDate_obj):
     non_meter_folder_dates=[]
     path = "E:/Applications/SEMvsSCADA/svs_be/Meter_Files/"
 
-    CONNECTION_STRING = "mongodb://10.3.101.179:1434"
+    CONNECTION_STRING = "mongodb://10.3.230.94:1434"
     client = MongoClient(CONNECTION_STRING)
     db = client['meterDataArchival']
     Data_Table = db["meterData"+str(startDate_obj.year)]
@@ -270,7 +270,7 @@ def MeterData(startDate,endDate,time,meter_list,folder):
 
     if (folder == "no"):
 
-        CONNECTION_STRING = "mongodb://10.3.101.179:1434"
+        CONNECTION_STRING = "mongodb://10.3.230.94:1434"
         client = MongoClient(CONNECTION_STRING)
         db = client['meterDataArchival']
         Data_Table = db["meterData"+str(startDate_obj.year)]
@@ -486,7 +486,7 @@ def ReportMeterData(startDate,endDate,time,folder):
 
     if (folder == "no"):
 
-        CONNECTION_STRING = "mongodb://10.3.101.179:1434"
+        CONNECTION_STRING = "mongodb://10.3.230.94:1434"
         client = MongoClient(CONNECTION_STRING)
         db = client['meterDataArchival']
         Data_Table = db["meterData"+str(startDate_obj.year)]

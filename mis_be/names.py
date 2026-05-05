@@ -82,24 +82,51 @@ def Names(startDate, endDate, type_):
     return jsonify(list(data))
 
 
-def MultiNames(MultistartDate, type_):
-    def common_names(collections, dates, suffix=None):
+def MultiNames(data_input, type_):
+    # data_input can be a list of dates (legacy) or a tuple (dates, period_type)
+    if isinstance(data_input, tuple):
+        dates, period_type = data_input
+    else:
+        dates = data_input
+        period_type = "Date"
+
+    def common_names(collections, dates, period_type, suffix=None):
         results = []
         for idx, date in enumerate(dates):
-            filter_ = build_filter(date, date)
+            if period_type == "Date":
+                start, end = pd.to_datetime(date), pd.to_datetime(date)
+            elif period_type == "Month":
+                start = pd.to_datetime(date)
+                end = start + MonthEnd(1)
+            
+            filter_ = {'d': {'$gte': start.replace(tzinfo=timezone.utc), '$lte': end.replace(tzinfo=timezone.utc)}}
+            
             names = []
             for coll in collections:
                 names += coll.find(filter=filter_, projection={'n': 1}).distinct('n')
+            
             if idx == 0:
                 results = names
             else:
                 results = list(set(results) & set(names))
+        
         if suffix:
             results = [f"{name} {suffix}" for name in results]
         return list(dict.fromkeys(results))
 
-    if type_ == "ICT":
-        dates, period_type = MultistartDate
+    collection_map = {
+        "Voltage": [voltage_data_collection],
+        "Frequency": [frequency_data_collection],
+        "Generator": [Generator_DB],
+        "ThGenerator": [Th_Gen_DB],
+        "ISGS": [ISGS_DB],
+        "Exchange": [Exchange_DB],
+        "ICT": [ICT_data1, ICT_data2],
+        "Lines": ([line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2], "MW"),
+        "Demand": "SPECIAL_DEMAND"
+    }
+
+    if type_ == "Demand":
         results = []
         for idx, date in enumerate(dates):
             if period_type == "Date":
@@ -108,40 +135,24 @@ def MultiNames(MultistartDate, type_):
                 start = pd.to_datetime(date)
                 end = start + MonthEnd(1)
             filter_ = {'d': {'$gte': start.replace(tzinfo=timezone.utc), '$lte': end.replace(tzinfo=timezone.utc)}}
-            names = fetch_distinct_names([ICT_data1, ICT_data2], filter_)
-            results = names if idx == 0 else list(set(results) & set(names))
-        return jsonify(list(dict.fromkeys(results)))
-
-    if type_ in ["Voltage", "Frequency", "Generator", "ThGenerator", "ISGS", "Exchange"]:
-        collection_map = {
-            "Voltage": [voltage_data_collection],
-            "Frequency": [frequency_data_collection],
-            "Generator": [Generator_DB],
-            "ThGenerator": [Th_Gen_DB],
-            "ISGS": [ISGS_DB],
-            "Exchange": [Exchange_DB],
-        }
-        return jsonify(common_names(collection_map[type_], MultistartDate))
-
-    if type_ == "Lines":
-        return jsonify(common_names(
-            [line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2],
-            MultistartDate, suffix="MW"
-        ))
-
-    if type_ == "LinesMWMVAR":
-        mw_names = common_names([line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2], MultistartDate, suffix="MW")
-        mvar_names = common_names([MVAR_P1, MVAR_P2, Lines_MVAR_400_above], MultistartDate, suffix="MVAR")
-        return jsonify(mw_names + mvar_names)
-
-    if type_ == "Demand":
-        results = []
-        for idx, date in enumerate(MultistartDate):
-            filter_ = build_filter(date, date)
+            
             names = list(demand_collection.find(filter=filter_, projection={'n': 1}).distinct('n'))
             names += drawal_collection.find(filter=filter_, projection={'n': 1}).distinct('n')
             names = [item for item in names if ':' not in item]
             results = names if idx == 0 else list(set(results) & set(names))
         return jsonify(list(dict.fromkeys(results)))
 
-    return jsonify([])
+    if type_ == "LinesMWMVAR":
+        mw_names = common_names([line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2], dates, period_type, suffix="MW")
+        mvar_names = common_names([MVAR_P1, MVAR_P2, Lines_MVAR_400_above], dates, period_type, suffix="MVAR")
+        return jsonify(mw_names + mvar_names)
+
+    if type_ in collection_map:
+        val = collection_map[type_]
+        if isinstance(val, tuple):
+            colls, suffix = val
+            return jsonify(common_names(colls, dates, period_type, suffix=suffix))
+        else:
+            return jsonify(common_names(val, dates, period_type))
+
+    return jsonify([])

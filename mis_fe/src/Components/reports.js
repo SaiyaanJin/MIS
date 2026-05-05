@@ -19,6 +19,7 @@ import { DownloadTableExcel } from "react-export-table-to-excel";
 import { Container, Col, Row as rows } from "react-grid-system";
 
 export default function Reports() {
+	const baseUrl = process.env.REACT_APP_API_BASE_URL;
 	const report_table = useRef(null);
 	const [date, setDate] = useState([]);
 	const [freq_data, setfreq_data] = useState();
@@ -112,7 +113,7 @@ export default function Reports() {
 		if (date && type) {
 			axios
 				.post(
-					"/reports?date_val=" +
+					baseUrl + "/reports?date_val=" +
 						date_range +
 						"&category=" +
 						type,
@@ -1319,15 +1320,29 @@ export default function Reports() {
 				<div className="field">
 					<span className="p-float-label">
 						Date Range:{" "}
-						<Calendar
-							placeholder="Select Date Range"
-							dateFormat="dd/mm/yy"
-							value={date}
-							onChange={(e) => setDate(e.value)}
-							showIcon
-							selectionMode="range"
-							readOnlyInput
-						/>
+						<div className="modern-cal-wrapper">
+							<Calendar
+								placeholder="Select Date Range"
+								dateFormat="dd/mm/yy"
+								value={date}
+								onChange={(e) => {
+									const val = e.value || [];
+									const newRange = [...val];
+									if (newRange[0] && (!date || !date[0] || newRange[0].toDateString() !== date[0].toDateString())) {
+										newRange[0] = new Date(newRange[0]);
+										newRange[0].setHours(0, 0, 0, 0);
+									}
+									if (newRange[1] && (!date || !date[1] || newRange[1].toDateString() !== date[1].toDateString())) {
+										newRange[1] = new Date(newRange[1]);
+										newRange[1].setHours(23, 59, 0, 0);
+									}
+									setDate(newRange);
+								}}
+								showIcon
+								selectionMode="range"
+								readOnlyInput
+							/>
+						</div>
 					</span>
 				</div>
 				<div className="field">

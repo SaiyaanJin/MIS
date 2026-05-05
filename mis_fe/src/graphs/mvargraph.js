@@ -1,174 +1,86 @@
-import React from "react";
+import React, { useMemo, useRef } from "react";
 import moment from "moment";
-
-import Plot from "react-plotly.js";
+import { Chart } from "primereact/chart";
+import { useTheme } from "../context/ThemeContext";
+import {
+    TRACE_COLORS, FREQ_COLORS,
+    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels
+} from "./_chartUtils";
 
 export default function Mvargraph(props) {
-  var name = "MVAR Data of ";
-  var data = [];
-  var datatype = "MVAR Data";
+    const { isDarkMode } = useTheme();
+    const chartRef = useRef(null);
 
-  if (props.mvar_data) {
-    var stsn = "";
-    let Durgapur = {};
-    let Jeypore = {};
-    let Sasaram = {};
+    const { chartData, chartOptions } = useMemo(() => {
+        if (!props.mvar_data) return { chartData: {}, chartOptions: {} };
 
-    for (var i = 0; i < props.mvar_data.length - 1; i++) {
-      var max = props.mvar_data[i]["max"];
-      var min = props.mvar_data[i]["min"];
-      var avg = props.mvar_data[i]["avg"];
+        const dateArr = props.mvar_data[props.mvar_data.length - 1]["Date_Time"] || [];
+        const labels  = formatXLabels(dateArr);
+        const datasets = [];
+        let hasFreqAxis = false;
 
-      for (var x = 0; x < props.freq_region.length; x++) {
-        if (props.freq_region[x] === "Durgapur") {
-          Durgapur = {
-            y: props.frequency[0]["frequency"],
-            x: props.frequency[3]["Date_Time"],
-            yaxis: "y2",
-            name:
-              props.frequency[0]["stationName"] +
-              "(Max:" +
-              props.frequency[0]["max"] +
-              " HZ, Min:" +
-              props.frequency[0]["min"] +
-              " HZ, Avg:" +
-              props.frequency[0]["avg"] +
-              " HZ)",
-            type: "line",
-          };
+        for (let i = 0; i < props.mvar_data.length - 1; i++) {
+            const entry    = props.mvar_data[i];
+            const max      = entry["max"];
+            const min      = entry["min"];
+            const avg      = entry["avg"];
+            const color    = TRACE_COLORS[i % TRACE_COLORS.length];
+
+            let nameSuffix = "";
+            if (props.date_time && props.check1) nameSuffix = " · " + moment(entry["Date_Time"]).format("DD MMM YY");
+            if (props.date_time && props.check2) nameSuffix = " · " + moment(entry["Date_Time"]).format("MMM YYYY");
+
+            const maxVal = max != null ? Number(max).toFixed(2) : "N/A";
+            const minVal = min != null ? Number(min).toFixed(2) : "N/A";
+            const avgVal = avg != null ? Number(avg).toFixed(2) : "N/A";
+
+            datasets.push({
+                label: `${entry["stationName"]}${nameSuffix}  ▲${maxVal} ▼${minVal} ⌀${avgVal} MVAR`,
+                data: entry["line"] || [],
+                borderColor: color,
+                backgroundColor: hexRgba(color, 0.12),
+                borderWidth: 2,
+                tension: 0.35,
+                fill: true,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: color,
+                yAxisID: "y",
+                _hex: color,
+                _fill: true,
+            });
         }
-        if (props.freq_region[x] === "Jeypore") {
-          Jeypore = {
-            y: props.frequency[1]["frequency"],
-            x: props.frequency[3]["Date_Time"],
-            yaxis: "y2",
-            name:
-              props.frequency[1]["stationName"] +
-              "(Max:" +
-              props.frequency[1]["max"] +
-              " HZ, Min:" +
-              props.frequency[1]["min"] +
-              " HZ, Avg:" +
-              props.frequency[1]["avg"] +
-              " HZ)",
-            type: "line",
-          };
+
+        // Frequency overlays
+        if (props.freq_region && props.frequency) {
+            const freqDs = buildFreqDatasets(props.freq_region, props.frequency, labels);
+            if (freqDs.length) { datasets.push(...freqDs); hasFreqAxis = true; }
         }
-        if (props.freq_region[x] === "Sasaram") {
-          Sasaram = {
-            y: props.frequency[2]["frequency"],
-            x: props.frequency[3]["Date_Time"],
-            yaxis: "y2",
-            name:
-              props.frequency[2]["stationName"] +
-              "(Max:" +
-              props.frequency[2]["max"] +
-              " HZ, Min:" +
-              props.frequency[2]["min"] +
-              " HZ, Avg:" +
-              props.frequency[2]["avg"] +
-              " HZ)",
-            type: "line",
-          };
-        }
-      }
 
-      var name_suffix = "";
+        const data = { labels, datasets };
+        const options = buildOptions({
+            isDarkMode,
+            yLabel: "Reactive Power (MVAR)",
+            yCallback: (v) => `${v} MVAR`,
+            hasFreqAxis,
+        });
 
-      if (props.date_time && props.check1) {
-        name_suffix =
-          ": " + moment(props.mvar_data[i]["Date_Time"]).format("DD-MM-YYYY");
-        name = "Day-wise MVAR Data of ";
-        datatype = "Date-wise MVAR Data";
-      }
+        return { chartData: data, chartOptions: options };
+    }, [props.mvar_data, props.freq_region, props.frequency, props.check1, props.check2, isDarkMode]);
 
-      if (props.date_time && props.check2) {
-        name_suffix =
-          ": " + moment(props.mvar_data[i]["Date_Time"]).format("MMMM YYYY");
+    if (!props.mvar_data) return null;
 
-        name = " Month-wise MVAR Data of ";
-        datatype = "Month-wise MVAR Data";
-      }
-
-      if (i === 0) {
-        stsn = props.mvar_data[i]["stationName"];
-      } else {
-        if (
-          props.mvar_data[i]["stationName"] !==
-          props.mvar_data[i - 1]["stationName"]
-        ) {
-          stsn = stsn + ", " + props.mvar_data[i]["stationName"];
-        }
-      }
-
-      let mvar_actual = {
-        y: props.mvar_data[i]["line"],
-        x: props.mvar_data[props.mvar_data.length - 1]["Date_Time"],
-        name:
-          props.mvar_data[i]["stationName"] +
-          " Line" +
-          name_suffix +
-          "(Max:" +
-          max +
-          " MW, Min:" +
-          min +
-          " MW, Avg:" +
-          avg +
-          " MW)",
-        type: "line",
-      };
-
-      data.push(mvar_actual, Durgapur, Jeypore, Sasaram);
-    }
-  }
-
-  return (
-    <Plot
-      data={data}
-      layout={{
-        showlegend: true,
-        legend: {
-          font: {
-            family: "Courier New, monospace",
-            size: 14,
-            color: "#7f7f7f",
-          },
-          orientation: "h",
-          bgcolor: "white",
-          xanchor: "center",
-          yanchor: "center",
-          y: -0.2,
-          x: 0.5,
-        },
-        width: 1900,
-        height: 800,
-        title: name + stsn,
-        xaxis: {
-          title: "Dates",
-          titlefont: {
-            family: "Courier New, monospace",
-            size: 18,
-            color: "#7f7f7f",
-          },
-        },
-        yaxis: {
-          title: datatype,
-          titlefont: {
-            family: "Courier New, monospace",
-            size: 18,
-            color: "#7f7f7f",
-          },
-        },
-        yaxis2: {
-          title: "Frequency (HZ)",
-          titlefont: { color: "#8B0000" },
-          tickfont: { color: "#8B0000" },
-          anchor: "free",
-          overlaying: "y",
-          side: "right",
-          position: 1,
-        },
-      }}
-    />
-  );
+    return (
+        <div style={{ position: "relative", width: "100%", height: "650px", padding: "8px 0" }}>
+            <Chart
+                ref={chartRef}
+                type="line"
+                data={chartData}
+                options={chartOptions}
+                plugins={[makeGradientPlugin()]}
+                style={{ width: "100%", height: "100%" }}
+            />
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom � Drag to pan � Dbl-click to reset</div>
+        </div>
+    );
 }

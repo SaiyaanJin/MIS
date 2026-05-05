@@ -532,6 +532,84 @@ def MultiLinesNames():
     return res
 
 
+@app.route('/DemandNames', methods=['GET', 'POST'])
+@app.route('/demandnames', methods=['GET', 'POST'])
+def DemandNames():
+    # Parameter extraction with fallback
+    startDateStr = request.args.get('startDate') or request.form.get('startDate')
+    endDateStr = request.args.get('endDate') or request.form.get('endDate')
+
+    if not all([startDateStr, endDateStr]):
+        return jsonify({"error": "Missing startDate or endDate"}), 400
+
+    startDate = startDateStr.split(" ")[0]
+    endDate = endDateStr.split(" ")[0]
+
+    cache_key = f"DemandNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = Names(startDate, endDate, "Demand")
+    cache.set(cache_key, res, timeout=86400)
+    return res
+
+
+@app.route('/MultiDemandNames', methods=['GET', 'POST'])
+@app.route('/multidemandnames', methods=['GET', 'POST'])
+def MultiDemandNames():
+    # Parse request arguments
+    MultistartDateStr = request.args.get('MultistartDate') or request.form.get('MultistartDate')
+    query_type = request.args.get('Type', 'Date')
+
+    if not MultistartDateStr:
+         return jsonify({"error": "Missing MultistartDate"}), 400
+
+    date_list = MultistartDateStr.split(',')
+    dates_key = "_".join(sorted(date_list))
+    
+    cache_key = f"MultiDemandNames_{dates_key}_{query_type}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+
+    res = MultiNames((date_list, query_type), "Demand")
+    cache.set(cache_key, res, timeout=86400)
+    return res
+
+
+
+@app.route('/IctNames', methods=['GET', 'POST'])
+def IctNames():
+    startDate1 = request.args['startDate']
+    endDate1 = request.args['endDate']
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
+    cache_key = f"IctNames_{startDate}_{endDate}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+    res = Names(startDate, endDate, "ICT")
+    cache.set(cache_key, res, timeout=86400)
+    return res
+
+
+@app.route('/MultiIctNames', methods=['GET', 'POST'])
+@app.route('/MultiICTNames', methods=['GET', 'POST'])
+def MultiIctNames():
+    MultistartDate = request.args['MultistartDate']
+    Type = request.args.get('Type', 'Date')
+    dates_key = "_".join(sorted(MultistartDate.split(',')))
+    cache_key = f"MultiIctNames_{dates_key}_{Type}"
+    cached_res = cache.get(cache_key)
+    if cached_res:
+        return cached_res
+    date_list = MultistartDate.split(',')
+    res = MultiNames((date_list, Type), "ICT")
+    cache.set(cache_key, res, timeout=86400)
+    return res
+
+
 @app.route('/GetLinesData', methods=['GET', 'POST'])
 def GetLinesData():
     startDate1 = request.args['startDate']
@@ -610,8 +688,8 @@ def GetLinesData():
             max_v = [[max_v[0]], []]
             min_v = [[min_v[0]], []]
         else:
-            max_v = [[max_v[0]] * len(max_v[1]), [allDateTime[i] for i in max_v[1]]]
-            min_v = [[min_v[0]] * len(min_v[1]), [allDateTime[i] for i in min_v[1]]]
+            max_v = [[max_v[0]], [max_v[1]]]
+            min_v = [[min_v[0]], [min_v[1]]]
 
         entry['max'] = max_v
         entry['min'] = min_v
@@ -628,6 +706,416 @@ def GetLinesData():
     return jsonify(reply)
 
 
+@app.route('/GetDemandData', methods=['GET', 'POST'])
+def GetDemandData():
+    startDate1 = request.args['startDate']
+    endDate1 = request.args['endDate']
+    stationNames = request.args['stationName'].split(',')
+    time1 = int(request.args['time'])
+
+    startTime = f"{startDate1}:00"
+    endTime = f"{endDate1}:00"
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
+
+    startTimeObj = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
+    endTimeObj = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
+
+    index1 = startTimeObj.hour * 60 + startTimeObj.minute
+    index2 = index1 + int((endTimeObj - startTimeObj).total_seconds() / 60)
+
+    allDateTime = []
+    dt_cursor = startTimeObj
+    while dt_cursor <= endTimeObj:
+        allDateTime.append(dt_cursor.strftime("%d-%m-%Y %H:%M:%S"))
+        dt_cursor += timedelta(minutes=time1)
+
+    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
+    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
+    date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
+
+    reply = []
+    listofzeros = [0] * 1440
+
+    for station in stationNames:
+        demand = []
+        for dt in date_range:
+            filter = {
+                'd': {
+                    '$gte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc)
+                },
+                'n': station
+            }
+            project = {'_id': 0, 'p': 1}
+            result = list(demand_collection.find(filter=filter, projection=project))
+            if not result:
+                result = list(drawal_collection.find(filter=filter, projection=project))
+            
+            demand += result[0]['p'] if result else listofzeros
+
+        demand = [0 if math.isnan(float(v)) else float(v) for v in demand]
+        demand = demand[index1:index2 + 1]
+
+        if time1 == 1:
+            reply.append({'stationName': station, 'output': demand})
+        else:
+            chunks = list(divide_chunks(demand, time1))
+            avg_demand = [my_max_min_function(chunk)[2] for chunk in chunks]
+            reply.append({'stationName': station, 'output': avg_demand})
+
+    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
+    merge_list = [df1]
+    for idx, it in enumerate(reply):
+        df = pd.DataFrame.from_dict(it).drop(['stationName'], axis=1)
+        df.columns = pd.MultiIndex.from_product([[stationNames[idx]], df.columns])
+        merge_list.append(df)
+
+    global Demand_excel_data
+    Demand_excel_data = merge_list
+
+    for i in range(len(reply)):
+        temp_vals = sorted(reply[i]['output'], reverse=True)
+        percentiles = list(np.linspace(0, 100, len(temp_vals)))
+        reply[i]["demand Duration"] = [temp_vals, percentiles]
+
+        max_v, min_v, avg_v = my_max_min_function(reply[i]['output'])
+        
+        def process_extremes(extremes):
+            if extremes[0] == 0 or len(extremes) > 50:
+                return [[""], []]
+            values = [extremes[0]] * (len(extremes) - 1)
+            times = [allDateTime[i] for i in extremes[1:]]
+            return [values, times]
+
+        reply[i]['max'] = process_extremes(max_v)
+        reply[i]['min'] = process_extremes(min_v)
+        reply[i]['avg'] = avg_v
+
+    reply.append({'Date_Time': allDateTime})
+    return jsonify(reply)
+
+
+@app.route('/GetMultiDemandData', methods=['GET', 'POST'])
+def GetMultiDemandData():
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationName = request.args['MultistationName'].split(',')
+    Type = request.args['Type']
+    time1 = int(request.args['time'])
+
+    listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
+
+    if Type == "Date":
+        date_obj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(date_obj, date_obj, timedelta(minutes=time1))]
+
+        for station in stationName:
+            for dateval in MultistartDate:
+                dt_obj = datetime.strptime(dateval, "%Y-%m-%d")
+                filter = {
+                    'd': {
+                        '$gte': datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0, tzinfo=timezone.utc),
+                        '$lte': datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0, tzinfo=timezone.utc)
+                    },
+                    'n': station
+                }
+                project = {'_id': 0, 'p': 1}
+                result = list(demand_collection.find(filter=filter, projection=project))
+                if not result:
+                    result = list(drawal_collection.find(filter=filter, projection=project))
+
+                demand = result[0]['p'] if result else listofzeros
+                demand = [0 if math.isnan(float(v)) else float(v) for v in demand]
+
+                if time1 == 1:
+                    reply.append({'stationName': station, 'output': demand, 'Date_Time': dt_obj})
+                else:
+                    averaged = [my_max_min_function(chunk)[2] for chunk in divide_chunks(demand, time1)]
+                    reply.append({'stationName': station, 'output': averaged, 'Date_Time': dt_obj})
+
+    elif Type == "Month":
+        for station in stationName:
+            for dateval in MultistartDate:
+                startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
+                endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
+                if len(allDateTime) < len(dts):
+                    allDateTime = dts
+
+                alldate = list(pd.date_range(startDateObj, endDateObj, freq='d').strftime("%Y-%m-%d"))
+                demand = []
+                for d in alldate:
+                    dt = datetime.strptime(d, "%Y-%m-%d")
+                    filter = {
+                        'd': {
+                            '$gte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc),
+                            '$lte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc)
+                        },
+                        'n': station
+                    }
+                    project = {'_id': 0, 'p': 1}
+                    result = list(demand_collection.find(filter=filter, projection=project))
+                    if not result:
+                        result = list(drawal_collection.find(filter=filter, projection=project))
+                    
+                    demand += result[0]['p'] if result else listofzeros
+
+                demand = [0 if math.isnan(float(v)) else float(v) for v in demand]
+
+                if time1 == 1:
+                    reply.append({'stationName': station, 'output': demand, 'Date_Time': startDateObj})
+                else:
+                    averaged = [my_max_min_function(chunk)[2] for chunk in divide_chunks(demand, time1)]
+                    reply.append({'stationName': station, 'output': averaged, 'Date_Time': startDateObj})
+
+    for item in reply:
+        sorted_val = sorted(item['output'], reverse=True)
+        z = list(np.linspace(0, 100, len(sorted_val)))
+        item['demand Duration'] = [sorted_val, z]
+        max_, min_, avg_ = my_max_min_function(item['output'])
+        
+        def format_max_min(val):
+            if val[0] == 0 or len(val) > 50:
+                return [[""], []]
+            return [[val[0]] * (len(val)-1), [allDateTime[i] for i in val[1:]]]
+
+        item['max'] = format_max_min(max_)
+        item['min'] = format_max_min(min_)
+        item['avg'] = avg_
+
+    reply.append({'Date_Time': allDateTime})
+    return jsonify(reply)
+
+
+@app.route('/GetDemandDataExcel', methods=['GET', 'POST'])
+def GetDemandDataExcel():
+    global Demand_excel_data
+    if len(Demand_excel_data) > 0:
+        merged = pd.concat(Demand_excel_data, axis=1, join="inner")
+        merged.to_excel(dir_path+"Excel_Files/Demand.xlsx", index=None)
+        path = dir_path+"Excel_Files/Demand.xlsx"
+        startDate = request.args['startDate']
+        endDate = request.args['endDate']
+        stationName = request.args['stationName']
+        
+        if startDate == endDate:
+            custom = f"{startDate} Demand Data.xlsx"
+        else:
+            custom = f"{startDate} to {endDate} Demand Data.xlsx"
+
+        if os.path.exists(path):
+            return send_file(path, as_attachment=True, download_name=custom)
+        return Response('Error generating file')
+    return jsonify("No Data to Download")
+
+
+@app.route('/GetICTData', methods=['GET', 'POST'])
+def GetICTData():
+    startDate1 = request.args['startDate']
+    endDate1 = request.args['endDate']
+    stationNames = request.args['stationName'].split(',')
+    time1 = int(request.args['time'])
+
+    startTime = f"{startDate1}:00"
+    endTime = f"{endDate1}:00"
+    startDate = startDate1.split(" ")[0]
+    endDate = endDate1.split(" ")[0]
+
+    startTimeObj = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
+    endTimeObj = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
+
+    index1 = startTimeObj.hour * 60 + startTimeObj.minute
+    index2 = index1 + int((endTimeObj - startTimeObj).total_seconds() / 60)
+
+    allDateTime = []
+    dt_cursor = startTimeObj
+    while dt_cursor <= endTimeObj:
+        allDateTime.append(dt_cursor.strftime("%d-%m-%Y %H:%M:%S"))
+        dt_cursor += timedelta(minutes=time1)
+
+    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
+    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
+    date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
+
+    reply = []
+    listofzeros = [0] * 1440
+
+    for station in stationNames:
+        ict = []
+        for dt in date_range:
+            filter = {
+                'd': {
+                    '$gte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc),
+                    '$lte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc)
+                },
+                'n': station
+            }
+            project = {'_id': 0, 'p': 1}
+            result = list(ICT_data2.find(filter=filter, projection=project))
+            if not result:
+                result = list(ICT_data1.find(filter=filter, projection=project))
+            
+            ict += result[0]['p'] if result else listofzeros
+
+        ict = [0 if math.isnan(float(v)) else float(v) for v in ict]
+        ict = ict[index1:index2 + 1]
+
+        if time1 == 1:
+            reply.append({'stationName': station, 'line': ict})
+        else:
+            chunks = list(divide_chunks(ict, time1))
+            avg_ict = [my_max_min_function(chunk)[2] for chunk in chunks]
+            reply.append({'stationName': station, 'line': avg_ict})
+
+    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
+    merge_list = [df1]
+    for idx, it in enumerate(reply):
+        df = pd.DataFrame.from_dict(it).drop(['stationName'], axis=1)
+        df.columns = pd.MultiIndex.from_product([[stationNames[idx]], df.columns])
+        merge_list.append(df)
+
+    global ICT_excel_data
+    ICT_excel_data = merge_list
+
+    for i in range(len(reply)):
+        temp_vals = sorted(reply[i]['line'], reverse=True)
+        percentiles = list(np.linspace(0, 100, len(temp_vals)))
+        reply[i]["ict Duration"] = [temp_vals, percentiles]
+
+        max_v, min_v, avg_v = my_max_min_function(reply[i]['line'])
+        
+        def process_extremes(extremes):
+            if extremes[0] == 0 or len(extremes) > 50:
+                return [[""], []]
+            values = [extremes[0]] * (len(extremes) - 1)
+            times = [allDateTime[i] for i in extremes[1:]]
+            return [values, times]
+
+        reply[i]['max'] = process_extremes(max_v)
+        reply[i]['min'] = process_extremes(min_v)
+        reply[i]['avg'] = avg_v
+
+    reply.append({'Date_Time': allDateTime})
+    return jsonify(reply)
+
+
+@app.route('/GetMultiIctData', methods=['GET', 'POST'])
+@app.route('/GetMultiICTData', methods=['GET', 'POST'])
+def GetMultiIctData():
+    MultistartDate = request.args['MultistartDate'].split(',')
+    stationName = request.args['MultistationName'].split(',')
+    Type = request.args['Type']
+    time1 = int(request.args['time'])
+
+    listofzeros = [0] * 1440
+    reply = []
+    allDateTime = []
+
+    if Type == "Date":
+        date_obj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
+        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(date_obj, date_obj, timedelta(minutes=time1))]
+
+        for station in stationName:
+            for dateval in MultistartDate:
+                dt_obj = datetime.strptime(dateval, "%Y-%m-%d")
+                filter = {
+                    'd': {
+                        '$gte': datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0, tzinfo=timezone.utc),
+                        '$lte': datetime(dt_obj.year, dt_obj.month, dt_obj.day, 0, 0, 0, tzinfo=timezone.utc)
+                    },
+                    'n': station
+                }
+                project = {'_id': 0, 'p': 1}
+                result = list(ICT_data2.find(filter=filter, projection=project))
+                if not result:
+                    result = list(ICT_data1.find(filter=filter, projection=project))
+
+                ict = result[0]['p'] if result else listofzeros
+                ict = [0 if math.isnan(float(v)) else float(v) for v in ict]
+
+                if time1 == 1:
+                    reply.append({'stationName': station, 'line': ict, 'Date_Time': dt_obj})
+                else:
+                    averaged = [my_max_min_function(chunk)[2] for chunk in divide_chunks(ict, time1)]
+                    reply.append({'stationName': station, 'line': averaged, 'Date_Time': dt_obj})
+
+    elif Type == "Month":
+        for station in stationName:
+            for dateval in MultistartDate:
+                startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
+                endDateObj = pd.Timestamp(dateval) + MonthEnd(1)
+                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
+                if len(allDateTime) < len(dts):
+                    allDateTime = dts
+
+                # Modified to use correct inclusive range for Month
+                alldate = list(pd.date_range(startDateObj, endDateObj - timedelta(days=1), freq='d').strftime("%Y-%m-%d"))
+                ict = []
+                for d in alldate:
+                    dt = datetime.strptime(d, "%Y-%m-%d")
+                    filter = {
+                        'd': {
+                            '$gte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc),
+                            '$lte': datetime(dt.year, dt.month, dt.day, 0, 0, 0, tzinfo=timezone.utc)
+                        },
+                        'n': station
+                    }
+                    project = {'_id': 0, 'p': 1}
+                    result = list(ICT_data2.find(filter=filter, projection=project))
+                    if not result:
+                        result = list(ICT_data1.find(filter=filter, projection=project))
+                    
+                    ict += result[0]['p'] if result else listofzeros
+
+                ict = [0 if math.isnan(float(v)) else float(v) for v in ict]
+
+                if time1 == 1:
+                    reply.append({'stationName': station, 'line': ict, 'Date_Time': startDateObj})
+                else:
+                    averaged = [my_max_min_function(chunk)[2] for chunk in divide_chunks(ict, time1)]
+                    reply.append({'stationName': station, 'line': averaged, 'Date_Time': startDateObj})
+
+    for item in reply:
+        sorted_val = sorted(item['line'], reverse=True)
+        z = list(np.linspace(0, 100, len(sorted_val)))
+        item['ict Duration'] = [sorted_val, z]
+        max_, min_, avg_ = my_max_min_function(item['line'])
+        
+        def format_max_min(val):
+            if val[0] == 0 or len(val) > 50:
+                return [[""], []]
+            return [[val[0]] * (len(val)-1), [allDateTime[i] for i in val[1:]]]
+
+        item['max'] = format_max_min(max_)
+        item['min'] = format_max_min(min_)
+        item['avg'] = avg_
+
+    reply.append({'Date_Time': allDateTime})
+    return jsonify(reply)
+
+
+@app.route('/GetIctDataExcel', methods=['GET', 'POST'])
+def GetIctDataExcel():
+    global ICT_excel_data
+    if len(ICT_excel_data) > 0:
+        merged = pd.concat(ICT_excel_data, axis=1, join="inner")
+        merged.to_excel(dir_path+"Excel_Files/Ict.xlsx", index=None)
+        path = dir_path+"Excel_Files/Ict.xlsx"
+        startDate = request.args['startDate']
+        endDate = request.args['endDate']
+        stationName = request.args['stationName']
+        
+        if startDate == endDate:
+            custom = f"{startDate} Ict Data.xlsx"
+        else:
+            custom = f"{startDate} to {endDate} Ict Data.xlsx"
+
+        if os.path.exists(path):
+            return send_file(path, as_attachment=True, download_name=custom)
+        return Response('Error generating file')
+    return jsonify("No Data to Download")
 
 @app.route('/GetMultiLinesData', methods=['GET', 'POST'])
 def GetMultiLinesData():
@@ -856,311 +1344,21 @@ def ICTFileInsert():
     return res
 
 
-@app.route('/ICTNames', methods=['GET', 'POST'])
-def ICTNames():
-    startDate1 = request.args['startDate']
-    endDate1 = request.args['endDate']
+# ICT routes moved to unified handlers around line 560 and 896
 
-    startDate = startDate1.split(" ")[0]
-    endDate = endDate1.split(" ")[0]
 
-    cache_key = f"ICTNames_{startDate}_{endDate}"
-    cached_res = cache.get(cache_key)
-    if cached_res:
-        return cached_res
+# MultiICTNames moved to unified handler around line 580
 
-    res = Names(startDate, endDate, "ICT")
-    cache.set(cache_key, res, timeout=86400)
-    return res
 
+# GetICTData moved to unified handler around line 896
 
-@app.route('/MultiICTNames', methods=['GET', 'POST'])
-def MultiICTNames():
-    MultistartDate = request.args['MultistartDate']
-    Type = request.args['Type']
 
-    dates_sorted = "_".join(sorted(MultistartDate.split(',')))
-    cache_key = f"MultiICTNames_{dates_sorted}_{Type}"
 
-    cached_res = cache.get(cache_key)
-    if cached_res:
-        return cached_res
+# GetMultiICTData moved to unified handler around line 986
 
-    date_list = MultistartDate.split(',')
-    res = MultiNames([date_list, Type], "ICT")
-    cache.set(cache_key, res, timeout=86400)
-    return res
 
 
-@app.route('/GetICTData', methods=['GET', 'POST'])
-def GetICTData():
-
-    startDate1 = request.args['startDate']
-    endDate1 = request.args['endDate']
-    stationName = request.args['stationName'].split(',')
-    time1 = int(request.args['time'])
-
-    startTime = startDate1 + ":00"
-    endTime = endDate1 + ":00"
-
-    startDate = startDate1.split(" ")[0]
-    endDate = endDate1.split(" ")[0]
-
-    startTimeObj = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-    endTimeObj = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-
-    index1 = startTimeObj.hour * 60 + startTimeObj.minute
-    index2 = index1 + int((endTimeObj - startTimeObj).total_seconds() / 60)
-
-    if time1 > 1 + (endTimeObj - startTimeObj).total_seconds() / 60:
-        return jsonify("Time ERROR")
-
-    allDateTime = []
-    ts = startTimeObj
-    while ts <= endTimeObj:
-        allDateTime.append(ts.strftime("%d-%m-%Y %H:%M:%S"))
-        ts += timedelta(minutes=time1)
-
-    startDateObj = datetime.strptime(startDate, "%Y-%m-%d")
-    endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
-
-    date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
-
-    reply = []
-    listofzeros = [0] * 1440
-    names = ''
-    merge_list = []
-
-    df1 = pd.DataFrame.from_dict({'Date_Time': allDateTime})
-    merge_list.append(df1)
-
-    for station in stationName:
-        names += station + ', '
-        line = []
-
-        for it in date_range:
-            filter = {
-                'd': {
-                    '$gte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc),
-                    '$lte': datetime(it.year, it.month, it.day, 0, 0, 0, tzinfo=timezone.utc)
-                },
-                'n': station
-            }
-            project = {'_id': 0, 'p': 1}
-
-            result1 = ICT_data1.find(filter=filter, projection=project)
-            result_list = list(result1)
-
-            if not result_list:
-                result2 = ICT_data2.find(filter=filter, projection=project)
-                result_list = list(result2)
-
-            line += result_list[0]['p'] if result_list else listofzeros
-
-        for i in range(len(line)):
-            try:
-                if math.isnan(float(line[i])):
-                    line[i] = 0
-            except:
-                line[i] = 0
-
-        line = line[index1:index2 + 1]
-
-        if time1 == 1:
-            data = {'stationName': station, 'line': line}
-        else:
-            temp_line = []
-            for chunk in divide_chunks(line, time1):
-                _, _, avg = my_max_min_function(chunk)
-                temp_line.append(avg)
-            data = {'stationName': station, 'line': temp_line}
-
-        reply.append(data)
-
-    for i in range(len(reply)):
-        max_, min_, avg = my_max_min_function(reply[i]['line'])
-
-        if max_[0] == 0 and min_[0] == 0:
-            max_, min_ = [[0], []], [[0], []]
-        elif len(max_) > 50 and len(min_) > 50:
-            max_ = [[max_[0]], []]
-            min_ = [[min_[0]], []]
-        else:
-            max_ = [[max_[0]] * (len(max_) - 1), allDateTime[1:len(max_)]]
-            min_ = [[min_[0]] * (len(min_) - 1), allDateTime[1:len(min_)]]
-
-        reply[i]['max'] = max_
-        reply[i]['min'] = min_
-        reply[i]['avg'] = avg
-
-    reply.append({'Date_Time': allDateTime})
-
-    for x in range(len(reply) - 1):
-        df1 = pd.DataFrame.from_dict({reply[x]['stationName']: reply[x]['line']})
-        merge_list.append(df1)
-
-    global ICT_excel_data
-    ICT_excel_data = merge_list
-
-    return jsonify(reply)
-
-
-
-@app.route('/GetMultiICTData', methods=['GET', 'POST'])
-def GetMultiICTData():
-
-    MultistartDate = request.args['MultistartDate'].split(',')
-    stationName = request.args['MultistationName'].split(',')
-    Type = request.args['Type']
-    time1 = int(request.args['time'])
-
-    listofzeros = [0] * 1440
-    reply = []
-    allDateTime = []
-
-    if Type == "Date":
-        startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
-        endDateObj = startDateObj
-        allDateTime = [dt.strftime("%H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
-
-        for station in stationName:
-            for dateval in MultistartDate:
-                DateObj = datetime.strptime(dateval, "%Y-%m-%d")
-
-                filter = {
-                    'd': {
-                        '$gte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc),
-                        '$lte': datetime(DateObj.year, DateObj.month, DateObj.day, 0, 0, 0, tzinfo=timezone.utc)
-                    },
-                    'n': station
-                }
-
-                result_list = list(ICT_data1.find(filter=filter, projection={'_id': 0, 'p': 1}))
-                line = result_list[0]['p'] if result_list else listofzeros
-
-                for i in range(len(line)):
-                    try:
-                        if math.isnan(float(line[i])):
-                            line[i] = 0
-                    except:
-                        line[i] = 0
-
-                if time1 > 1:
-                    line = [my_max_min_function(chunk)[2] for chunk in divide_chunks(line, time1)]
-
-                reply.append({'stationName': station, 'line': line, 'Date_Time': DateObj})
-
-    elif Type == "Month":
-        for station in stationName:
-            for dateval in MultistartDate:
-                startDateObj = datetime.strptime(dateval, "%Y-%m-%d")
-                endDateObj = (pd.Timestamp(dateval) + MonthEnd(1)).to_pydatetime()
-
-                dts = [dt.strftime("%d-%m-%Y %H:%M:%S") for dt in datetime_range(startDateObj, endDateObj, timedelta(minutes=time1))]
-                if len(allDateTime) < len(dts):
-                    allDateTime = dts
-
-                alldates = pd.date_range(startDateObj, endDateObj - timedelta(days=1), freq='d').strftime("%Y-%m-%d").tolist()
-                alldates.append(endDateObj.strftime("%Y-%m-%d"))
-
-                line = []
-                for d in alldates:
-                    d_obj = datetime.strptime(d, "%Y-%m-%d")
-                    filter = {
-                        'd': {
-                            '$gte': datetime(d_obj.year, d_obj.month, d_obj.day, 0, 0, 0, tzinfo=timezone.utc),
-                            '$lte': datetime(d_obj.year, d_obj.month, d_obj.day, 0, 0, 0, tzinfo=timezone.utc)
-                        },
-                        'n': station
-                    }
-                    result_list = list(ICT_data1.find(filter=filter, projection={'_id': 0, 'p': 1}))
-                    line += result_list[0]['p'] if result_list else listofzeros
-
-                for i in range(len(line)):
-                    try:
-                        if math.isnan(float(line[i])):
-                            line[i] = 0
-                    except:
-                        line[i] = 0
-
-                if time1 > 1:
-                    line = [my_max_min_function(chunk)[2] for chunk in divide_chunks(line, time1)]
-
-                reply.append({'stationName': station, 'line': line, 'Date_Time': startDateObj})
-
-    # Append timestamps
-    reply.append({'Date_Time': allDateTime})
-
-    # Calculate max, min, avg for each station
-    for i in range(len(reply) - 1):
-        max_, min_, avg = my_max_min_function(reply[i]['line'])
-
-        if max_[0] == 0 and min_[0] == 0:
-            max_, min_ = [[0], []], [[0], []]
-        elif len(max_) > 50 and len(min_) > 50:
-            max_, min_ = [[max_[0]], []], [[min_[0]], []]
-        else:
-            max_ = [[max_[0]] * (len(max_)-1), allDateTime[1:len(max_)]]
-            min_ = [[min_[0]] * (len(min_)-1), allDateTime[1:len(min_)]]
-
-        reply[i]['max'] = max_
-        reply[i]['min'] = min_
-        reply[i]['avg'] = avg
-
-    return jsonify(reply)
-
-
-
-@app.route('/GetICTDataExcel', methods=['GET', 'POST'])
-def GetICTDataExcel():
-
-    global ICT_excel_data
-
-    if len(ICT_excel_data) > 0:
-
-        merged = pd.concat(ICT_excel_data, axis=1, join="inner")
-        merged.to_excel(dir_path+"Excel_Files/ICT.xlsx", index=None)
-
-        path = dir_path+"Excel_Files/ICT.xlsx"
-
-        startDate1 = request.args['startDate']
-        endDate1 = request.args['endDate']
-
-        startDate1 = startDate1.split(" ")
-        endDate1 = endDate1.split(" ")
-
-        startDate = startDate1[0]
-        endDate = endDate1[0]
-
-        # startTime = startDate1[1]
-        # endTime = endDate1[1]
-
-        stationName = request.args['stationName']
-        stationName = stationName.split(',')
-
-        names = ''
-        for i in stationName:
-            names = names+i+', '
-
-        names = names[:-2]
-
-        if startDate == endDate:
-            custom = startDate+' '+' ICT Data of '+names+'.xlsx'
-
-        else:
-            custom = startDate+' to '+endDate+' '+' ICT Data of '+names+'.xlsx'
-
-        if os.path.exists(path):
-            with open(path, "rb") as excel:
-                data = excel.read()
-
-            response = Response(
-                data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-        return send_file(dir_path+'Excel_Files/ICT.xlsx', as_attachment=True, download_name=custom)
-
-    else:
-        return jsonify("No Data to Download")
+# GetICTDataExcel moved to unified handler around line 1079
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////ict/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2408,7 +2606,7 @@ def ThGeneratorFileInsert():
     return res
 
 
-@app.route('/ThGeneratorNames', methods=['GET', 'POST'])
+@app.route('/ThermalGeneratorNames', methods=['GET', 'POST'])
 def ThGeneratorNames():
     startDate1 = request.args['startDate']
     endDate1 = request.args['endDate']
@@ -2427,7 +2625,7 @@ def ThGeneratorNames():
 
 
 
-@app.route('/MultiThGeneratorNames', methods=['GET', 'POST'])
+@app.route('/MultiThermalGeneratorNames', methods=['GET', 'POST'])
 def ThMultiGeneratorNames():
     MultistartDate = request.args['MultistartDate']
     date_list = MultistartDate.split(',')
@@ -2444,7 +2642,7 @@ def ThMultiGeneratorNames():
     return res
 
 
-@app.route('/GetThGeneratorData', methods=['GET', 'POST'])
+@app.route('/GetThermalGeneratorData', methods=['GET', 'POST'])
 def GetThGeneratorData():
     # Extract and validate parameters
     start_str = request.args.get('startDate') or request.form.get('startDate')
@@ -2564,7 +2762,7 @@ def GetThGeneratorData():
     return jsonify(reply)
 
 
-@app.route('/GetMultiThGeneratorData', methods=['GET', 'POST'])
+@app.route('/GetMultiThermalGeneratorData', methods=['GET', 'POST'])
 def GetMultiThGeneratorData():
     multistart_dates = request.args.get('MultistartDate')
     multistation_names = request.args.get('MultistationName')
@@ -2766,9 +2964,14 @@ def ISGSFileInsert():
 
 
 @app.route('/ISGSNames', methods=['GET', 'POST'])
+@app.route('/IsgsNames', methods=['GET', 'POST'])
+@app.route('/isgsnames', methods=['GET', 'POST'])
 def ISGSNames():
-    startDate1 = request.args['startDate']
-    endDate1 = request.args['endDate']
+    startDate1 = request.args.get('startDate') or request.form.get('startDate')
+    endDate1 = request.args.get('endDate') or request.form.get('endDate')
+
+    if not startDate1 or not endDate1:
+        return jsonify({"error": "Missing startDate or endDate"}), 400
 
     startDate = startDate1.split(" ")[0]
     endDate = endDate1.split(" ")[0]
@@ -2784,24 +2987,33 @@ def ISGSNames():
 
 
 @app.route('/MultiISGSNames', methods=['GET', 'POST'])
+@app.route('/MultiIsgsNames', methods=['GET', 'POST'])
+@app.route('/multiisgsnames', methods=['GET', 'POST'])
 def MultiISGSNames():
-    MultistartDate = request.args['MultistartDate']
+    MultistartDate = request.args.get('MultistartDate') or request.form.get('MultistartDate')
+    query_type = request.args.get('Type', 'Date') # Default to Date for backward compatibility
+
+    if not MultistartDate:
+         return jsonify({"error": "Missing MultistartDate"}), 400
+
     date_list = MultistartDate.split(',')
 
     dates_sorted = "_".join(sorted(date_list))
-    cache_key = f"MultiISGSNames_{dates_sorted}"
+    cache_key = f"MultiISGSNames_{dates_sorted}_{query_type}"
 
     cached_res = cache.get(cache_key)
     if cached_res:
         return cached_res
 
-    res = MultiNames(date_list, "ISGS")
+    res = MultiNames((date_list, query_type), "ISGS")
     cache.set(cache_key, res, timeout=86400)
     return res
 
 
 
 @app.route('/GetISGSData', methods=['GET', 'POST'])
+@app.route('/GetIsgsData', methods=['GET', 'POST'])
+@app.route('/getisgsdata', methods=['GET', 'POST'])
 def GetISGSData():
     # Parameter extraction with fallback for POST data
     startDateStr = request.args.get('startDate') or request.form.get('startDate')
@@ -2920,12 +3132,21 @@ def GetISGSData():
     return jsonify(reply)
 
 @app.route('/GetMultiISGSData', methods=['GET', 'POST'])
+@app.route('/GetMultiIsgsData', methods=['GET', 'POST'])
+@app.route('/getmultiisgsdata', methods=['GET', 'POST'])
 def GetMultiISGSData():
     # Parse request arguments
-    MultistartDate = request.args['MultistartDate'].split(',')
-    stationNames = request.args['MultistationName'].split(',')
-    query_type = request.args['Type']
-    time_interval = int(request.args['time'])
+    MultistartDateStr = request.args.get('MultistartDate') or request.form.get('MultistartDate')
+    MultistationNameStr = request.args.get('MultistationName') or request.form.get('MultistationName')
+    query_type = request.args.get('Type', 'Date')
+    time_interval_str = request.args.get('time') or request.form.get('time') or '1'
+
+    if not all([MultistartDateStr, MultistationNameStr]):
+         return jsonify({"error": "Missing MultistartDate or MultistationName"}), 400
+
+    MultistartDate = MultistartDateStr.split(',')
+    stationNames = MultistationNameStr.split(',')
+    time_interval = int(time_interval_str)
 
     listofzeros = [0] * 1440
     reply = []
@@ -3020,6 +3241,8 @@ def GetMultiISGSData():
 
 
 @app.route('/GetISGSDataExcel', methods=['GET', 'POST'])
+@app.route('/GetIsgsDataExcel', methods=['GET', 'POST'])
+@app.route('/getisgsdataexcel', methods=['GET', 'POST'])
 def GetISGSDataExcel():
     # Merge and save Excel
     output_path = os.path.join(dir_path, "Excel_Files", "ISGS.xlsx")
