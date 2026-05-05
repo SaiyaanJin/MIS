@@ -621,7 +621,7 @@ export default function Ict() {
                                 <div className="gen-field-label"><i className="pi pi-bolt" />Select Ict(s)</div>
                                 <MultiSelect filterPlaceholder="Search generators…" showSelectAll showClear resetFilterOnHide
                                     maxSelectedLabels={3} selectionLimit={5} display="chip"
-                                    placeholder="Pick up to 5 generators…"
+                                    placeholder="Pick up to 5 elements…"
                                     value={Selected_ict_states} options={ict_states}
                                     onChange={(e) => setSelected_ict_states(e.value)}
                                     filter className="w-full modern-multiselect"

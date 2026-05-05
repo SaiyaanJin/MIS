@@ -621,7 +621,7 @@ export default function Lines() {
                                 <div className="gen-field-label"><i className="pi pi-bolt" />Select Lines(s)</div>
                                 <MultiSelect filterPlaceholder="Search generators…" showSelectAll showClear resetFilterOnHide
                                     maxSelectedLabels={3} selectionLimit={5} display="chip"
-                                    placeholder="Pick up to 5 generators…"
+                                    placeholder="Pick up to 5 elements…"
                                     value={Selected_lines_states} options={lines_states}
                                     onChange={(e) => setSelected_lines_states(e.value)}
                                     filter className="w-full modern-multiselect"

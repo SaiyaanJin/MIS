@@ -621,7 +621,7 @@ export default function Frequency() {
                                 <div className="gen-field-label"><i className="pi pi-bolt" />Select Frequency(s)</div>
                                 <MultiSelect filterPlaceholder="Search generators…" showSelectAll showClear resetFilterOnHide
                                     maxSelectedLabels={3} selectionLimit={5} display="chip"
-                                    placeholder="Pick up to 5 generators…"
+                                    placeholder="Pick up to 5 elements…"
                                     value={Selected_frequency_states} options={frequency_states}
                                     onChange={(e) => setSelected_frequency_states(e.value)}
                                     filter className="w-full modern-multiselect"

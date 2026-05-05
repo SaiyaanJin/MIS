@@ -980,7 +980,7 @@
 																		selectionLimit: 5,
 																		display: "chip",
 																		placeholder:
-																			"Pick up to 5 generators\u2026",
+																			"Pick up to 5 elements\u2026",
 																		value: V,
 																		options: Y,
 																		onChange: function (e) {

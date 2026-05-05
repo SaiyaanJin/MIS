@@ -3324,7 +3324,7 @@ def MultiExchangeNames():
     if cached_res:
         return cached_res
 
-    res = MultiNames(date_list, "ISGS")
+    res = MultiNames(date_list, "Exchange")
     cache.set(cache_key, res, timeout=86400)
     return res
 
