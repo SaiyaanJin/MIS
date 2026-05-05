@@ -209,3 +209,110 @@ export const formatXLabels = (arr) =>
         const m = moment(t, moment.ISO_8601, true);
         return m.isValid() ? m.format("DD-MMM HH:mm") : String(t ?? "");
     });
+
+// ── Max / Min index finder ─────────────────────────────────────────────────────
+// Returns { maxIdx, minIdx } for a numeric array (skips null/undefined).
+export const findMaxMin = (dataArr) => {
+    if (!dataArr || dataArr.length === 0) return { maxIdx: -1, minIdx: -1 };
+    let maxIdx = -1, minIdx = -1;
+    let maxVal = -Infinity, minVal = Infinity;
+    for (let i = 0; i < dataArr.length; i++) {
+        const v = Number(dataArr[i]);
+        if (isNaN(v)) continue;
+        if (v > maxVal) { maxVal = v; maxIdx = i; }
+        if (v < minVal) { minVal = v; minIdx = i; }
+    }
+    return { maxIdx, minIdx, maxVal, minVal };
+};
+
+// ── Max / Min annotation plugin ───────────────────────────────────────────────
+// Datasets opt in by setting: _maxIdx, _minIdx, _maxVal, _minVal, _unit, _hex
+// Draws a filled circle + value callout label at the peak and trough of each trace.
+export const makeMaxMinPlugin = () => ({
+    id: "misMaxMinMarkers",
+    afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const { chartArea } = chart;
+        if (!chartArea) return;
+
+        chart.data.datasets.forEach((ds, dsIdx) => {
+            if (ds._maxIdx == null || ds._minIdx == null) return;
+            const meta = chart.getDatasetMeta(dsIdx);
+            if (!meta || meta.hidden) return;
+
+            const color = ds._hex || ds.borderColor || "#3b82f6";
+            const unit  = ds._unit || "";
+
+            const drawMarker = (pointIdx, isMax) => {
+                if (pointIdx < 0) return;
+                const point = meta.data[pointIdx];
+                if (!point) return;
+
+                const px = point.x;
+                const py = point.y;
+                const val = isMax ? ds._maxVal : ds._minVal;
+                if (val == null) return;
+
+                // ── Dot ──────────────────────────────────────────────────────
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(px, py, 6, 0, 2 * Math.PI);
+                ctx.fillStyle   = isMax ? "#ef4444" : "#3b82f6";   // red = max, blue = min
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth   = 2;
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+
+                // ── Label background + text ───────────────────────────────────
+                const symbol = isMax ? "▲" : "▼";
+                const label  = `${symbol} ${Number(val).toFixed(2)}${unit ? " " + unit : ""}`;
+                ctx.save();
+                ctx.font = "bold 10px Inter, sans-serif";
+                const tw = ctx.measureText(label).width;
+
+                // Determine label position: above for max, below for min
+                const PAD   = 4;
+                const BOX_H = 16;
+                const BOX_W = tw + PAD * 2;
+
+                // Clamp horizontally inside chart area
+                let lx = px - BOX_W / 2;
+                lx = Math.max(chartArea.left, Math.min(chartArea.right - BOX_W, lx));
+
+                let ly = isMax ? py - 8 - BOX_H : py + 8;
+                // Clamp vertically inside chart area
+                ly = Math.max(chartArea.top, Math.min(chartArea.bottom - BOX_H, ly));
+
+                // Background pill
+                ctx.beginPath();
+                const r = 4;
+                ctx.moveTo(lx + r, ly);
+                ctx.lineTo(lx + BOX_W - r, ly);
+                ctx.arcTo(lx + BOX_W, ly, lx + BOX_W, ly + r, r);
+                ctx.lineTo(lx + BOX_W, ly + BOX_H - r);
+                ctx.arcTo(lx + BOX_W, ly + BOX_H, lx + BOX_W - r, ly + BOX_H, r);
+                ctx.lineTo(lx + r, ly + BOX_H);
+                ctx.arcTo(lx, ly + BOX_H, lx, ly + BOX_H - r, r);
+                ctx.lineTo(lx, ly + r);
+                ctx.arcTo(lx, ly, lx + r, ly, r);
+                ctx.closePath();
+                ctx.fillStyle   = isMax ? "rgba(239,68,68,0.92)" : "rgba(59,130,246,0.92)";
+                ctx.shadowColor = "rgba(0,0,0,0.30)";
+                ctx.shadowBlur  = 4;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Text
+                ctx.fillStyle  = "#ffffff";
+                ctx.textAlign  = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(label, lx + BOX_W / 2, ly + BOX_H / 2);
+                ctx.restore();
+            };
+
+            drawMarker(ds._maxIdx, true);
+            drawMarker(ds._minIdx, false);
+        });
+    },
+});

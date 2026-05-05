@@ -1,10 +1,10 @@
-import React, { useMemo, useRef } from "react";
+﻿import React, { useMemo, useRef } from "react";
 import moment from "moment";
 import { Chart } from "primereact/chart";
 import { useTheme } from "../context/ThemeContext";
 import {
     TRACE_COLORS, FREQ_COLORS,
-    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels
+    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels, findMaxMin, makeMaxMinPlugin
 } from "./_chartUtils";
 
 export default function Mvargraph(props) {
@@ -33,6 +33,7 @@ export default function Mvargraph(props) {
             const maxVal = max != null ? Number(max).toFixed(2) : "N/A";
             const minVal = min != null ? Number(min).toFixed(2) : "N/A";
             const avgVal = avg != null ? Number(avg).toFixed(2) : "N/A";
+            const { maxIdx: _mxI, minIdx: _mnI, maxVal: _mxV, minVal: _mnV } = findMaxMin(entry["line"]);
 
             datasets.push({
                 label: `${entry["stationName"]}${nameSuffix}  ▲${maxVal} ▼${minVal} ⌀${avgVal} MVAR`,
@@ -46,6 +47,11 @@ export default function Mvargraph(props) {
                 pointHoverRadius: 5,
                 pointHoverBackgroundColor: color,
                 yAxisID: "y",
+                _maxIdx: _mxI,
+                _minIdx: _mnI,
+                _maxVal: _mxV,
+                _minVal: _mnV,
+                _unit: "MVAr",
                 _hex: color,
                 _fill: true,
             });
@@ -77,10 +83,10 @@ export default function Mvargraph(props) {
                 type="line"
                 data={chartData}
                 options={chartOptions}
-                plugins={[makeGradientPlugin()]}
+                plugins={[makeGradientPlugin(), makeMaxMinPlugin()]}
                 style={{ width: "100%", height: "100%" }}
             />
-            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom � Drag to pan � Dbl-click to reset</div>
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom � Drag to pan � Dbl-click to reset</div>
         </div>
     );
 }

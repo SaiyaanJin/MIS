@@ -1,9 +1,10 @@
-import React, { useMemo, useRef } from "react";
+﻿import React, { useMemo, useRef } from "react";
 import moment from "moment";
 import { Chart } from "primereact/chart";
 import { Chart as ChartJS, registerables } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { useTheme } from "../context/ThemeContext";
+import { findMaxMin, makeMaxMinPlugin } from "./_chartUtils";
 
 // Register Chart.js core + zoom plugin once
 ChartJS.register(...registerables, zoomPlugin);
@@ -97,6 +98,7 @@ export default function Generatorgraph(props) {
             const maxVal = max?.[0]?.[0] != null ? Number(max[0][0]).toFixed(1) : "N/A";
             const minVal = min?.[0]?.[0] != null ? Number(min[0][0]).toFixed(1) : "N/A";
             const avgVal = avg != null ? Number(avg).toFixed(1) : "N/A";
+            const { maxIdx: _mxI, minIdx: _mnI, maxVal: _mxV, minVal: _mnV } = findMaxMin(entry["output"]);
             const legend = `${stName}${nameSuffix}  ▲${maxVal} ▼${minVal} ⌀${avgVal} MW`;
 
             datasets.push({
@@ -116,6 +118,11 @@ export default function Generatorgraph(props) {
                 yAxisID: "y",
                 _hex: color,   // stored for gradient plugin
                 _isMW: isMW,
+                _maxIdx: isMW ? _mxI : undefined,
+                _minIdx: isMW ? _mnI : undefined,
+                _maxVal: isMW ? _mxV : undefined,
+                _minVal: isMW ? _mnV : undefined,
+                _unit: "MW",
             });
             traceIdx++;
         }
@@ -308,7 +315,7 @@ export default function Generatorgraph(props) {
                 type="line"
                 data={chartData}
                 options={chartOptions}
-                plugins={[gradientPlugin]}
+                plugins={[gradientPlugin, makeMaxMinPlugin()]}
                 style={{ width: "100%", height: "100%" }}
             />
             <div style={{

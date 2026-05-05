@@ -1,10 +1,10 @@
-import React, { useMemo, useRef } from "react";
+﻿import React, { useMemo, useRef } from "react";
 import moment from "moment";
 import { Chart } from "primereact/chart";
 import { useTheme } from "../context/ThemeContext";
 import {
     TRACE_COLORS,
-    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels
+    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels, findMaxMin, makeMaxMinPlugin
 } from "./_chartUtils";
 
 export default function Demandgraph(props) {
@@ -33,6 +33,7 @@ export default function Demandgraph(props) {
             const maxVal = max?.[0]?.[0] != null ? Number(max[0][0]).toFixed(1) : "N/A";
             const minVal = min?.[0]?.[0] != null ? Number(min[0][0]).toFixed(1) : "N/A";
             const avgVal = avg != null ? Number(avg).toFixed(1) : "N/A";
+            const { maxIdx: _mxI, minIdx: _mnI, maxVal: _mxV, minVal: _mnV } = findMaxMin(entry["output"]);
 
             datasets.push({
                 label: `${entry["stationName"]}${nameSuffix}  ▲${maxVal} ▼${minVal} ⌀${avgVal} MW`,
@@ -46,6 +47,11 @@ export default function Demandgraph(props) {
                 pointHoverRadius: 5,
                 pointHoverBackgroundColor: color,
                 yAxisID: "y",
+                _maxIdx: _mxI,
+                _minIdx: _mnI,
+                _maxVal: _mxV,
+                _minVal: _mnV,
+                _unit: "MW",
                 _hex: color,
                 _fill: true,
             });
@@ -77,10 +83,10 @@ export default function Demandgraph(props) {
                 type="line"
                 data={chartData}
                 options={chartOptions}
-                plugins={[makeGradientPlugin()]}
+                plugins={[makeGradientPlugin(), makeMaxMinPlugin()]}
                 style={{ width: "100%", height: "100%" }}
             />
-            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom � Drag to pan � Dbl-click to reset</div>
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom � Drag to pan � Dbl-click to reset</div>
         </div>
     );
 }

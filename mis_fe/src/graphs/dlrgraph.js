@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from "react";
+ï»¿import React, { useMemo, useRef } from "react";
 import { Chart } from "primereact/chart";
 import { useTheme } from "../context/ThemeContext";
 import {
@@ -77,10 +77,10 @@ export default function Dlrgraph(props) {
                 type="line"
                 data={chartData}
                 options={chartOptions}
-                plugins={[makeGradientPlugin()]}
+                plugins={[makeGradientPlugin(), makeMaxMinPlugin()]}
                 style={{ width: "100%", height: "100%" }}
             />
-            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom · Drag to pan · Dbl-click to reset</div>
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom ï¿½ Drag to pan ï¿½ Dbl-click to reset</div>
         </div>
     );
 }

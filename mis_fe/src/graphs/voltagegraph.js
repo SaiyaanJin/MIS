@@ -1,10 +1,10 @@
-import React, { useMemo, useRef } from "react";
+ï»¿import React, { useMemo, useRef } from "react";
 import moment from "moment";
 import { Chart } from "primereact/chart";
 import { useTheme } from "../context/ThemeContext";
 import {
     TRACE_COLORS,
-    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels
+    hexRgba, makeGradientPlugin, buildOptions, buildFreqDatasets, formatXLabels, findMaxMin, makeMaxMinPlugin
 } from "./_chartUtils";
 
 // Bus-1 = solid+fill, Bus-2 = dashed+no-fill with shifted palette
@@ -39,6 +39,8 @@ export default function Voltagegraph(props) {
             if (props.date_time && props.check2) nameSuffix = " Â· " + moment(entry["Date_Time"]).format("MMM YYYY");
 
             const f = (v) => v != null ? Number(v).toFixed(2) : "N/A";
+            const { maxIdx: _mx1I, minIdx: _mn1I, maxVal: _mx1V, minVal: _mn1V } = findMaxMin(entry["voltageBus1"]);
+            const { maxIdx: _mx2I, minIdx: _mn2I, maxVal: _mx2V, minVal: _mn2V } = findMaxMin(entry["voltageBus2"]);
 
             // Bus-1 (solid + gradient fill)
             datasets.push({
@@ -53,6 +55,11 @@ export default function Voltagegraph(props) {
                 pointHoverRadius: 5,
                 pointHoverBackgroundColor: c1,
                 yAxisID: "y",
+                _maxIdx: _mx1I,
+                _minIdx: _mn1I,
+                _maxVal: _mx1V,
+                _minVal: _mn1V,
+                _unit: "kV",
                 _hex: c1,
                 _fill: true,
             });
@@ -71,6 +78,11 @@ export default function Voltagegraph(props) {
                 pointHoverRadius: 4,
                 pointHoverBackgroundColor: c2,
                 yAxisID: "y",
+                _maxIdx: _mx2I,
+                _minIdx: _mn2I,
+                _maxVal: _mx2V,
+                _minVal: _mn2V,
+                _unit: "kV",
                 _hex: c2,
                 _fill: false,
             });
@@ -102,10 +114,10 @@ export default function Voltagegraph(props) {
                 type="line"
                 data={chartData}
                 options={chartOptions}
-                plugins={[makeGradientPlugin()]}
+                plugins={[makeGradientPlugin(), makeMaxMinPlugin()]}
                 style={{ width: "100%", height: "100%" }}
             />
-            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom · Drag to pan · Dbl-click to reset</div>
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom ï¿½ Drag to pan ï¿½ Dbl-click to reset</div>
         </div>
     );
 }
