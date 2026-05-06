@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   App.css — Layout, global component overrides, animations for MIS App
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Layout ───────────────────────────────────────────────────────────── */
 .ultimate-layout {
     display: flex;
     min-height: 100vh;
@@ -8,281 +13,187 @@
 
 .app-layout-main {
     flex: 1;
-    margin-left: 228px; /* Fixed Sidebar Offset (16px) + Width (210px) + 2px buffer */
+    margin-left: 228px;
     transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
 }
 
-.theme-toggle-floating {
-    position: fixed;
-    top: 1.5rem;
-    right: 1.5rem;
-    z-index: 1001;
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-subtle) !important;
-    color: var(--text-primary) !important;
-    border-radius: 50% !important;
-    width: 42px !important;
-    height: 42px !important;
-    box-shadow: var(--shadow-soft) !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.theme-toggle-floating:hover {
-    transform: rotate(15deg) scale(1.1);
-    border-color: var(--primary) !important;
-    box-shadow: var(--shadow-hover) !important;
-}
-
-/* Response to Sidebar Collapse */
+/* Sidebar collapsed state */
 body:has(.ultimate-sidebar.collapsed) .app-layout-main {
-    margin-left: 98px; /* Fixed Sidebar Offset (16px) + Width (80px) + 2px buffer */
+    margin-left: 82px;
 }
 
 .content-area {
     flex: 1;
     overflow-y: auto;
+    /* Page-entry animation on every route render */
+    animation: mis-page-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.loading-placeholder {
-    height: 200px;
+/* ── Suspense / Loading Skeleton ──────────────────────────────────────── */
+.mis-suspense-shell {
+    padding: 20px 16px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: var(--primary);
-    font-size: 1.5rem;
-    letter-spacing: 2px;
-}
-.display-none {
-    display: none;
+    flex-direction: column;
+    gap: 16px;
+    animation: mis-fade-in 0.3s ease both;
 }
 
-a {
-	text-decoration: none;
-	color: rgb(0, 0, 0);
-	font-size: 20px;
-	font-family: "Trebuchet MS", sans-serif;
-	padding: 7px 15px;
-	background-color: transparent;
+@keyframes mis-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
-a:hover {
-	background-color: #000000;
-	color: rgb(248, 3, 3);
-	width: "auto";
-	border-radius: 25px;
+.mis-suspense-hero {
+    border-radius: 14px;
+    height: 72px;
+    background: linear-gradient(90deg,
+        var(--border-subtle) 25%,
+        var(--border-bright) 50%,
+        var(--border-subtle) 75%
+    );
+    background-size: 200% 100%;
+    animation: mis-shimmer 1.6s infinite linear;
 }
 
-a:active {
-	color: #3af122;
+.mis-suspense-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
 }
 
-body {
-	font-family: var(--font-family);
+.mis-suspense-card {
+    border-radius: 12px;
+    background: linear-gradient(90deg,
+        var(--border-subtle) 25%,
+        var(--border-bright) 50%,
+        var(--border-subtle) 75%
+    );
+    background-size: 200% 100%;
+    animation: mis-shimmer 1.6s infinite linear;
 }
 
-.dropbtn {
-	background-color: #04aa6d;
-	color: white;
-	padding: 16px;
-	font-size: 16px;
-	border: none;
+.mis-suspense-chart {
+    border-radius: 14px;
+    height: 340px;
+    background: linear-gradient(90deg,
+        var(--border-subtle) 25%,
+        var(--border-bright) 50%,
+        var(--border-subtle) 75%
+    );
+    background-size: 200% 100%;
+    animation: mis-shimmer 1.6s 0.1s infinite linear;
 }
 
-/* The container <div> - needed to position the dropdown content */
-.dropdown {
-	position: relative;
-	display: inline-block;
+.mis-suspense-legend {
+    display: flex;
+    gap: 10px;
 }
 
-/* Dropdown Content (Hidden by Default) */
-.dropdown-content {
-	display: none;
-	position: absolute;
-	background-color: #f1f1f1;
-	min-width: 260px;
-	box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-	z-index: 1;
+.mis-suspense-legend-item {
+    border-radius: 8px;
+    height: 20px;
+    flex: 1;
+    background: linear-gradient(90deg,
+        var(--border-subtle) 25%,
+        var(--border-bright) 50%,
+        var(--border-subtle) 75%
+    );
+    background-size: 200% 100%;
+    animation: mis-shimmer 1.6s 0.2s infinite linear;
 }
 
-/* Links inside the dropdown */
-.dropdown-content a {
-	color: black;
-	padding: 6px 11px;
-	text-decoration: none;
-	display: block;
-}
-
-/* Change color of dropdown links on hover */
-.dropdown-content a:hover {
-	background-color: #817575;
-	color: rgb(255, 255, 255);
-	width: "auto";
-	border-radius: 25px;
-}
-
-/* Show the dropdown menu on hover */
-.dropdown:hover .dropdown-content {
-	display: block;
-}
-
-.page-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.02em;
-}
-
-.combined-header-section h1 {
-    color: var(--text-primary);
-    font-weight: 700;
-}
-
-.premium-dropdown {
+/* ── Theme Toggle Button ──────────────────────────────────────────────── */
+.theme-toggle-floating {
+    position: fixed;
+    top: 1.2rem;
+    right: 1.4rem;
+    z-index: 1001;
     background: var(--bg-card) !important;
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: var(--radius-sm) !important;
-}
-
-.p-dropdown-label {
+    border: 1.5px solid var(--border-bright) !important;
     color: var(--text-primary) !important;
+    border-radius: 50% !important;
+    width: 40px !important;
+    height: 40px !important;
+    box-shadow: var(--shadow-soft), 0 0 0 0 rgba(37,99,235,0) !important;
+    transition:
+        transform 0.3s var(--transition-spring),
+        box-shadow 0.25s ease,
+        border-color 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-.animate-fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+.theme-toggle-floating .p-button-icon {
+    font-size: 15px !important;
+    transition: transform 0.5s var(--transition-spring) !important;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+.theme-toggle-floating:hover {
+    transform: rotate(20deg) scale(1.12) !important;
+    border-color: var(--primary) !important;
+    box-shadow:
+        var(--shadow-hover),
+        0 0 0 4px rgba(37,99,235,0.14) !important;
 }
 
-/* Scrollbar customization for the high-fidelity theme */
-::-webkit-scrollbar {
-    width: 6px;
+.theme-toggle-floating:active {
+    transform: rotate(20deg) scale(0.96) !important;
 }
 
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--border-bright);
-    border-radius: 10px;
-}
-
-.border-top-primary { border-top: 4px solid var(--primary) !important; }
-.border-top-info { border-top: 4px solid #3b82f6 !important; }
-.border-top-warning { border-top: 4px solid #f59e0b !important; }
-.border-top-danger { border-top: 4px solid #ef4444 !important; }
-
-.divider-h {
-    width: 1px;
-    background: var(--border-subtle);
-    margin: 0 2rem;
-}
-
-.ultimate-action-btn {
-    background: var(--primary) !important;
-    color: white !important;
-    border: 1px solid transparent !important;
-    font-weight: 600 !important;
-    font-size: 0.95rem !important;
-    letter-spacing: 0px !important;
-    text-transform: none !important;
-    border-radius: var(--radius-md) !important;
-    box-shadow: var(--shadow-soft) !important;
-    transition: var(--transition-base) !important;
-    padding: 0.75rem 1.5rem !important;
-}
-
-.ultimate-action-btn:hover {
-    background: var(--primary-hover) !important;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-hover) !important;
-}
-
-.ultimate-action-btn:active {
-    transform: translateY(0);
-}
-
-.glass-panel {
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-soft);
-    transition: box-shadow var(--transition-base);
-}
-
-.font-accent {
-    font-family: 'Inter', sans-serif;
-    letter-spacing: -0.01em;
-}
-
-.premium-multiselect {
+/* ── PrimeReact Global Overrides ──────────────────────────────────────── */
+.p-dropdown,
+.p-calendar .p-inputtext,
+.p-multiselect {
     background: var(--bg-card) !important;
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: var(--radius-sm) !important;
-}
-
-.premium-multiselect .p-multiselect-label {
-    padding: 0.5rem 0.75rem !important;
-    color: var(--text-primary) !important;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
-}
-
-.p-multiselect-panel,
-.p-dropdown-panel,
-.p-datepicker {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-bright) !important;
-    box-shadow: var(--shadow-hover) !important;
+    border: 1.5px solid var(--border-bright) !important;
     border-radius: var(--radius-md) !important;
     color: var(--text-primary) !important;
-}
-
-.p-dropdown, .p-calendar .p-inputtext, .p-multiselect {
-    background: var(--bg-main) !important;
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: var(--radius-sm) !important;
-    color: var(--text-primary) !important;
-    transition: var(--transition-base);
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+    font-family: var(--font-base) !important;
 }
 
 .p-dropdown:not(.p-disabled):hover,
 .p-calendar:not(.p-disabled):hover .p-inputtext,
 .p-multiselect:not(.p-disabled):hover {
-    border-color: var(--border-bright) !important;
+    border-color: #93c5fd !important;
 }
 
 .p-dropdown:not(.p-disabled).p-focus,
 .p-calendar:not(.p-disabled).p-focus .p-inputtext,
 .p-multiselect:not(.p-disabled).p-focus {
     border-color: var(--primary) !important;
-    box-shadow: 0 0 0 3px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2) !important;
+    box-shadow: var(--glow-primary) !important;
+    outline: none !important;
 }
 
-/* ── PrimeReact Calendar: month/year navigator <select> dropdowns ───────────
-   Fixes the invisible white-text-on-white-background bug in the header
-   navigation selects when monthNavigator / yearNavigator are enabled.
-   Applied globally here so it works across ALL pages in the app.
-   ─────────────────────────────────────────────────────────────────────────── */
+.p-dropdown-label { color: var(--text-primary) !important; }
+
+.p-multiselect-panel,
+.p-dropdown-panel,
+.p-datepicker {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-bright) !important;
+    box-shadow: var(--shadow-hover), 0 0 0 1px var(--border-subtle) !important;
+    border-radius: var(--radius-lg) !important;
+    color: var(--text-primary) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+/* ── Calendar Navigator Selects ───────────────────────────────────────── */
 .p-datepicker .p-datepicker-header .p-datepicker-month,
 .p-datepicker .p-datepicker-header .p-datepicker-year {
     color: #1e293b !important;
     background-color: #f8fafc !important;
-    border: 1.5px solid rgba(148, 163, 184, 0.55) !important;
+    border: 1.5px solid rgba(148,163,184,0.55) !important;
     border-radius: 7px !important;
     padding: 4px 26px 4px 10px !important;
     font-size: 13px !important;
     font-weight: 600 !important;
-    font-family: 'Inter', sans-serif !important;
+    font-family: var(--font-base) !important;
     cursor: pointer !important;
     transition: border-color 0.15s, box-shadow 0.15s !important;
     -webkit-appearance: auto !important;
@@ -293,32 +204,137 @@ body {
 .p-datepicker .p-datepicker-header .p-datepicker-month:hover,
 .p-datepicker .p-datepicker-header .p-datepicker-year:hover {
     border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14) !important;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.14) !important;
 }
 
 .p-datepicker .p-datepicker-header .p-datepicker-month:focus,
 .p-datepicker .p-datepicker-header .p-datepicker-year:focus {
     border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.2) !important;
 }
 
-/* Ensure native OS <option> items are readable */
 .p-datepicker .p-datepicker-header .p-datepicker-month option,
 .p-datepicker .p-datepicker-header .p-datepicker-year option {
     color: #1e293b !important;
     background-color: #ffffff !important;
 }
 
-/* Dark mode variant */
-[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-month,
-[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-year {
+[data-theme='dark'] .p-datepicker .p-datepicker-header .p-datepicker-month,
+[data-theme='dark'] .p-datepicker .p-datepicker-header .p-datepicker-year {
     color: #e2e8f0 !important;
     background-color: #1e293b !important;
-    border-color: rgba(148, 163, 184, 0.3) !important;
+    border-color: rgba(148,163,184,0.3) !important;
 }
 
-[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-month option,
-[data-theme="dark"] .p-datepicker .p-datepicker-header .p-datepicker-year option {
+[data-theme='dark'] .p-datepicker .p-datepicker-header .p-datepicker-month option,
+[data-theme='dark'] .p-datepicker .p-datepicker-header .p-datepicker-year option {
     color: #e2e8f0 !important;
     background-color: #1e293b !important;
+}
+
+/* ── Global Buttons ───────────────────────────────────────────────────── */
+.premium-dropdown {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+.ultimate-action-btn {
+    background: var(--primary) !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-family: var(--font-base) !important;
+    font-size: 0.9rem !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 4px 14px -3px rgba(37,99,235,0.4) !important;
+    transition: transform 0.18s var(--transition-spring), box-shadow 0.2s ease !important;
+    padding: 0.65rem 1.4rem !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.ultimate-action-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.2s ease;
+}
+
+.ultimate-action-btn:hover {
+    background: var(--primary-hover) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 22px -4px rgba(37,99,235,0.5) !important;
+}
+
+.ultimate-action-btn:active {
+    transform: translateY(0) scale(0.98) !important;
+}
+
+/* ── Glass Panel ──────────────────────────────────────────────────────── */
+.glass-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.glass-panel:hover {
+    border-color: var(--border-bright);
+    box-shadow: var(--shadow-hover);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────── */
+.animate-fade-in {
+    animation: mis-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes mis-fade-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Page Title ───────────────────────────────────────────────────────── */
+.page-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.03em;
+    font-family: var(--font-heading);
+}
+
+/* ── Loading Placeholder (legacy compat) ─────────────────────────────── */
+.loading-placeholder {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    font-family: var(--font-heading);
+}
+
+/* ── Utility Classes ──────────────────────────────────────────────────── */
+.display-none { display: none !important; }
+.divider-h { width: 1px; background: var(--border-subtle); margin: 0 1.5rem; }
+
+.premium-multiselect { background: var(--bg-card) !important; border: 1px solid var(--border-subtle) !important; border-radius: var(--radius-sm) !important; }
+.premium-multiselect .p-multiselect-label { padding: 0.5rem 0.75rem !important; color: var(--text-primary) !important; font-family: var(--font-base); font-size: 0.93rem; }
+
+.font-accent { font-family: var(--font-heading); letter-spacing: -0.01em; }
+.font-mono   { font-family: var(--font-mono); }
+
+.border-top-primary { border-top: 3px solid var(--primary) !important; }
+.border-top-info    { border-top: 3px solid #3b82f6 !important; }
+.border-top-warning { border-top: 3px solid #f59e0b !important; }
+.border-top-danger  { border-top: 3px solid #ef4444 !important; }
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .app-layout-main { margin-left: 0 !important; }
+    .content-area { padding: 8px 4px; }
 }

@@ -1,6 +1,7 @@
 ﻿import React, { useMemo, useRef } from "react";
 import moment from "moment";
 import { Chart } from "primereact/chart";
+import GraphToolbar from "./GraphToolbar";
 import { useTheme } from "../context/ThemeContext";
 import {
     TRACE_COLORS,
@@ -10,6 +11,7 @@ import {
 export default function Linesgraph(props) {
     const { isDarkMode } = useTheme();
     const chartRef = useRef(null);
+    const wrapperRef = useRef(null);
 
     const { chartData, chartOptions } = useMemo(() => {
         if (!props.lines_data || !props.frequency) return { chartData: {}, chartOptions: {} };
@@ -80,7 +82,7 @@ export default function Linesgraph(props) {
     if (!props.lines_data) return null;
 
     return (
-        <div style={{ position: "relative", width: "100%", height: "650px", padding: "8px 0" }}>
+        <div ref={wrapperRef} className="pc-chart-wrapper"><GraphToolbar chartRef={chartRef} wrapperRef={wrapperRef} /><div className="pc-chart-body" style={{ height: "650px", padding: "12px 16px" }}>
             <Chart
                 ref={chartRef}
                 type="line"
@@ -89,7 +91,7 @@ export default function Linesgraph(props) {
                 plugins={makeChartPlugins()}
                 style={{ width: "100%", height: "100%" }}
             />
-            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none", fontFamily: "Inter, sans-serif", letterSpacing: "0.3px" }}>⊕ Scroll to zoom &nbsp;·&nbsp; ✥ Drag to pan &nbsp;·&nbsp; ↺ Dbl-click to reset</div>
         </div>
+    </div>
     );
 }

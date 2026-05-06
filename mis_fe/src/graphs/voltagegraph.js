@@ -1,6 +1,7 @@
 ﻿import React, { useMemo, useRef } from "react";
 import moment from "moment";
 import { Chart } from "primereact/chart";
+import GraphToolbar from "./GraphToolbar";
 import { useTheme } from "../context/ThemeContext";
 import {
     TRACE_COLORS,
@@ -14,6 +15,7 @@ const BUS2_COLORS = ["#818cf8","#34d399","#fbbf24","#a78bfa","#22d3ee","#fb923c"
 export default function Voltagegraph(props) {
     const { isDarkMode } = useTheme();
     const chartRef = useRef(null);
+    const wrapperRef = useRef(null);
 
     const { chartData, chartOptions } = useMemo(() => {
         if (!props.voltage_data) return { chartData: {}, chartOptions: {} };
@@ -108,7 +110,7 @@ export default function Voltagegraph(props) {
     if (!props.voltage_data) return null;
 
     return (
-        <div style={{ position: "relative", width: "100%", height: "650px", padding: "8px 0" }}>
+        <div ref={wrapperRef} className="pc-chart-wrapper"><GraphToolbar chartRef={chartRef} wrapperRef={wrapperRef} /><div className="pc-chart-body" style={{ height: "650px", padding: "12px 16px" }}>
             <Chart
                 ref={chartRef}
                 type="line"
@@ -117,7 +119,7 @@ export default function Voltagegraph(props) {
                 plugins={makeChartPlugins()}
                 style={{ width: "100%", height: "100%" }}
             />
-            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none", fontFamily: "Inter, sans-serif", letterSpacing: "0.3px" }}>⊕ Scroll to zoom &nbsp;·&nbsp; ✥ Drag to pan &nbsp;·&nbsp; ↺ Dbl-click to reset</div>
         </div>
+    </div>
     );
 }

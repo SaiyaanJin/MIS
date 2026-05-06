@@ -55,8 +55,19 @@ const Layout = ({ children }) => {
 				>
 					<Suspense
 						fallback={
-							<div className="loading-placeholder">
-								Initializing High-Fidelity Experience...
+							<div className="mis-suspense-shell">
+								<div className="mis-suspense-hero" />
+								<div className="mis-suspense-row">
+									<div className="mis-suspense-card" style={{ height: 72 }} />
+									<div className="mis-suspense-card" style={{ height: 72 }} />
+									<div className="mis-suspense-card" style={{ height: 72 }} />
+								</div>
+								<div className="mis-suspense-chart" />
+								<div className="mis-suspense-legend">
+									{[1, 2, 3, 4].map((i) => (
+										<div key={i} className="mis-suspense-legend-item" />
+									))}
+								</div>
 							</div>
 						}
 					>

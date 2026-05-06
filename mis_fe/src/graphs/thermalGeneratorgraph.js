@@ -1,6 +1,7 @@
 ﻿import React, { useMemo, useRef } from "react";
 import moment from "moment";
 import { Chart } from "primereact/chart";
+import GraphToolbar from "./GraphToolbar";
 import { Chart as ChartJS, registerables } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { useTheme } from "../context/ThemeContext";
@@ -50,6 +51,7 @@ const makeGradient = (ctx, hex, height = 400) => {
 export default function ThermalGeneratorgraph(props) {
     const { isDarkMode } = useTheme();
     const chartRef = useRef(null);
+    const wrapperRef = useRef(null);
 
     // Theme tokens
     const textColor       = isDarkMode ? "#cbd5e1" : "#334155";
@@ -309,7 +311,7 @@ export default function ThermalGeneratorgraph(props) {
     if (!props.thermalGenerator_data) return null;
 
     return (
-        <div style={{ position: "relative", width: "100%", height: "680px", padding: "8px 0" }}>
+        <div ref={wrapperRef} className="pc-chart-wrapper"><GraphToolbar chartRef={chartRef} wrapperRef={wrapperRef} /><div className="pc-chart-body" style={{ height: "680px", padding: "12px 16px" }}>
             <Chart
                 ref={chartRef}
                 type="line"
@@ -329,5 +331,6 @@ export default function ThermalGeneratorgraph(props) {
                 Scroll wheel to zoom · Drag to pan · Double-click to reset
             </div>
         </div>
+    </div>
     );
 }
