@@ -566,7 +566,7 @@ export default function Combined() {
 			if (checkedI && Selected_i_states && Selected_i_states.length > 0) {
 				const p = axios
 					.post(
-						baseUrl + "/GetICTData?startDate=" +
+						baseUrl + "/GetIctData?startDate=" +
 							moment(start_date).format("YYYY-MM-DD HH:mm") +
 							"&endDate=" +
 							moment(end_date).format("YYYY-MM-DD HH:mm") +
