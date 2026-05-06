@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Calendar } from "primereact/calendar";
 import "../cssFiles/PasswordDemo.css";
@@ -155,17 +155,32 @@ const combinedStyles = `
 
 .comb-section {
   border-radius: 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid rgba(37,99,235,0.22);
   background: var(--bg-card);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
   margin-bottom: 24px;
   animation: comb-fade-up 0.55s cubic-bezier(.16,1,.3,1) both;
 }
+.comb-section:hover {
+  border-color: rgba(37,99,235,0.45);
+  box-shadow: var(--shadow-hover), 0 0 0 3px rgba(37,99,235,0.07);
+}
 .comb-section-header {
   padding: 18px 24px;
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1.5px solid rgba(37,99,235,0.18);
+  background: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(37,99,235,0.03) 100%);
+  position: relative;
+}
+.comb-section-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+  border-radius: 0 2px 2px 0;
 }
 .comb-section-title {
   display: flex; align-items: center; gap: 12px;
@@ -177,8 +192,8 @@ const combinedStyles = `
   font-size: 15px;
   flex-shrink: 0;
 }
-.comb-section-pill.blue  { background: rgba(59,130,246,0.12); color: #3b82f6; }
-.comb-section-pill.violet{ background: rgba(139,92,246,0.12); color: #8b5cf6; }
+.comb-section-pill.blue   { background: rgba(37,99,235,0.14); color: #2563eb; border: 1px solid rgba(37,99,235,0.25); }
+.comb-section-pill.violet { background: rgba(37,99,235,0.14); color: #1d4ed8; border: 1px solid rgba(37,99,235,0.25); }
 .comb-section-body { padding: 24px; }
 
 .comb-field-label {
@@ -224,7 +239,7 @@ const combinedStyles = `
 
 .comb-chart-wrapper {
   border-radius: 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid rgba(37,99,235,0.22);
   background: var(--bg-card);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
@@ -234,7 +249,17 @@ const combinedStyles = `
   padding: 16px 24px;
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-main);
+  background: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(37,99,235,0.03) 100%);
+  border-bottom: 1.5px solid rgba(37,99,235,0.18);
+  position: relative;
+}
+.comb-chart-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+  border-radius: 0 2px 2px 0;
 }
 .comb-loading-overlay {
   position: fixed; inset: 0; z-index: 9999;

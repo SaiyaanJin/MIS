@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { Row } from "react-grid-system";
 import { Button } from "primereact/button";
@@ -135,17 +135,31 @@ const modernStyles = `
 
 .gen-section {
   border-radius: 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid rgba(239,68,68,0.22);
   background: var(--bg-card);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
   margin-bottom: 24px;
   animation: gen-fade-up 0.55s cubic-bezier(.16,1,.3,1) both;
 }
+.gen-section:hover {
+  border-color: rgba(239,68,68,0.45);
+  box-shadow: var(--shadow-hover), 0 0 0 3px rgba(239,68,68,0.07);
+}
 .gen-section-header {
   padding: 18px 24px;
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1.5px solid rgba(239,68,68,0.18);
+  background: linear-gradient(135deg, rgba(239,68,68,0.06) 0%, rgba(239,68,68,0.03) 100%);
+  position: relative;
+}
+.gen-section-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  border-radius: 0 2px 2px 0;
 }
 .gen-section-title {
   display: flex; align-items: center; gap: 12px;
@@ -157,8 +171,8 @@ const modernStyles = `
   font-size: 15px;
   flex-shrink: 0;
 }
-.gen-section-pill.blue  { background: rgba(59,130,246,0.12); color: #3b82f6; }
-.gen-section-pill.violet{ background: rgba(139,92,246,0.12); color: #8b5cf6; }
+.gen-section-pill.blue   { background: rgba(239,68,68,0.14); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+.gen-section-pill.violet { background: rgba(239,68,68,0.14); color: #dc2626; border: 1px solid rgba(239,68,68,0.25); }
 .gen-section-body { padding: 24px; box-sizing: border-box; }
 
 .gen-field-label {
@@ -181,7 +195,7 @@ const modernStyles = `
   margin-top: 20px;
 }
 .gen-btn-primary {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 50%, #ef4444 100%) !important;
   border: none !important;
   padding: 10px 22px !important;
   font-weight: 600 !important;
@@ -189,12 +203,26 @@ const modernStyles = `
   border-radius: 10px !important;
   height: 42px !important;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(37,99,235,0.35) !important;
+  box-shadow: 0 4px 14px rgba(239,68,68,0.4) !important;
   transition: all 0.2s !important;
 }
 .gen-btn-primary:hover {
   transform: translateY(-2px) !important;
-  box-shadow: 0 8px 20px rgba(37,99,235,0.45) !important;
+  box-shadow: 0 8px 22px rgba(239,68,68,0.5) !important;
+}
+/* Download Excel — enabled (#ef4444) */
+.gen-btn-secondary:not(:disabled),
+.gen-btn-secondary:not([disabled]) {
+  background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 60%, #ef4444 100%) !important;
+  border: none !important;
+  color: #fff !important;
+  opacity: 1 !important;
+  box-shadow: 0 4px 14px rgba(239,68,68,0.35) !important;
+}
+.gen-btn-secondary:not(:disabled):hover,
+.gen-btn-secondary:not([disabled]):hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 22px rgba(239,68,68,0.45) !important;
 }
 .gen-btn-secondary {
   background: var(--bg-main) !important;
@@ -208,25 +236,26 @@ const modernStyles = `
   white-space: nowrap;
   transition: all 0.2s !important;
 }
-.gen-btn-secondary:hover {
-  background: var(--bg-card) !important;
-  border-color: var(--primary) !important;
-  color: var(--primary) !important;
-  transform: translateY(-1px) !important;
-}
+
 .gen-chart-wrapper {
   border-radius: 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid rgba(239,68,68,0.22);
   background: var(--bg-card);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
   animation: gen-fade-up 0.6s cubic-bezier(.16,1,.3,1) both;
 }
+.gen-chart-wrapper:hover {
+  border-color: rgba(239,68,68,0.45);
+  box-shadow: var(--shadow-hover);
+}
 .gen-chart-header {
   padding: 16px 24px;
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-main);
+  background: linear-gradient(135deg, rgba(239,68,68,0.06) 0%, rgba(239,68,68,0.03) 100%);
+  border-bottom: 1.5px solid rgba(239,68,68,0.18);
+  position: relative;
 }
 
 .gen-table-wrapper {
@@ -283,6 +312,14 @@ const modernStyles = `
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
 }
+.gen-chart-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  border-radius: 0 2px 2px 0;
+}
 .gen-loading-overlay {
   position: fixed; inset: 0; z-index: 9999;
   display: flex; align-items: center; justify-content: center;
@@ -296,6 +333,14 @@ const modernStyles = `
   padding: 40px 48px;
   display: flex; flex-direction: column; align-items: center; gap: 16px;
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+}
+.gen-chart-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  border-radius: 0 2px 2px 0;
 }
 .gen-spinner {
   width: 48px; height: 48px;

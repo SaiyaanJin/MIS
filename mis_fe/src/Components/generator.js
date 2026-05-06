@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Calendar } from "primereact/calendar";
 import "../cssFiles/PasswordDemo.css";
 import "primeflex/primeflex.css";
@@ -175,20 +175,36 @@ const generatorStyles = `
 
 .gen-section {
   border-radius: 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid rgba(22,163,74,0.22);
   background: var(--bg-card);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft), 0 0 0 0 rgba(22,163,74,0);
   overflow: hidden;
   margin-bottom: 24px;
   animation: gen-fade-up 0.55s cubic-bezier(.16,1,.3,1) both;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.gen-section:hover {
+  border-color: rgba(22,163,74,0.45);
+  box-shadow: var(--shadow-hover), 0 0 0 3px rgba(22,163,74,0.07);
 }
 .gen-section-header {
-  padding: 18px 24px;
+  padding: 16px 24px;
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1.5px solid rgba(22,163,74,0.18);
+  background: linear-gradient(135deg, rgba(5,46,22,0.06) 0%, rgba(22,163,74,0.04) 100%);
+  position: relative;
+}
+.gen-section-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #16a34a, #15803d);
+  border-radius: 0 2px 2px 0;
 }
 .gen-section-title {
   display: flex; align-items: center; gap: 12px;
+  padding-left: 8px;
 }
 .gen-section-pill {
   width: 32px; height: 32px;
@@ -197,9 +213,12 @@ const generatorStyles = `
   font-size: 15px;
   flex-shrink: 0;
 }
-.gen-section-pill.blue  { background: rgba(59,130,246,0.12); color: #3b82f6; }
-.gen-section-pill.violet{ background: rgba(139,92,246,0.12); color: #8b5cf6; }
-.gen-section-body { padding: 24px; }
+.gen-section-pill.blue   { background: rgba(22,163,74,0.14); color: #16a34a; border: 1px solid rgba(22,163,74,0.25); }
+.gen-section-pill.violet { background: rgba(22,163,74,0.14); color: #15803d; border: 1px solid rgba(22,163,74,0.25); }
+.gen-section-body {
+  padding: 24px;
+  border-top: none;
+}
 
 .gen-field-label {
   font-size: 11px;
@@ -235,25 +254,31 @@ const generatorStyles = `
   margin-top: 20px;
 }
 .gen-btn-primary {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 50%, #22c55e 100%) !important;
   border: none !important;
   padding: 10px 22px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   font-size: 13px !important;
   border-radius: 10px !important;
   height: 42px !important;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(37,99,235,0.35) !important;
-  transition: all 0.2s !important;
+  box-shadow: 0 4px 14px rgba(22,163,74,0.4) !important;
+  transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1) !important;
+  letter-spacing: -0.1px !important;
 }
 .gen-btn-primary:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 20px rgba(37,99,235,0.45) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 22px rgba(22,163,74,0.5) !important;
+  background: linear-gradient(135deg, #166534 0%, #15803d 50%, #16a34a 100%) !important;
 }
+.gen-btn-primary:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+/* Download Excel — disabled (grey) */
 .gen-btn-secondary {
-  background: var(--bg-main) !important;
-  border: 1px solid var(--border-bright) !important;
-  color: var(--text-secondary) !important;
+  background: var(--bg-card) !important;
+  border: 1.5px solid var(--border-bright) !important;
+  color: var(--text-muted) !important;
   padding: 10px 20px !important;
   font-weight: 600 !important;
   font-size: 13px !important;
@@ -261,26 +286,54 @@ const generatorStyles = `
   height: 42px !important;
   white-space: nowrap;
   transition: all 0.2s !important;
+  opacity: 0.65 !important;
 }
-.gen-btn-secondary:hover {
-  background: var(--bg-card) !important;
-  border-color: var(--primary) !important;
-  color: var(--primary) !important;
-  transform: translateY(-1px) !important;
+/* Download Excel — enabled (green) */
+.gen-btn-secondary:not(:disabled),
+.gen-btn-secondary:not([disabled]) {
+  background: linear-gradient(135deg, #052e16 0%, #15803d 60%, #16a34a 100%) !important;
+  border: none !important;
+  color: #fff !important;
+  opacity: 1 !important;
+  box-shadow: 0 4px 14px rgba(22,163,74,0.35) !important;
+}
+.gen-btn-secondary:not(:disabled):hover,
+.gen-btn-secondary:not([disabled]):hover {
+  background: linear-gradient(135deg, #14532d 0%, #166534 60%, #15803d 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 22px rgba(22,163,74,0.45) !important;
+}
+.gen-btn-secondary:not(:disabled):active,
+.gen-btn-secondary:not([disabled]):active {
+  transform: translateY(0) scale(0.98) !important;
 }
 .gen-chart-wrapper {
   border-radius: 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1.5px solid rgba(22,163,74,0.22);
   background: var(--bg-card);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
   animation: gen-fade-up 0.6s cubic-bezier(.16,1,.3,1) both;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.gen-chart-wrapper:hover {
+  border-color: rgba(22,163,74,0.45);
+  box-shadow: var(--shadow-hover);
 }
 .gen-chart-header {
-  padding: 16px 24px;
+  padding: 14px 24px;
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-main);
+  border-bottom: 1.5px solid rgba(22,163,74,0.18);
+  background: linear-gradient(135deg, rgba(5,46,22,0.06) 0%, rgba(22,163,74,0.04) 100%);
+  position: relative;
+}
+.gen-chart-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #16a34a, #15803d);
+  border-radius: 0 2px 2px 0;
 }
 .gen-loading-overlay {
   position: fixed; inset: 0; z-index: 9999;
@@ -487,7 +540,7 @@ export default function Generator() {
                                 Live Analytics
                             </div>
                             <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: "-0.3px", lineHeight: 1.25 }}>
-                                Generator Analytics
+                                Unit-wise Generation Analytics
                             </h1>
                             <p style={{ color: "rgba(255,255,255,0.65)", margin: "3px 0 0", fontSize: 11.5, fontWeight: 400 }}>
                                 Power output monitoring &amp; multi-timeline comparison
@@ -666,7 +719,7 @@ export default function Generator() {
                         <div className="gen-action-row">
                             <Button icon="pi pi-chart-bar" label="Generate Graph" className="gen-btn-primary"
                                 onClick={() => { setloading_show(true); getgeneratordata(); }} />
-                            <Button icon="pi pi-download" label="Download Excel Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="gen-btn-secondary"
                                 disabled={!generator_data}
                                 tooltip="Export plotted data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => exportGraphToExcel(generator_data,
@@ -861,7 +914,7 @@ export default function Generator() {
                             <Button icon="pi pi-chart-bar" label="Generate Comparison" className="gen-btn-primary"
                                 style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9) !important" }}
                                 onClick={() => { setloading_show(true); getmultigeneratordata(); }} />
-                            <Button icon="pi pi-download" label="Download Excel Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="gen-btn-secondary"
                                 disabled={!multiple_generator_data}
                                 tooltip="Export plotted comparison data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => {

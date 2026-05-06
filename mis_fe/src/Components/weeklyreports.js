@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "../cssFiles/Animation.css";
 import { TabView, TabPanel } from "primereact/tabview";
 import { Calendar } from "primereact/calendar";
@@ -66,17 +66,27 @@ const weeklyStyles = `
   text-transform: uppercase;
   margin-bottom: 6px;
 }
+.weekly-section-accent {
+  border-left: 3px solid #ef4444 !important;
+}
 .weekly-ctrl-card {
   background: rgba(255,255,255,0.7);
   backdrop-filter: blur(12px);
   border-radius: 16px;
   padding: 1.5rem;
-  border: 1px solid rgba(255,255,255,0.4);
+  border: 1.5px solid rgba(239,68,68,0.2);
   box-shadow: 0 8px 32px -4px rgba(0,0,0,0.06);
   margin-bottom: 1.5rem;
   transition: all 0.3s ease;
 }
-.dark-mode .weekly-ctrl-card {
+.weekly-ctrl-card:hover {
+  border-color: rgba(239,68,68,0.45);
+  box-shadow: 0 8px 32px -4px rgba(0,0,0,0.1), 0 0 0 3px rgba(239,68,68,0.07);
+}
+.dark-mode .weekly-section-accent {
+  border-left: 3px solid #ef4444 !important;
+}
+.weekly-ctrl-card {
   background: rgba(15,23,42,0.6);
   border-borderColor: rgba(255,255,255,0.08);
 }

@@ -35,7 +35,7 @@ const targets = [
   { file: 'isgs.js', Name: 'Isgs', lower: 'isgs', emoji: '🏭', sub: 'ISGS power monitoring' },
   { file: 'lines.js', Name: 'Lines', lower: 'lines', emoji: '⚡', sub: 'Transmission line analytics' },
   { file: 'mvar.js', Name: 'Mvar', lower: 'mvar', emoji: '⚡', sub: 'Reactive power (MVAR) analytics' },
-  { file: 'thermalGenerator.js', Name: 'ThermalGenerator', lower: 'thermalGenerator', emoji: '🔥', sub: 'Thermal plant generation output' },
+  { file: 'thermalGenerator.js', Name: 'ThermalGenerator', lower: 'thermalGenerator', emoji: '🔥', sub: 'Plant-wise  generation output' },
   { file: 'voltage.js', Name: 'Voltage', lower: 'voltage', emoji: '⚡', sub: 'Grid voltage monitoring' }
 ];
 

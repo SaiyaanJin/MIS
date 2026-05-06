@@ -13,8 +13,8 @@ const menuItems = [
     { label: 'ICT', icon: 'pi pi-microchip', path: '/Ict', color: '#6a5acd' },
     { label: 'Lines', icon: 'pi pi-arrow-right-arrow-left', path: '/Lines', color: '#c83042' },
     { label: 'Gen', icon: 'pi pi-bolt', path: '/Generator', color: '#16a34a', subItems: [
-        { label: 'All Generators', path: '/Generator' },
-        { label: 'Thermal Generators', path: '/ThermalGenerator' }
+        { label: 'Unit-wise Generation', path: '/Generator' },
+        { label: 'Plant-wise Generation', path: '/ThermalGenerator' }
     ]},
     { label: 'Outage', icon: 'pi pi-calendar-times', path: '/Outage', color: '#EF4444' },
     { label: 'ISGS', icon: 'pi pi-globe', path: '/ISGS', color: '#0000ff' },
