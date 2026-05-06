@@ -334,8 +334,12 @@ def GetMultiVoltageData():
                 project = {'_id': 0, 'vol': 1, 'vol2': 1}
                 result_list = list(voltage_data_collection.find(filter=filter, projection=project))
 
-                voltageBus1 = result_list[0]['vol'] if result_list else listofzeros
+                voltageBus1 = result_list[0]['vol']  if result_list else listofzeros
                 voltageBus2 = result_list[0]['vol2'] if result_list else listofzeros
+
+                # Guard: vol/vol2 may be stored as a scalar int in some documents
+                if not isinstance(voltageBus1, (list, tuple)): voltageBus1 = listofzeros
+                if not isinstance(voltageBus2, (list, tuple)): voltageBus2 = listofzeros
 
                 voltageBus1 = [0 if pd.isna(float(v)) else float(v) for v in voltageBus1]
                 voltageBus2 = [0 if pd.isna(float(v)) else float(v) for v in voltageBus2]
@@ -379,8 +383,9 @@ def GetMultiVoltageData():
                     project = {'_id': 0, 'vol': 1, 'vol2': 1}
                     result_list = list(voltage_data_collection.find(filter=filter, projection=project))
 
-                    voltageBus1 += result_list[0]['vol'] if result_list else listofzeros
-                    voltageBus2 += result_list[0]['vol2'] if result_list else listofzeros
+                    voltageBus1 += result_list[0]['vol']  if result_list else listofzeros
+                    vol2_raw      = result_list[0]['vol2'] if result_list else listofzeros
+                    voltageBus2  += vol2_raw if isinstance(vol2_raw, (list, tuple)) else listofzeros
 
                 voltageBus1 = [0 if pd.isna(float(v)) else float(v) for v in voltageBus1]
                 voltageBus2 = [0 if pd.isna(float(v)) else float(v) for v in voltageBus2]
@@ -410,9 +415,16 @@ def GetMultiVoltageData():
         max_v2, min_v2, avg_v2 = my_max_min_function(item['voltageBus2'])
 
         def format_max_min(val, label):
-            if val[0] == 0 or len(val) > 50:
-                return [[""], []]
-            return [[val[0]] * len(val[1]), [allDateTime[i] for i in val[1]]]
+            # val structure from my_max_min_function: [peak_value, idx1, idx2, ...]
+            # (a flat list — the peak value is at [0] and indices follow)
+            if not isinstance(val, (list, tuple)) or len(val) < 2:
+                return [["--"], []]
+            peak_val = val[0]
+            indices  = val[1:]            # list of integer positions
+            if peak_val == 0 or len(indices) > 50:
+                return [["--"], []]
+            valid_times = [allDateTime[i] for i in indices if isinstance(i, int) and i < len(allDateTime)]
+            return [[peak_val] * len(valid_times), valid_times]
 
         item['max_v1'] = format_max_min(max_v1, 'max')
         item['min_v1'] = format_max_min(min_v1, 'min')
