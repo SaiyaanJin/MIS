@@ -38,6 +38,11 @@ app.config['CACHE_DEFAULT_TIMEOUT'] = 86400  # 1 day in seconds
 
 cache = Cache(app)
 
+# Share the Flask-Cache instance with names.py so Names/MultiNames can cache
+# their MongoDB results without a circular import.
+import names as _names_module
+_names_module.init_cache(cache)
+
 Lines_file_name = ''
 MVAR_file_name = ''
 

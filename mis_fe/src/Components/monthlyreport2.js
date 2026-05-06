@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+﻿import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { Row } from "react-grid-system";
 import { Button } from "primereact/button";
@@ -40,14 +40,13 @@ const modernStyles = `
 }
 
 .gen-hero {
-  position: relative;
   overflow: hidden;
   border-radius: 12px;
   padding: 16px 22px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   border: 1px solid var(--border-subtle);
-  background: linear-gradient(135deg, #d946ef 0%, #ec4899 45%, #f43f5e 100%);
-  box-shadow: 0 12px 28px -8px rgba(217,70,239,0.4);
+  background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 45%, #ef4444 100%);
+  box-shadow: 0 12px 28px -8px rgba(239,68,68,0.45);
   animation: gen-fade-up 0.5s cubic-bezier(.16,1,.3,1) both;
 }
 .gen-hero::before {
@@ -1151,7 +1150,7 @@ function MonthlyReports2() {
 
 			<Toast ref={toast} />
 
-			<div style={{ paddingBottom: 40 }}>
+			<div style={{ paddingBottom: 40, '--page-accent': '#ef4444' }}>
 				{/* ── HERO HEADER ─────────────────────────────────────────────────── */}
 				<div className="gen-hero">
 					<div

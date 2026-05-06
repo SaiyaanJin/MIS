@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import "../cssFiles/Animation.css";
 import { TabView, TabPanel } from "primereact/tabview";
 import { Calendar } from "primereact/calendar";
@@ -29,13 +29,12 @@ const weeklyStyles = `
 }
 
 .weekly-hero {
-  position: relative;
   overflow: hidden;
   border-radius: 12px;
   padding: 16px 22px;
-  margin-bottom: 20px;
-  background: linear-gradient(135deg, #065f46 0%, #10b981 45%, #34d399 100%);
-  box-shadow: 0 12px 28px -8px rgba(16,185,129,0.3);
+  margin-bottom: 0;
+  background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 45%, #ef4444 100%);
+  box-shadow: 0 12px 28px -8px rgba(239,68,68,0.40);
   animation: weekly-fade-up 0.5s cubic-bezier(.16,1,.3,1) both;
 }
 .weekly-hero::before {
@@ -1484,7 +1483,7 @@ export default function WeeklyReports() {
 			<Toast ref={toast} />
 
 			{/* ─── Hero Section ────────────────────────────────────────────────── */}
-			<div className="weekly-hero">
+			<div className="weekly-hero" style={{ '--page-accent': '#ef4444' }}>
 				<div className="flex align-items-center gap-4">
 					<div className="weekly-hero-icon">
 						<i className="pi pi-file-pdf text-white"></i>

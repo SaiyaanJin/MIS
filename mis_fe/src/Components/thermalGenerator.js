@@ -42,14 +42,13 @@ const generatorStyles = `
 }
 
 .gen-hero {
-  position: relative;
   overflow: hidden;
   border-radius: 12px;
   padding: 16px 22px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   border: 1px solid var(--border-subtle);
-  background: linear-gradient(135deg, #1e40af 0%, #2563eb 45%, #4f46e5 100%);
-  box-shadow: 0 12px 28px -8px rgba(37,99,235,0.4);
+  background: linear-gradient(135deg, #052e16 0%, #15803d 45%, #16a34a 100%);
+  box-shadow: 0 12px 28px -8px rgba(22,163,74,0.45);
   animation: gen-fade-up 0.5s cubic-bezier(.16,1,.3,1) both;
 }
 .gen-hero::before {
@@ -475,7 +474,7 @@ export default function ThermalGenerator() {
                 </div>
             )}
 
-            <div style={{ paddingBottom: 40 }}>
+            <div style={{ paddingBottom: 40, '--page-accent': '#16a34a' }}>
 				<div>
 
                 {/* ── HERO HEADER (compact) ─────────────────────────────────── */}

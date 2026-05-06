@@ -110,11 +110,14 @@ export default function Outage() {
             )}
 
             {/* HERO HEADER */}
-            <div className="pc-hero">
+            <div className="pc-hero" style={{
+                background: "linear-gradient(135deg, #334155 0%, #475569 45%, #64748b 100%)",
+                boxShadow: "0 12px 28px -8px rgba(71,85,105,0.45)"
+            }}>
                 <div className="pc-hero-inner">
-                    <div className="pc-hero-icon"><i className="pi pi-filter-slash" style={{ color: "#f43f5e", fontSize: "20px" }}></i></div>
+                    <div className="pc-hero-icon"><i className="pi pi-filter-slash" style={{ color: "#e2e8f0", fontSize: "20px" }}></i></div>
                     <div className="pc-hero-text">
-                        <div className="pc-hero-badge" style={{ borderColor: "rgba(244,63,94,0.5)", color: "#fda4af" }}>System Status</div>
+                        <div className="pc-hero-badge" style={{ borderColor: "rgba(226,232,240,0.4)", color: "rgba(255,255,255,0.9)" }}>System Status</div>
                         <h1 className="pc-hero-title">Grid Outage Report</h1>
                         <p className="pc-hero-sub">Daily status of planned and forced generation unit outages</p>
                     </div>
@@ -123,7 +126,7 @@ export default function Outage() {
 
             <div className="pc-section">
                 <div className="pc-section-head">
-                    <div className="pc-section-pill" style={{ background: "rgba(244,63,94,0.1)", color: "#f43f5e" }}><i className="pi pi-calendar"></i></div>
+                    <div className="pc-section-pill" style={{ background: "rgba(100,116,139,0.12)", color: "#64748b" }}><i className="pi pi-calendar"></i></div>
                     <span className="pc-section-title">Query Configuration</span>
                 </div>
                 <div className="pc-section-body p-fluid grid formgrid align-items-end">
