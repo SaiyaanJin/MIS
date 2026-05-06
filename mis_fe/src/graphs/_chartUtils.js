@@ -1,6 +1,14 @@
 /**
  * Shared Chart.js utilities for all MIS graph components.
  * Provides palette, gradient factory, zoom plugin, and option builders.
+ *
+ * Features:
+ *  - Gradient fills per dataset
+ *  - Max / Min point markers (▲ / ▼)
+ *  - Crosshair (vertical + horizontal hairlines on hover)
+ *  - Double-click to reset pan & zoom
+ *  - Zoom-level badge overlay
+ *  - Rich tooltip with colour swatches
  */
 import moment from "moment";
 import { Chart as ChartJS, registerables } from "chart.js";
@@ -42,7 +50,7 @@ export const makeGradient = (ctx, hex, height = 400) => {
     return gradient;
 };
 
-// ── Gradient plugin (inject into Chart.js) ────────────────────────────────────
+// ── Gradient plugin ───────────────────────────────────────────────────────────
 export const makeGradientPlugin = () => ({
     id: "misGradientFill",
     beforeDatasetsUpdate(chart) {
@@ -57,6 +65,265 @@ export const makeGradientPlugin = () => ({
     },
 });
 
+// ── Crosshair plugin ──────────────────────────────────────────────────────────
+// Draws a vertical + horizontal hairline at the cursor position.
+export const makeCrosshairPlugin = () => ({
+    id: "misCrosshair",
+    afterInit(chart) {
+        chart._crosshairX = null;
+        chart._crosshairY = null;
+        const canvas = chart.canvas;
+        if (!canvas) return;
+
+        const onMove = (e) => {
+            if (!chart.canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            chart._crosshairX = e.clientX - rect.left;
+            chart._crosshairY = e.clientY - rect.top;
+            if (chart.ctx) chart.draw();
+        };
+        const onLeave = () => {
+            chart._crosshairX = null;
+            chart._crosshairY = null;
+            if (chart.ctx) chart.draw();
+        };
+
+        canvas.addEventListener("mousemove", onMove);
+        canvas.addEventListener("mouseleave", onLeave);
+        chart._crosshairListeners = { onMove, onLeave };
+    },
+    destroy(chart) {
+        const canvas = chart.canvas;
+        const { onMove, onLeave } = chart._crosshairListeners || {};
+        if (canvas && onMove)  canvas.removeEventListener("mousemove", onMove);
+        if (canvas && onLeave) canvas.removeEventListener("mouseleave", onLeave);
+        chart._crosshairListeners = null;
+    },
+    afterDatasetsDraw(chart) {
+        const { ctx, chartArea } = chart;
+        if (!ctx || !chartArea) return;
+        const x = chart._crosshairX;
+        const y = chart._crosshairY;
+        if (x == null || y == null) return;
+
+        // Only draw inside chart area
+        if (x < chartArea.left || x > chartArea.right ||
+            y < chartArea.top  || y > chartArea.bottom) return;
+
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(148,163,184,0.55)";
+
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(x, chartArea.top);
+        ctx.lineTo(x, chartArea.bottom);
+        ctx.stroke();
+
+        // Horizontal line
+        ctx.beginPath();
+        ctx.moveTo(chartArea.left, y);
+        ctx.lineTo(chartArea.right, y);
+        ctx.stroke();
+
+        // Small circle intersection dot
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = "rgba(148,163,184,0.7)";
+        ctx.fill();
+
+        ctx.restore();
+    },
+});
+
+// ── Double-click to reset zoom/pan ───────────────────────────────────────────
+export const makeResetZoomPlugin = () => ({
+    id: "misResetZoom",
+    afterInit(chart) {
+        const canvas = chart.canvas;
+        if (!canvas) return;
+
+        const onDblClick = (e) => {
+            e.preventDefault();
+            if (!chart.canvas) return;
+            if (chart.resetZoom) {
+                chart.resetZoom();
+                // Brief flash animation on the canvas border
+                try {
+                    canvas.style.transition = "box-shadow 0.15s ease";
+                    canvas.style.boxShadow  = "0 0 0 2px rgba(59,130,246,0.6)";
+                    setTimeout(() => {
+                        if (canvas) canvas.style.boxShadow = "";
+                    }, 350);
+                } catch (_) { /* chart may have unmounted */ }
+            }
+        };
+
+        canvas.addEventListener("dblclick", onDblClick);
+        chart._resetZoomListener = onDblClick;
+    },
+    destroy(chart) {
+        const canvas = chart.canvas;
+        if (canvas && chart._resetZoomListener) {
+            canvas.removeEventListener("dblclick", chart._resetZoomListener);
+        }
+        chart._resetZoomListener = null;
+    },
+});
+
+// ── Zoom-level badge plugin ───────────────────────────────────────────────────
+// Shows "ZOOM 2.4×" badge in the top-left when the chart is zoomed in.
+export const makeZoomBadgePlugin = () => ({
+    id: "misZoomBadge",
+    afterDraw(chart) {
+        const { ctx, chartArea } = chart;
+        if (!ctx || !chartArea) return;
+
+        // Read current zoom ratio from the zoom plugin state (x-axis scale)
+        let ratio = 1;
+        try {
+            const xScale  = chart.scales["x"];
+            const origMin = xScale._originalMin ?? xScale.min;
+            const origMax = xScale._originalMax ?? xScale.max;
+            const currMin = xScale.min;
+            const currMax = xScale.max;
+            if (origMax != null && origMin != null && currMax !== currMin) {
+                ratio = (origMax - origMin) / (currMax - currMin);
+            }
+        } catch (_) { /* ignore */ }
+
+        if (ratio <= 1.05) return; // Only show badge when meaningfully zoomed
+
+        const label = `ZOOM ${ratio.toFixed(1)}×`;
+        ctx.save();
+        ctx.font = "bold 10px Inter, sans-serif";
+        const tw = ctx.measureText(label).width;
+        const PAD = 6, H = 18;
+        const bx = chartArea.left + 8;
+        const by = chartArea.top + 8;
+
+        // Background pill
+        ctx.beginPath();
+        const r = 4;
+        ctx.moveTo(bx + r, by);
+        ctx.lineTo(bx + tw + PAD * 2 - r, by);
+        ctx.arcTo(bx + tw + PAD * 2, by, bx + tw + PAD * 2, by + r, r);
+        ctx.lineTo(bx + tw + PAD * 2, by + H - r);
+        ctx.arcTo(bx + tw + PAD * 2, by + H, bx + tw + PAD * 2 - r, by + H, r);
+        ctx.lineTo(bx + r, by + H);
+        ctx.arcTo(bx, by + H, bx, by + H - r, r);
+        ctx.lineTo(bx, by + r);
+        ctx.arcTo(bx, by, bx + r, by, r);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(37,99,235,0.88)";
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, bx + (tw + PAD * 2) / 2, by + H / 2);
+        ctx.restore();
+    },
+});
+
+// ── Max / Min annotation plugin ───────────────────────────────────────────────
+export const makeMaxMinPlugin = () => ({
+    id: "misMaxMinMarkers",
+    afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const { chartArea } = chart;
+        if (!chartArea) return;
+
+        chart.data.datasets.forEach((ds, dsIdx) => {
+            if (ds._maxIdx == null || ds._minIdx == null) return;
+            const meta = chart.getDatasetMeta(dsIdx);
+            if (!meta || meta.hidden) return;
+
+            const color = ds._hex || ds.borderColor || "#3b82f6";
+            const unit  = ds._unit || "";
+
+            const drawMarker = (pointIdx, isMax) => {
+                if (pointIdx < 0) return;
+                const point = meta.data[pointIdx];
+                if (!point) return;
+
+                const px  = point.x;
+                const py  = point.y;
+                const val = isMax ? ds._maxVal : ds._minVal;
+                if (val == null) return;
+
+                // Dot
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(px, py, 6, 0, 2 * Math.PI);
+                ctx.fillStyle   = isMax ? "#ef4444" : "#3b82f6";
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth   = 2;
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+
+                // Label
+                const symbol = isMax ? "▲" : "▼";
+                const label  = `${symbol} ${Number(val).toFixed(2)}${unit ? " " + unit : ""}`;
+                ctx.save();
+                ctx.font = "bold 10px Inter, sans-serif";
+                const tw = ctx.measureText(label).width;
+
+                const PAD   = 4;
+                const BOX_H = 16;
+                const BOX_W = tw + PAD * 2;
+
+                let lx = px - BOX_W / 2;
+                lx = Math.max(chartArea.left, Math.min(chartArea.right - BOX_W, lx));
+
+                let ly = isMax ? py - 8 - BOX_H : py + 8;
+                ly = Math.max(chartArea.top, Math.min(chartArea.bottom - BOX_H, ly));
+
+                ctx.beginPath();
+                const r = 4;
+                ctx.moveTo(lx + r, ly);
+                ctx.lineTo(lx + BOX_W - r, ly);
+                ctx.arcTo(lx + BOX_W, ly, lx + BOX_W, ly + r, r);
+                ctx.lineTo(lx + BOX_W, ly + BOX_H - r);
+                ctx.arcTo(lx + BOX_W, ly + BOX_H, lx + BOX_W - r, ly + BOX_H, r);
+                ctx.lineTo(lx + r, ly + BOX_H);
+                ctx.arcTo(lx, ly + BOX_H, lx, ly + BOX_H - r, r);
+                ctx.lineTo(lx, ly + r);
+                ctx.arcTo(lx, ly, lx + r, ly, r);
+                ctx.closePath();
+                ctx.fillStyle   = isMax ? "rgba(239,68,68,0.92)" : "rgba(59,130,246,0.92)";
+                ctx.shadowColor = "rgba(0,0,0,0.30)";
+                ctx.shadowBlur  = 4;
+                ctx.fill();
+                ctx.shadowBlur  = 0;
+
+                ctx.fillStyle    = "#ffffff";
+                ctx.textAlign    = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(label, lx + BOX_W / 2, ly + BOX_H / 2);
+                ctx.restore();
+            };
+
+            drawMarker(ds._maxIdx, true);
+            drawMarker(ds._minIdx, false);
+        });
+    },
+});
+
+// ── Convenience: all interactive plugins bundled ──────────────────────────────
+// Use this in every graph component instead of listing them individually.
+// Usage: plugins={makeChartPlugins()}
+export const makeChartPlugins = () => [
+    makeGradientPlugin(),
+    makeMaxMinPlugin(),
+    makeCrosshairPlugin(),
+    makeResetZoomPlugin(),
+    makeZoomBadgePlugin(),
+];
+
 // ── Common Chart options builder ──────────────────────────────────────────────
 export const buildOptions = ({
     isDarkMode,
@@ -68,14 +335,14 @@ export const buildOptions = ({
     const textColor    = isDarkMode ? "#cbd5e1" : "#334155";
     const textColorSub = isDarkMode ? "#94a3b8" : "#64748b";
     const gridColor    = isDarkMode ? "rgba(148,163,184,0.10)" : "rgba(100,116,139,0.08)";
-    const tooltipBg    = isDarkMode ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.96)";
-    const tooltipBdr   = isDarkMode ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)";
+    const tooltipBg    = isDarkMode ? "rgba(15,23,42,0.96)"   : "rgba(255,255,255,0.98)";
+    const tooltipBdr   = isDarkMode ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.10)";
 
     return {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: "index", intersect: false },
-        animation: { duration: 550, easing: "easeInOutQuart" },
+        animation: { duration: 600, easing: "easeInOutQuart" },
         plugins: {
             legend: {
                 display: true,
@@ -101,14 +368,30 @@ export const buildOptions = ({
                 bodyColor: textColorSub,
                 borderColor: tooltipBdr,
                 borderWidth: 1,
-                padding: 12,
-                cornerRadius: 8,
+                padding: { x: 14, y: 10 },
+                cornerRadius: 10,
+                boxPadding: 5,
                 titleFont: { family: "Inter, sans-serif", size: 12, weight: "700" },
-                bodyFont: { family: "Inter, sans-serif", size: 11 },
+                bodyFont:  { family: "Inter, sans-serif", size: 11 },
+                usePointStyle: true,
+                callbacks: {
+                    // Show colour swatch dot next to each value
+                    labelPointStyle: () => ({ pointStyle: "circle", rotation: 0 }),
+                },
             },
             zoom: {
-                zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: "xy" },
-                pan:  { enabled: true, mode: "xy" },
+                zoom: {
+                    wheel:   { enabled: true, speed: 0.08 },
+                    pinch:   { enabled: true },
+                    mode:    "xy",
+                    onZoom:  ({ chart }) => chart.update("none"),
+                },
+                pan: {
+                    enabled:   true,
+                    mode:      "xy",
+                    threshold: 5,
+                    onPan:     ({ chart }) => chart.update("none"),
+                },
             },
         },
         scales: {
@@ -211,7 +494,6 @@ export const formatXLabels = (arr) =>
     });
 
 // ── Max / Min index finder ─────────────────────────────────────────────────────
-// Returns { maxIdx, minIdx } for a numeric array (skips null/undefined).
 export const findMaxMin = (dataArr) => {
     if (!dataArr || dataArr.length === 0) return { maxIdx: -1, minIdx: -1 };
     let maxIdx = -1, minIdx = -1;
@@ -224,95 +506,3 @@ export const findMaxMin = (dataArr) => {
     }
     return { maxIdx, minIdx, maxVal, minVal };
 };
-
-// ── Max / Min annotation plugin ───────────────────────────────────────────────
-// Datasets opt in by setting: _maxIdx, _minIdx, _maxVal, _minVal, _unit, _hex
-// Draws a filled circle + value callout label at the peak and trough of each trace.
-export const makeMaxMinPlugin = () => ({
-    id: "misMaxMinMarkers",
-    afterDatasetsDraw(chart) {
-        const ctx = chart.ctx;
-        const { chartArea } = chart;
-        if (!chartArea) return;
-
-        chart.data.datasets.forEach((ds, dsIdx) => {
-            if (ds._maxIdx == null || ds._minIdx == null) return;
-            const meta = chart.getDatasetMeta(dsIdx);
-            if (!meta || meta.hidden) return;
-
-            const color = ds._hex || ds.borderColor || "#3b82f6";
-            const unit  = ds._unit || "";
-
-            const drawMarker = (pointIdx, isMax) => {
-                if (pointIdx < 0) return;
-                const point = meta.data[pointIdx];
-                if (!point) return;
-
-                const px = point.x;
-                const py = point.y;
-                const val = isMax ? ds._maxVal : ds._minVal;
-                if (val == null) return;
-
-                // ── Dot ──────────────────────────────────────────────────────
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(px, py, 6, 0, 2 * Math.PI);
-                ctx.fillStyle   = isMax ? "#ef4444" : "#3b82f6";   // red = max, blue = min
-                ctx.strokeStyle = "#ffffff";
-                ctx.lineWidth   = 2;
-                ctx.fill();
-                ctx.stroke();
-                ctx.restore();
-
-                // ── Label background + text ───────────────────────────────────
-                const symbol = isMax ? "▲" : "▼";
-                const label  = `${symbol} ${Number(val).toFixed(2)}${unit ? " " + unit : ""}`;
-                ctx.save();
-                ctx.font = "bold 10px Inter, sans-serif";
-                const tw = ctx.measureText(label).width;
-
-                // Determine label position: above for max, below for min
-                const PAD   = 4;
-                const BOX_H = 16;
-                const BOX_W = tw + PAD * 2;
-
-                // Clamp horizontally inside chart area
-                let lx = px - BOX_W / 2;
-                lx = Math.max(chartArea.left, Math.min(chartArea.right - BOX_W, lx));
-
-                let ly = isMax ? py - 8 - BOX_H : py + 8;
-                // Clamp vertically inside chart area
-                ly = Math.max(chartArea.top, Math.min(chartArea.bottom - BOX_H, ly));
-
-                // Background pill
-                ctx.beginPath();
-                const r = 4;
-                ctx.moveTo(lx + r, ly);
-                ctx.lineTo(lx + BOX_W - r, ly);
-                ctx.arcTo(lx + BOX_W, ly, lx + BOX_W, ly + r, r);
-                ctx.lineTo(lx + BOX_W, ly + BOX_H - r);
-                ctx.arcTo(lx + BOX_W, ly + BOX_H, lx + BOX_W - r, ly + BOX_H, r);
-                ctx.lineTo(lx + r, ly + BOX_H);
-                ctx.arcTo(lx, ly + BOX_H, lx, ly + BOX_H - r, r);
-                ctx.lineTo(lx, ly + r);
-                ctx.arcTo(lx, ly, lx + r, ly, r);
-                ctx.closePath();
-                ctx.fillStyle   = isMax ? "rgba(239,68,68,0.92)" : "rgba(59,130,246,0.92)";
-                ctx.shadowColor = "rgba(0,0,0,0.30)";
-                ctx.shadowBlur  = 4;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-
-                // Text
-                ctx.fillStyle  = "#ffffff";
-                ctx.textAlign  = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(label, lx + BOX_W / 2, ly + BOX_H / 2);
-                ctx.restore();
-            };
-
-            drawMarker(ds._maxIdx, true);
-            drawMarker(ds._minIdx, false);
-        });
-    },
-});

@@ -4,7 +4,7 @@ import { Chart } from "primereact/chart";
 import { Chart as ChartJS, registerables } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { useTheme } from "../context/ThemeContext";
-import { findMaxMin, makeMaxMinPlugin } from "./_chartUtils";
+import { findMaxMin, makeChartPlugins } from "./_chartUtils";
 
 // Register Chart.js core + zoom plugin once
 ChartJS.register(...registerables, zoomPlugin);
@@ -315,7 +315,7 @@ export default function Generatorgraph(props) {
                 type="line"
                 data={chartData}
                 options={chartOptions}
-                plugins={[gradientPlugin, makeMaxMinPlugin()]}
+                plugins={makeChartPlugins()}
                 style={{ width: "100%", height: "100%" }}
             />
             <div style={{

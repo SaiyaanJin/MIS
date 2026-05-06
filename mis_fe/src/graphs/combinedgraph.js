@@ -2,7 +2,7 @@
 import { Chart } from "primereact/chart";
 import { useTheme } from "../context/ThemeContext";
 import {
-    hexRgba, makeGradientPlugin, buildOptions, formatXLabels, findMaxMin, makeMaxMinPlugin
+    hexRgba, makeChartPlugins, buildOptions, formatXLabels, findMaxMin
 } from "./_chartUtils";
 
 const TYPE_PALETTES = {
@@ -150,10 +150,10 @@ export default function Combinedgraph(props) {
                 type="line"
                 data={chartData}
                 options={chartOptions}
-                plugins={[makeGradientPlugin(), makeMaxMinPlugin()]}
+                plugins={makeChartPlugins()}
                 style={{ width: "100%", height: "100%" }}
             />
-            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none" }}>Scroll to zoom · Drag to pan · Dbl-click to reset</div>
+            <div style={{ position: "absolute", bottom: 6, right: 10, fontSize: 10, color: "#94a3b8", userSelect: "none", pointerEvents: "none", fontFamily: "Inter, sans-serif", letterSpacing: "0.3px" }}>⊕ Scroll to zoom &nbsp;·&nbsp; ✥ Drag to pan &nbsp;·&nbsp; ↺ Dbl-click to reset</div>
         </div>
     );
 }
