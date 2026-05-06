@@ -71,7 +71,7 @@ export default function Voltagegraph(props) {
                 borderColor: c2,
                 backgroundColor: hexRgba(c2, 0),
                 borderWidth: 1.8,
-                borderDash: [7, 3],
+                borderDash: [],
                 tension: 0.35,
                 fill: false,
                 pointRadius: 0,

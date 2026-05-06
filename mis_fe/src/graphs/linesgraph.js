@@ -44,7 +44,7 @@ export default function Linesgraph(props) {
                 borderColor: color,
                 backgroundColor: hexRgba(color, 0.1),
                 borderWidth: isMW ? 2 : 1.6,
-                borderDash: isMW ? [] : [6, 3],
+                borderDash: [],
                 tension: 0.35,
                 fill: isMW,
                 pointRadius: 0,

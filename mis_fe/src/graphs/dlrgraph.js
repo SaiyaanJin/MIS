@@ -46,7 +46,7 @@ export default function Dlrgraph(props) {
                 borderColor: cFore,
                 backgroundColor: hexRgba(cFore, 0),
                 borderWidth: 1.8,
-                borderDash: [8, 4],
+                borderDash: [],
                 tension: 0.35,
                 fill: false,
                 pointRadius: 0,
