@@ -617,7 +617,7 @@ export default function Mvar() {
                         <div className="gen-action-row">
                             <Button icon="pi pi-chart-bar" label="Generate Graph" className="gen-btn-primary"
                                 onClick={() => { setloading_show(true); getmvardata(); }} />
-                            <Button icon="pi pi-download" label="Download Excel Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-download" label="Download Excel Data" className="p-button-success"
                                 disabled={!mvar_data}
                                 tooltip="Export plotted data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => exportGraphToExcel(mvar_data,
@@ -812,7 +812,7 @@ export default function Mvar() {
                             <Button icon="pi pi-chart-bar" label="Generate Comparison" className="gen-btn-primary"
                                 style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9) !important" }}
                                 onClick={() => { setloading_show(true); getmultimvardata(); }} />
-                            <Button icon="pi pi-download" label="Download Excel Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-download" label="Download Excel Data" className="p-button-success"
                                 disabled={!multiple_mvar_data}
                                 tooltip="Export plotted comparison data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => {

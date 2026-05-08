@@ -670,7 +670,7 @@ export default function Generator() {
                         <div className="gen-action-row">
                             <Button icon="pi pi-chart-bar" label="Generate Graph" className="gen-btn-primary"
                                 onClick={() => { setloading_show(true); getgeneratordata(); }} />
-                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="p-button-success"
                                 disabled={!generator_data}
                                 tooltip="Export plotted data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => exportGraphToExcel(generator_data,
@@ -865,7 +865,7 @@ export default function Generator() {
                             <Button icon="pi pi-chart-bar" label="Generate Comparison" className="gen-btn-primary"
                                 style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9) !important" }}
                                 onClick={() => { setloading_show(true); getmultigeneratordata(); }} />
-                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="p-button-success"
                                 disabled={!multiple_generator_data}
                                 tooltip="Export plotted comparison data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => {

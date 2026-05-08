@@ -662,7 +662,7 @@ export default function Isgs() {
                         <div className="gen-action-row">
                             <Button icon="pi pi-chart-bar" label="Generate Graph" className="gen-btn-primary"
                                 onClick={() => { setloading_show(true); getisgsdata(); }} />
-                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="p-button-success"
                                 disabled={!isgs_data}
                                 tooltip="Export plotted data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => exportGraphToExcel(isgs_data,
@@ -857,7 +857,7 @@ export default function Isgs() {
                             <Button icon="pi pi-chart-bar" label="Generate Comparison" className="gen-btn-primary"
                                 style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9) !important" }}
                                 onClick={() => { setloading_show(true); getmultiisgsdata(); }} />
-                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="gen-btn-secondary"
+                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="p-button-success"
                                 disabled={!multiple_isgs_data}
                                 tooltip="Export plotted comparison data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => {
