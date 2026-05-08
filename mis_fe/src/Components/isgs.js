@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { exportGraphToExcel } from "../graphs/_chartUtils";
 import { Calendar } from "primereact/calendar";
 import "../cssFiles/PasswordDemo.css";
 import "primeflex/primeflex.css";
@@ -19,9 +20,6 @@ import { Checkbox } from "primereact/checkbox";
 import { Chip } from "primereact/chip";
 import { Tag } from "primereact/tag";
 import { useTheme } from "../context/ThemeContext";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-
 // ─── Styles injected once ─────────────────────────────────────────────────────
 const generatorStyles = `
 @keyframes gen-fade-up {
@@ -447,54 +445,7 @@ export default function Isgs() {
     const freq_change  = (e) => { let s=[...freq_region];  e.checked?s.push(e.value):s.splice(s.indexOf(e.value),1); setfreq_region(s);  };
     const freq_change1 = (e) => { let s=[...freq_region1]; e.checked?s.push(e.value):s.splice(s.indexOf(e.value),1); setfreq_region1(s); };
 
-    // ── Excel Export ──────────────────────────────────────────────────────────
-    const exportGraphToExcel = (data, label) => {
-        if (!data) return;
-        const wb = XLSX.utils.book_new();
-        const sharedTimeArr = data[data.length - 1]["Date_Time"] || [];
-        const stationMap = {};
-        for (let i = 0; i < data.length - 1; i++) {
-            const e = data[i];
-            const n = e["stationName"] || `Station_${i}`;
-            if (!stationMap[n]) stationMap[n] = [];
-            stationMap[n].push(e);
-        }
-        const isSingleRange = Object.values(stationMap).every(entries => entries.length === 1);
-        const fmt = (ts) => { const m = moment(ts, moment.ISO_8601, true); return ts ? (m.isValid() ? m.format("DD-MMM-YY HH:mm") : String(ts)) : ""; };
-        const fmtT = (ts) => { const m = moment(ts, moment.ISO_8601, true); return ts ? (m.isValid() ? m.format("HH:mm") : String(ts)) : ""; };
-
-        if (isSingleRange) {
-            const stNames = Object.keys(stationMap);
-            const rows = sharedTimeArr.map((ts, idx) => {
-                const row = { "Date / Time": fmt(ts) };
-                stNames.forEach(n => { row[n] = ((stationMap[n][0]["output"] || stationMap[n][0]["actual"] || stationMap[n][0]["demand"] || stationMap[n][0]["voltageBus1"] || stationMap[n][0]["line"] || stationMap[n][0]["frequency"] || stationMap[n][0]["drawal"] || stationMap[n][0]["schedule"]) || [])[idx] ?? ""; });
-                return row;
-            });
-            if (rows.length > 0) {
-                const ws = XLSX.utils.json_to_sheet(rows);
-                ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
-                XLSX.utils.book_append_sheet(wb, ws, "Isgs Data");
-            }
-        } else {
-            Object.entries(stationMap).forEach(([name, entries]) => {
-                const hdrs = entries.map(e => e["Date_Time"] ? moment(e["Date_Time"]).format("DD-MMM-YYYY") : "Value");
-                const slotCount = Math.max(...entries.map(e => ((e["output"] || e["actual"] || e["demand"] || e["voltageBus1"] || e["line"] || e["frequency"] || e["drawal"] || e["schedule"])||[]).length));
-                const rows = Array.from({ length: slotCount }, (_, ri) => {
-                    const row = { "Time": fmtT(sharedTimeArr[ri]) || `Slot ${ri+1}` };
-                    entries.forEach((e, di) => { row[hdrs[di]] = ((e["output"] || e["actual"] || e["demand"] || e["voltageBus1"] || e["line"] || e["frequency"] || e["drawal"] || e["schedule"])||[])[ri] ?? ""; });
-                    return row;
-                });
-                if (rows.length > 0) {
-                    const ws = XLSX.utils.json_to_sheet(rows);
-                    ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
-                    XLSX.utils.book_append_sheet(wb, ws, name.substring(0, 31));
-                }
-            });
-        }
-        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        saveAs(new Blob([wbout], { type: "application/octet-stream" }), `Generator_${label}_${moment().format("YYYYMMDD_HHmm")}.xlsx`);
-    };
-
+        
     // ── Stat Badges ───────────────────────────────────────────────────────────
     const stationCount = isgs_data ? (isgs_data.length - 1) : 0;
     const multiCount   = multiple_isgs_data ? (multiple_isgs_data.length - 1) : 0;
@@ -913,7 +864,7 @@ export default function Isgs() {
                                     const lbl = checked1
                                         ? (multiple_date?.map(d => moment(d).format("DDMMYYYY")).join("_") || "dates")
                                         : (multiple_month?.map(d => moment(d).format("MMYYYY")).join("_") || "months");
-                                    exportGraphToExcel(multiple_isgs_data, lbl);
+                                    exportGraphToExcel(multiple_isgs_data, lbl, "Isgs");
                                 }} />
                             {!graphenable2 && multiple_isgs_data && (
                                 <Chip label={`${multiple_isgs_data.length - 1} trace(s) loaded`}

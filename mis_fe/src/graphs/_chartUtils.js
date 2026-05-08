@@ -13,6 +13,8 @@
 import moment from "moment";
 import { Chart as ChartJS, registerables } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // Register once globally
 ChartJS.register(...registerables, zoomPlugin);
@@ -505,4 +507,66 @@ export const findMaxMin = (dataArr) => {
         if (v < minVal) { minVal = v; minIdx = i; }
     }
     return { maxIdx, minIdx, maxVal, minVal };
+};
+
+// ── Excel Export Utility ──────────────────────────────────────────────────────
+export const exportGraphToExcel = (data, label, prefix = "Graph") => {
+    if (!data) return;
+    const wb = XLSX.utils.book_new();
+    const sharedTimeArr = data[data.length - 1]["Date_Time"] || [];
+    const stationMap = {};
+    for (let i = 0; i < data.length - 1; i++) {
+        const e = data[i];
+        const n = e["stationName"] || `Station_${i}`;
+        if (!stationMap[n]) stationMap[n] = [];
+        stationMap[n].push(e);
+    }
+    const isSingleRange = Object.values(stationMap).every(entries => entries.length === 1);
+    const fmt = (ts) => { const m = moment(ts, moment.ISO_8601, true); return ts ? (m.isValid() ? m.format("DD-MMM-YY HH:mm") : String(ts)) : ""; };
+    const fmtT = (ts) => { const m = moment(ts, moment.ISO_8601, true); return ts ? (m.isValid() ? m.format("HH:mm") : String(ts)) : ""; };
+
+    if (isSingleRange) {
+        // Single Date: grouped by station
+        const stNames = Object.keys(stationMap);
+        const rows = sharedTimeArr.map((ts, idx) => {
+            const row = { "Date / Time": fmt(ts) };
+            stNames.forEach(n => { row[n] = ((stationMap[n][0]["output"] || stationMap[n][0]["actual"] || stationMap[n][0]["demand"] || stationMap[n][0]["voltageBus1"] || stationMap[n][0]["line"] || stationMap[n][0]["frequency"] || stationMap[n][0]["drawal"] || stationMap[n][0]["schedule"]) || [])[idx] ?? ""; });
+            return row;
+        });
+        if (rows.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(rows);
+            ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
+            XLSX.utils.book_append_sheet(wb, ws, `${prefix} Data`.substring(0, 31));
+        }
+    } else {
+        // Multi Date: grouped by date, creating separate sheets for each date/month
+        const dateMap = {};
+        for (let i = 0; i < data.length - 1; i++) {
+            const e = data[i];
+            const d = e["Date_Time"] ? moment(e["Date_Time"]).format("DD-MMM-YYYY") : "Value";
+            if (!dateMap[d]) dateMap[d] = [];
+            dateMap[d].push(e);
+        }
+        
+        Object.entries(dateMap).forEach(([dateStr, entries]) => {
+            const stNames = entries.map(e => e["stationName"] || "Unknown");
+            const slotCount = Math.max(...entries.map(e => ((e["output"] || e["actual"] || e["demand"] || e["voltageBus1"] || e["line"] || e["frequency"] || e["drawal"] || e["schedule"])||[]).length));
+            
+            const rows = Array.from({ length: slotCount }, (_, ri) => {
+                const row = { "Time": fmtT(sharedTimeArr[ri]) || `Slot ${ri+1}` };
+                entries.forEach((e, di) => { 
+                    row[stNames[di]] = ((e["output"] || e["actual"] || e["demand"] || e["voltageBus1"] || e["line"] || e["frequency"] || e["drawal"] || e["schedule"])||[])[ri] ?? ""; 
+                });
+                return row;
+            });
+            
+            if (rows.length > 0) {
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
+                XLSX.utils.book_append_sheet(wb, ws, dateStr.substring(0, 31));
+            }
+        });
+    }
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), `${prefix}_${label}_${moment().format("YYYYMMDD_HHmm")}.xlsx`);
 };
