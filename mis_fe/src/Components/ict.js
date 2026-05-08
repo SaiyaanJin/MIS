@@ -262,6 +262,35 @@ const generatorStyles = `
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 22px rgba(106,90,205,0.5) !important;
 }
+
+  .gen-btn-success {
+    background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%) !important;
+    border: none !important;
+    padding: 10px 22px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    height: 42px !important;
+    white-space: nowrap;
+    color: #fff !important;
+    box-shadow: 0 4px 14px rgba(16,185,129,0.4) !important;
+    transition: all 0.2s !important;
+  }
+  .gen-btn-success:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 22px rgba(16,185,129,0.5) !important;
+  }
+  .gen-btn-success:disabled,
+  .gen-btn-success[disabled] {
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border-bright) !important;
+    color: #94a3b8 !important;
+    box-shadow: none !important;
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+  }
+
 /* Download Excel — enabled (#6a5acd) */
 .gen-btn-secondary:not(:disabled),
 .gen-btn-secondary:not([disabled]) {
@@ -662,7 +691,7 @@ export default function Ict() {
                         <div className="gen-action-row">
                             <Button icon="pi pi-chart-bar" label="Generate Graph" className="gen-btn-primary"
                                 onClick={() => { setloading_show(true); getictdata(); }} />
-                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="p-button-success"
+                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="gen-btn-success"
                                 disabled={!ict_data}
                                 tooltip="Export plotted data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => exportGraphToExcel(ict_data,
@@ -857,7 +886,7 @@ export default function Ict() {
                             <Button icon="pi pi-chart-bar" label="Generate Comparison" className="gen-btn-primary"
                                 style={{ background: "linear-gradient(135deg, #7c3aed, #6d28d9) !important" }}
                                 onClick={() => { setloading_show(true); getmultiictdata(); }} />
-                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="p-button-success"
+                            <Button icon="pi pi-file-excel" label="Download Excel Data" className="gen-btn-success"
                                 disabled={!multiple_ict_data}
                                 tooltip="Export plotted comparison data as Excel" tooltipOptions={{ position: "top" }}
                                 onClick={() => {
