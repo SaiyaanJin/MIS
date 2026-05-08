@@ -657,7 +657,7 @@ def GetLinesData():
     endDateObj = datetime.strptime(endDate, "%Y-%m-%d")
     date_range = [startDateObj + timedelta(days=x) for x in range((endDateObj - startDateObj).days + 1)]
 
-    listofzeros = [11111] * 1440
+    listofzeros = [0] * 1440
     reply = []
     merge_list = [pd.DataFrame({'Date_Time': allDateTime})]
     names = ''
