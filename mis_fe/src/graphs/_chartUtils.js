@@ -525,18 +525,58 @@ export const exportGraphToExcel = (data, label, prefix = "Graph") => {
     const fmt = (ts) => { const m = moment(ts, moment.ISO_8601, true); return ts ? (m.isValid() ? m.format("DD-MMM-YY HH:mm") : String(ts)) : ""; };
     const fmtT = (ts) => { const m = moment(ts, moment.ISO_8601, true); return ts ? (m.isValid() ? m.format("HH:mm") : String(ts)) : ""; };
 
+    // Helper to get data value or default field
+    const getDataValue = (entry, idx) => {
+        return (entry["output"] || entry["actual"] || entry["demand"] || entry["voltageBus1"] || entry["line"] || entry["frequency"] || entry["drawal"] || entry["schedule"]) || [];
+    };
+
+    // Helper to check if entry has dual bus data
+    const hasDualBus = (entry) => {
+        return entry["voltageBus1"] !== undefined && entry["voltageBus2"] !== undefined;
+    };
+
     if (isSingleRange) {
         // Single Date: grouped by station
         const stNames = Object.keys(stationMap);
-        const rows = sharedTimeArr.map((ts, idx) => {
-            const row = { "Date / Time": fmt(ts) };
-            stNames.forEach(n => { row[n] = ((stationMap[n][0]["output"] || stationMap[n][0]["actual"] || stationMap[n][0]["demand"] || stationMap[n][0]["voltageBus1"] || stationMap[n][0]["line"] || stationMap[n][0]["frequency"] || stationMap[n][0]["drawal"] || stationMap[n][0]["schedule"]) || [])[idx] ?? ""; });
-            return row;
-        });
-        if (rows.length > 0) {
-            const ws = XLSX.utils.json_to_sheet(rows);
-            ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
-            XLSX.utils.book_append_sheet(wb, ws, `${prefix} Data`.substring(0, 31));
+        
+        // Check if any station has dual bus data
+        const hasBusData = stNames.some(n => hasDualBus(stationMap[n][0]));
+
+        if (hasBusData) {
+            // Create rows with BUS-1 and BUS-2 columns
+            const rows = sharedTimeArr.map((ts, idx) => {
+                const row = { "Date / Time": fmt(ts) };
+                stNames.forEach(n => {
+                    const entry = stationMap[n][0];
+                    if (hasDualBus(entry)) {
+                        const bus1Val = (entry["voltageBus1"] || [])[idx] ?? "";
+                        const bus2Val = (entry["voltageBus2"] || [])[idx] ?? "";
+                        row[`${n} BUS-1`] = bus1Val;
+                        row[`${n} BUS-2`] = bus2Val;
+                    } else {
+                        const val = getDataValue(entry)[idx] ?? "";
+                        row[n] = val;
+                    }
+                });
+                return row;
+            });
+            if (rows.length > 0) {
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
+                XLSX.utils.book_append_sheet(wb, ws, `${prefix} Data`.substring(0, 31));
+            }
+        } else {
+            // Original logic for non-voltage data
+            const rows = sharedTimeArr.map((ts, idx) => {
+                const row = { "Date / Time": fmt(ts) };
+                stNames.forEach(n => { row[n] = getDataValue(stationMap[n][0])[idx] ?? ""; });
+                return row;
+            });
+            if (rows.length > 0) {
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
+                XLSX.utils.book_append_sheet(wb, ws, `${prefix} Data`.substring(0, 31));
+            }
         }
     } else {
         // Multi Date: grouped by date, creating separate sheets for each date/month
@@ -550,20 +590,48 @@ export const exportGraphToExcel = (data, label, prefix = "Graph") => {
         
         Object.entries(dateMap).forEach(([dateStr, entries]) => {
             const stNames = entries.map(e => e["stationName"] || "Unknown");
-            const slotCount = Math.max(...entries.map(e => ((e["output"] || e["actual"] || e["demand"] || e["voltageBus1"] || e["line"] || e["frequency"] || e["drawal"] || e["schedule"])||[]).length));
-            
-            const rows = Array.from({ length: slotCount }, (_, ri) => {
-                const row = { "Time": fmtT(sharedTimeArr[ri]) || `Slot ${ri+1}` };
-                entries.forEach((e, di) => { 
-                    row[stNames[di]] = ((e["output"] || e["actual"] || e["demand"] || e["voltageBus1"] || e["line"] || e["frequency"] || e["drawal"] || e["schedule"])||[])[ri] ?? ""; 
+            const slotCount = Math.max(...entries.map(e => getDataValue(e).length));
+
+            // Check if any station has dual bus data
+            const hasBusData = entries.some(e => hasDualBus(e));
+
+            if (hasBusData) {
+                // Create rows with BUS-1 and BUS-2 columns
+                const rows = Array.from({ length: slotCount }, (_, ri) => {
+                    const row = { "Time": fmtT(sharedTimeArr[ri]) || `Slot ${ri+1}` };
+                    entries.forEach((e, di) => {
+                        if (hasDualBus(e)) {
+                            const bus1Val = (e["voltageBus1"] || [])[ri] ?? "";
+                            const bus2Val = (e["voltageBus2"] || [])[ri] ?? "";
+                            row[`${stNames[di]} BUS-1`] = bus1Val;
+                            row[`${stNames[di]} BUS-2`] = bus2Val;
+                        } else {
+                            row[stNames[di]] = getDataValue(e)[ri] ?? "";
+                        }
+                    });
+                    return row;
                 });
-                return row;
-            });
-            
-            if (rows.length > 0) {
-                const ws = XLSX.utils.json_to_sheet(rows);
-                ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
-                XLSX.utils.book_append_sheet(wb, ws, dateStr.substring(0, 31));
+                
+                if (rows.length > 0) {
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
+                    XLSX.utils.book_append_sheet(wb, ws, dateStr.substring(0, 31));
+                }
+            } else {
+                // Original logic for non-voltage data
+                const rows = Array.from({ length: slotCount }, (_, ri) => {
+                    const row = { "Time": fmtT(sharedTimeArr[ri]) || `Slot ${ri+1}` };
+                    entries.forEach((e, di) => { 
+                        row[stNames[di]] = getDataValue(e)[ri] ?? ""; 
+                    });
+                    return row;
+                });
+                
+                if (rows.length > 0) {
+                    const ws = XLSX.utils.json_to_sheet(rows);
+                    ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...rows.map(r => String(r[k]??'').length)) + 2, 30) }));
+                    XLSX.utils.book_append_sheet(wb, ws, dateStr.substring(0, 31));
+                }
             }
         });
     }
