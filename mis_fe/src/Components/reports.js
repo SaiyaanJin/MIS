@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "../cssFiles/Animation.css";
 import { TabView, TabPanel } from "primereact/tabview";
 import { Calendar } from "primereact/calendar";
@@ -248,37 +248,37 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="दिनांक"
+					header="??????"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="अधिकतम/ Maximum"
+					header="??????/ Maximum"
 					colSpan={2}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head2"
-					header="न्यूनतम/ Minimum"
+					header="???????/ Minimum"
 					colSpan={2}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head3"
-					header="औसत"
+					header="???"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head4"
-					header="आवृत्ति विचलन सूचकांक (FDI)"
+					header="??????? ????? ??????? (FDI)"
 					colSpan={2}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head5"
-					header="आवृत्ति सीमा (% समय) (Frequency limit in % of time)"
+					header="??????? ???? (% ???) (Frequency limit in % of time)"
 					colSpan={3}
 				/>
 			</Row>
@@ -292,25 +292,25 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="आवृत्ति (Hz)"
+					header="??????? (Hz)"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="समय (time)"
+					header="??? (time)"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head2"
-					header="आवृत्ति (Hz)"
+					header="??????? (Hz)"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head2"
-					header="समय(time)"
+					header="???(time)"
 					colSpan={1}
 				/>
 
@@ -323,13 +323,13 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head4"
-					header="% समय (%in time)"
+					header="% ??? (%in time)"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head4"
-					header="घंटे(in Hours)"
+					header="????(in Hours)"
 					colSpan={1}
 				/>
 				<Column
@@ -360,7 +360,7 @@ export default function Reports() {
 				<Column
 					align="center"
 					style={{ minWidth: "10rem", maxWidth: "10rem" }}
-					footer="साप्ताहिक मूल्य (Weekly Value):"
+					footer="????????? ????? (Weekly Value):"
 					colSpan={1}
 					footerStyle={{ textAlign: "right" }}
 				/>
@@ -383,7 +383,7 @@ export default function Reports() {
 					<Column
 						alignHeader="center"
 						headerClassName="p-head"
-						header="दिनांक"
+						header="??????"
 						colSpan={1}
 					/>
 					<Column
@@ -425,7 +425,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head1"
-						header="अधिकतम (Max)"
+						header="?????? (Max)"
 						colSpan={1}
 					/>
 					<Column
@@ -436,7 +436,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head"
-						header="न्यूनतम (Min)"
+						header="??????? (Min)"
 						colSpan={1}
 					/>
 					<Column
@@ -447,7 +447,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head1"
-						header="वीडीआई (% समय) VDI (% in time)"
+						header="?????? (% ???) VDI (% in time)"
 						colSpan={1}
 					/>
 					<Column
@@ -458,7 +458,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head"
-						header="अधिकतम (Max)"
+						header="?????? (Max)"
 						colSpan={1}
 					/>
 					<Column
@@ -469,7 +469,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head1"
-						header="न्यूनतम (Min)"
+						header="??????? (Min)"
 						colSpan={1}
 					/>
 					<Column
@@ -480,7 +480,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head"
-						header="वीडीआई (% समय) VDI (% in time)"
+						header="?????? (% ???) VDI (% in time)"
 						colSpan={1}
 					/>
 					<Column
@@ -491,7 +491,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head1"
-						header="अधिकतम (Max)"
+						header="?????? (Max)"
 						colSpan={1}
 					/>
 					<Column
@@ -502,7 +502,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head"
-						header="न्यूनतम (Min)"
+						header="??????? (Min)"
 						colSpan={1}
 					/>
 					<Column
@@ -513,7 +513,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head1"
-						header="वीडीआई (% समय) VDI (% in time)"
+						header="?????? (% ???) VDI (% in time)"
 						colSpan={1}
 					/>
 				</Row>
@@ -528,7 +528,7 @@ export default function Reports() {
 					<Column
 						alignHeader="center"
 						headerClassName="p-head"
-						header="दिनांक"
+						header="??????"
 						colSpan={1}
 					/>
 					<Column
@@ -558,7 +558,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head1"
-						header="अधिकतम (Max)"
+						header="?????? (Max)"
 						colSpan={1}
 					/>
 					<Column
@@ -569,7 +569,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head"
-						header="न्यूनतम (Min)"
+						header="??????? (Min)"
 						colSpan={1}
 					/>
 					<Column
@@ -580,7 +580,7 @@ export default function Reports() {
 						}}
 						alignHeader="center"
 						headerClassName="p-head1"
-						header="वीडीआई (% समय) VDI (% in time)"
+						header="?????? (% ???) VDI (% in time)"
 						colSpan={1}
 					/>
 				</Row>
@@ -594,7 +594,7 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="सप्ताह के दौरान मेजर जेनरेटर ट्रिप या पुनः सिंक्रनाइज़ किए गए/ Major generators tripped or re-synchronized during the week"
+					header="?????? ?? ????? ???? ??????? ????? ?? ???? ??????????? ??? ??/ Major generators tripped or re-synchronized during the week"
 					colSpan={10}
 				/>
 			</Row>
@@ -602,50 +602,50 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="क्रम सं"
+					header="???? ??"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="स्टेशन"
+					header="??????"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="संस्था"
+					header="??????"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="यूनिट क्रमांक"
+					header="????? ???????"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="क्षमता"
+					header="??????"
 					colSpan={1}
 				/>
 
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="आउटेज/Outage"
+					header="?????/Outage"
 					colSpan={2}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="वापसी / Restoration"
+					header="????? / Restoration"
 					colSpan={2}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="कारण"
+					header="????"
 					colSpan={1}
 				/>
 			</Row>
@@ -685,25 +685,25 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="दिनांक / Date"
+					header="?????? / Date"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="समय / Time"
+					header="??? / Time"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="दिनांक / Date"
+					header="?????? / Date"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="समय / Time"
+					header="??? / Time"
 					colSpan={1}
 				/>
 				<Column
@@ -722,7 +722,7 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="सप्ताह के दौरान ट्रांसमिशन तत्वो का  ट्रिप या पुनः सिंक्रनाइज़/ IMPORTANT TRANSMISSION ELEMENTS TRIPPED / RESTORED DURING THE WEEK"
+					header="?????? ?? ????? ?????????? ????? ??  ????? ?? ???? ???????????/ IMPORTANT TRANSMISSION ELEMENTS TRIPPED / RESTORED DURING THE WEEK"
 					colSpan={7}
 				/>
 			</Row>
@@ -730,38 +730,38 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="क्रम सं"
+					header="???? ??"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="लाइन / आईसीटी"
+					header="???? / ??????"
 					colSpan={1}
 				/>
 				{/* <Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="संस्था (Agency)"
+					header="?????? (Agency)"
 					colSpan={1}
 				/> */}
 
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="आउटेज/Outage"
+					header="?????/Outage"
 					colSpan={2}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="वापसी / Restoration"
+					header="????? / Restoration"
 					colSpan={2}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="कारण / टिप्पणी "
+					header="???? / ??????? "
 					colSpan={1}
 				/>
 			</Row>
@@ -784,25 +784,25 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head4"
-					header="दिनांक / Date"
+					header="?????? / Date"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head4"
-					header="समय / Time"
+					header="??? / Time"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head5"
-					header="दिनांक / Date"
+					header="?????? / Date"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head5"
-					header="समय / Time"
+					header="??? / Time"
 					colSpan={1}
 				/>
 				<Column
@@ -821,7 +821,7 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="मुख्य तत्वो की अनुपलब्धता (एक सप्ताह से अधिक)/IMPORTANT ELEMENTS ARE UNDER BREAKDOWN (MORE THAN 01 WEEK):-"
+					header="????? ????? ?? ?????????? (?? ?????? ?? ????)/IMPORTANT ELEMENTS ARE UNDER BREAKDOWN (MORE THAN 01 WEEK):-"
 					colSpan={5}
 				/>
 			</Row>
@@ -829,38 +829,38 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="क्रम सं"
+					header="???? ??"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="स्टेशन"
+					header="??????"
 					colSpan={1}
 				/>
 				{/* <Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="संस्था (Agency)"
+					header="?????? (Agency)"
 					colSpan={1}
 				/> */}
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="मालिक"
+					header="?????"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="आउटेज दिनांक"
+					header="????? ??????"
 					colSpan={1}
 				/>
 
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="आउटेज का कारण"
+					header="????? ?? ????"
 					colSpan={1}
 				/>
 			</Row>
@@ -906,7 +906,7 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="आईईजीसी के व्यक्तिगत / संगणकीय गैर-अनुपालन के दृष्टांत /INSTANCES OF PERSISTENT/SIGNIFICANT NON-COMPLIANCE OF IEGC :"
+					header="??????? ?? ????????? / ??????? ???-??????? ?? ???????? /INSTANCES OF PERSISTENT/SIGNIFICANT NON-COMPLIANCE OF IEGC :"
 					colSpan={9}
 				/>
 			</Row>
@@ -914,7 +914,7 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="भेजे गए संदेशों की संख्या/Number of Messages sent"
+					header="???? ?? ??????? ?? ??????/Number of Messages sent"
 					colSpan={9}
 				/>
 			</Row>
@@ -922,45 +922,45 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="क्रम सं"
+					header="???? ??"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="नाम"
+					header="???"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="विचलन/DEVIATION"
+					header="?????/DEVIATION"
 					colSpan={3}
 				/>
 
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="आवृत्ति उल्लंघन"
+					header="??????? ???????"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="वोल्टेज उल्लंघन"
+					header="??????? ???????"
 					colSpan={1}
 				/>
 
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="शक्ति का प्रवाह का उल्लंघन"
+					header="????? ?? ?????? ?? ???????"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="कुल"
+					header="???"
 					colSpan={1}
 				/>
 			</Row>
@@ -980,20 +980,20 @@ export default function Reports() {
 				<Column
 					alignHeader="center"
 					headerClassName="p-head"
-					header="चेतावनी/ALERT"
+					header="???????/ALERT"
 					colSpan={1}
 				/>
 
 				<Column
 					alignHeader="center"
 					headerClassName="p-head1"
-					header="आपातकालीन/ EMERGENCY"
+					header="?????????/ EMERGENCY"
 					colSpan={1}
 				/>
 				<Column
 					alignHeader="center"
 					headerClassName="p-head2"
-					header="गैर-अनुपालन/NON-COMPLIANCE"
+					header="???-???????/NON-COMPLIANCE"
 					colSpan={1}
 				/>
 				<Column
@@ -1080,7 +1080,7 @@ export default function Reports() {
 				<Column
 					align="center"
 					style={{ minWidth: "10rem", maxWidth: "10rem" }}
-					footer="कुल / TOTAL:"
+					footer="??? / TOTAL:"
 					colSpan={2}
 					footerStyle={{ textAlign: "center" }}
 				/>
@@ -1240,7 +1240,7 @@ export default function Reports() {
 					<Column
 						align="center"
 						style={{ minWidth: "10rem", maxWidth: "10rem" }}
-						footer="साप्ताहिक मूल्य (Weekly Value):"
+						footer="????????? ????? (Weekly Value):"
 						colSpan={1}
 						footerStyle={{ textAlign: "right" }}
 					/>
@@ -1265,7 +1265,7 @@ export default function Reports() {
 					<Column
 						align="center"
 						style={{ minWidth: "10rem", maxWidth: "10rem" }}
-						footer="साप्ताहिक मूल्य (Weekly Value):"
+						footer="????????? ????? (Weekly Value):"
 						colSpan={1}
 						footerStyle={{ textAlign: "right" }}
 					/>
@@ -1340,6 +1340,7 @@ export default function Reports() {
 								}}
 								showIcon
 								selectionMode="range"
+                                    hideOnRangeSelection
 								readOnlyInput
 							/>
 						</div>
@@ -2360,7 +2361,7 @@ export default function Reports() {
 			</div>
 
 			<div ref={report_table} hidden={true} id="table">
-				<h4>(A) आवृदि प्रोफाइल / Frequency Profile*</h4>
+				<h4>(A) ????? ???????? / Frequency Profile*</h4>
 				<DataTable
 					ref={dt}
 					// header={header}
@@ -2399,7 +2400,7 @@ export default function Reports() {
 				</DataTable>
 				* Based on available SCADA data
 				<br />
-				<h4>(B) वोल्टेज प्रोफाइल / Voltage Profile*</h4>
+				<h4>(B) ??????? ???????? / Voltage Profile*</h4>
 				{volt_data_header_400.map((e) => (
 					<>
 						<div className="flex flex-wrap gap-1 justify-content-between align-items-center">
@@ -2724,7 +2725,7 @@ export default function Reports() {
 						headerClassName="p-head"
 						alignHeader="center"
 						field="2"
-						header="ग्रिड डिस्टर्बेंस/ट्रांसमिशन का प्रतिबंध(यदि कोई है)/GRID DISTURBANCES/TRANSMISSION CONSTRAINTS (IF ANY):"
+						header="????? ???????????/?????????? ?? ????????(??? ??? ??)/GRID DISTURBANCES/TRANSMISSION CONSTRAINTS (IF ANY):"
 					></Column>
 				</DataTable>
 				<br />
@@ -2746,7 +2747,7 @@ export default function Reports() {
 						headerClassName="p-head"
 						alignHeader="center"
 						field="2"
-						header="ट्रांसमिशन प्रणाली में अतिप्रजन के दृष्टांत / INSTANCES OF CONGESTION IN TRANSMISSION SYSTEM:"
+						header="?????????? ??????? ??? ???????? ?? ???????? / INSTANCES OF CONGESTION IN TRANSMISSION SYSTEM:"
 					></Column>
 				</DataTable>
 				<br />

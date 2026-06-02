@@ -1540,6 +1540,7 @@ export default function WeeklyReports() {
 									}}
 									showIcon={false}
 									selectionMode="range"
+                                    hideOnRangeSelection
 									readOnlyInput
 									className="border-none"
 									style={{ height: '32px' }}

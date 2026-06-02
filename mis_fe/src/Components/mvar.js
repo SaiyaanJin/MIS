@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { exportGraphToExcel } from "../graphs/_chartUtils";
 import { Calendar } from "primereact/calendar";
 import "../cssFiles/PasswordDemo.css";
@@ -20,7 +20,7 @@ import { Checkbox } from "primereact/checkbox";
 import { Chip } from "primereact/chip";
 import { Tag } from "primereact/tag";
 import { useTheme } from "../context/ThemeContext";
-// ─── Styles injected once ─────────────────────────────────────────────────────
+// --- Styles injected once -----------------------------------------------------
 const generatorStyles = `
 @keyframes gen-fade-up {
   from { opacity: 0; transform: translateY(18px); }
@@ -336,7 +336,7 @@ export default function Mvar() {
     const baseUrl = process.env.REACT_APP_API_BASE_URL;
     const { isDarkMode } = useTheme();
 
-    // ── State ────────────────────────────────────────────────────────────────
+    // -- State ----------------------------------------------------------------
     const [date_range, setDate_range] = useState([
         new Date(moment().set("hour",0).set("minute",0).set("second",0).subtract(2,"day")._d),
         new Date(moment().set("hour",23).set("minute",59).set("second",0).subtract(2,"day")._d),
@@ -369,8 +369,9 @@ export default function Mvar() {
     const [freq_region1, setfreq_region1] = useState([]);
     const [blocked, setBlocked]           = useState(false);
     const [loading_show, setloading_show] = useState(false);
+    const calendarRef = useRef(null);
 
-    // ── Data Fetch ────────────────────────────────────────────────────────────
+    // -- Data Fetch ------------------------------------------------------------
     useEffect(() => {
         if (start_date && end_date) {
             axios.post(baseUrl + "/MvarNames?startDate=" + moment(start_date).format("YYYY-MM-DD HH:mm") + "&endDate=" + moment(end_date).format("YYYY-MM-DD HH:mm"), {})
@@ -430,7 +431,7 @@ export default function Mvar() {
     const freq_change1 = (e) => { let s=[...freq_region1]; e.checked?s.push(e.value):s.splice(s.indexOf(e.value),1); setfreq_region1(s); };
 
         
-    // ── Stat Badges ───────────────────────────────────────────────────────────
+    // -- Stat Badges -----------------------------------------------------------
     const stationCount = mvar_data ? (mvar_data.length - 1) : 0;
     const multiCount   = multiple_mvar_data ? (multiple_mvar_data.length - 1) : 0;
     const dateRangeDays = start_date && end_date ? moment(end_date).diff(moment(start_date), "days") + 1 : 0;
@@ -449,7 +450,7 @@ export default function Mvar() {
                     <div className="gen-loading-card">
                         <div className="gen-spinner" />
                         <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>Fetching Mvar Data</div>
-                        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Crunching numbers from the grid…</div>
+                        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Crunching numbers from the grid�</div>
                     </div>
                 </div>
             )}
@@ -457,10 +458,10 @@ export default function Mvar() {
             <div style={{ paddingBottom: 40, '--page-accent': '#8b5cf6' }}>
 				<div>
 
-                {/* ── HERO HEADER (compact) ─────────────────────────────────── */}
+                {/* -- HERO HEADER (compact) ----------------------------------- */}
                 <div className="gen-hero">
                     <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", zIndex: 1 }}>
-                        <div className="gen-hero-icon">⚡</div>
+                        <div className="gen-hero-icon">?</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="gen-hero-badge">
                                 <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
@@ -488,13 +489,13 @@ export default function Mvar() {
                     </div>
                 </div>
 
-                {/* ── STAT CARDS ───────────────────────────────────────────────── */}
+                {/* -- STAT CARDS ------------------------------------------------- */}
                 <div className="grid mb-4" style={{ animationDelay: "0.05s" }}>
                     {[
-                        { color: "blue",  icon: "pi-calendar-plus", label: "Date Range", value: start_date ? moment(start_date).format("DD MMM") + " → " + moment(end_date).format("DD MMM YYYY") : "Not set" },
+                        { color: "blue",  icon: "pi-calendar-plus", label: "Date Range", value: start_date ? moment(start_date).format("DD MMM") + " ? " + moment(end_date).format("DD MMM YYYY") : "Not set" },
                         { color: "green", icon: "pi-bolt",          label: "Generators Selected", value: selectedCount ? `${selectedCount} station${selectedCount > 1 ? "s" : ""}` : "None selected" },
                         { color: "amber", icon: "pi-clock",          label: "Resolution", value: checked3 ? `${minutes} min interval` : "1 min (default)" },
-                        { color: "violet", icon: "pi-chart-line",    label: "Data Status", value: mvar_data ? "✓ Ready to view" : "Pending generation" },
+                        { color: "violet", icon: "pi-chart-line",    label: "Data Status", value: mvar_data ? "? Ready to view" : "Pending generation" },
                     ].map((s, idx) => (
                         <div className="col-12 sm:col-6 xl:col-3" key={s.label}>
                             <div className={`gen-stat-card ${s.color}`} style={{ animationDelay: `${0.08 + idx * 0.06}s` }}>
@@ -512,9 +513,9 @@ export default function Mvar() {
                     ))}
                 </div>
 
-                {/* ═══════════════════════════════════════════════════════════════
-                    SECTION 1 — Single Date-Range Analysis
-                ═══════════════════════════════════════════════════════════════ */}
+                {/* ---------------------------------------------------------------
+                    SECTION 1 � Single Date-Range Analysis
+                --------------------------------------------------------------- */}
                 <div className="gen-section">
                     <div className="gen-section-header">
                         <div className="gen-section-title">
@@ -530,17 +531,18 @@ export default function Mvar() {
                     <div className="gen-section-body">
                         <div className="grid align-items-end">
 
-                            {/* Date Range — single selectionMode="range" picker */}
+                            {/* Date Range � single selectionMode="range" picker */}
                             <div className="col-12 md:col-4">
                                 <div className="gen-field-label"><i className="pi pi-calendar-plus" />Date Range</div>
                                 <div className="modern-cal-wrapper">
                                     <Calendar
+                                        ref={calendarRef}
                                         style={{ width: "100%" }}
                                         showIcon
                                         selectionMode="range"
                                         showTime
                                         hourFormat="24"
-                                        placeholder="Select start → end date"
+                                        placeholder="Select start ? end date"
                                         dateFormat="dd-mm-yy"
                                         value={date_range}
                                         onChange={(e) => {
@@ -555,6 +557,10 @@ export default function Mvar() {
                                                 newRange[1].setHours(23, 59, 0, 0);
                                             }
                                             setDate_range(newRange);
+                                            // Auto-hide once both start and end dates are picked
+                                            if (newRange[0] && newRange[1] && calendarRef.current) {
+                                                calendarRef.current.hide();
+                                            }
                                         }}
                                         monthNavigator
                                         yearNavigator
@@ -569,7 +575,7 @@ export default function Mvar() {
                                         <span className="modern-date-badge">
                                             {moment(start_date).format("DD MMM YYYY HH:mm")}
                                         </span>
-                                        <span style={{ fontSize: 11, color: "var(--text-muted)", alignSelf: "center", fontWeight: 700 }}>→</span>
+                                        <span style={{ fontSize: 11, color: "var(--text-muted)", alignSelf: "center", fontWeight: 700 }}>?</span>
                                         <span className="modern-date-badge">
                                             {moment(end_date).format("DD MMM YYYY HH:mm")}
                                         </span>
@@ -598,9 +604,9 @@ export default function Mvar() {
                             {/* Mvar Selector */}
                             <div className="col-12 md:col-5">
                                 <div className="gen-field-label"><i className="pi pi-bolt" />Select Mvar(s)</div>
-                                <MultiSelect filterPlaceholder="Search generators…" showSelectAll showClear resetFilterOnHide
+                                <MultiSelect filterPlaceholder="Search generators�" showSelectAll showClear resetFilterOnHide
                                     maxSelectedLabels={7} selectionLimit={7} display="chip"
-                                    placeholder="Pick up to 7 elements…"
+                                    placeholder="Pick up to 7 elements�"
                                     value={Selected_mvar_states} options={mvar_states}
                                     onChange={(e) => setSelected_mvar_states(e.value)}
                                     filter className="w-full modern-multiselect"
@@ -613,7 +619,7 @@ export default function Mvar() {
                         <div className="gen-divider-row" />
                         <div className="grid gap-0">
                             <div className="col-12 md:col-6">
-                                <div className="gen-field-label mb-2"><i className="pi pi-sliders-h" />Overlay — Duration Curve</div>
+                                <div className="gen-field-label mb-2"><i className="pi pi-sliders-h" />Overlay � Duration Curve</div>
                                 <div className="gen-overlay-group">
                                     {["Mvar", "Frequency"].map(v => (
                                         <label key={v} className="gen-checkbox-item">
@@ -624,7 +630,7 @@ export default function Mvar() {
                                 </div>
                             </div>
                             <div className="col-12 md:col-6">
-                                <div className="gen-field-label mb-2"><i className="pi pi-wave-pulse" />Overlay — Frequency Stations</div>
+                                <div className="gen-field-label mb-2"><i className="pi pi-wave-pulse" />Overlay � Frequency Stations</div>
                                 <div className="gen-overlay-group">
                                     {[
                                         { val: "Durgapur", color: "#ef4444" },
@@ -661,17 +667,17 @@ export default function Mvar() {
                     </div>
                 </div>
 
-                {/* Chart Output — Range */}
+                {/* Chart Output � Range */}
                 {!graphenable && (
                     <div className="gen-chart-wrapper mb-4">
                         <div className="gen-chart-header">
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                                 <i className="pi pi-chart-line" style={{ color: "#3b82f6" }} />
                                 <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>Output Chart</span>
-                                <Tag value={`${moment(start_date).format("DD MMM")} → ${moment(end_date).format("DD MMM YYYY")}`}
+                                <Tag value={`${moment(start_date).format("DD MMM")} ? ${moment(end_date).format("DD MMM YYYY")}`}
                                     severity="info" rounded style={{ fontSize: 10 }} />
                             </div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Scroll to zoom · Drag to pan</div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Scroll to zoom � Drag to pan</div>
                         </div>
                         <div style={{ padding: "16px 20px" }}>
                             <Mvargraph
@@ -685,9 +691,9 @@ export default function Mvar() {
                     </div>
                 )}
 
-                {/* ═══════════════════════════════════════════════════════════════
-                    SECTION 2 — Multi-Timeline Comparison
-                ═══════════════════════════════════════════════════════════════ */}
+                {/* ---------------------------------------------------------------
+                    SECTION 2 � Multi-Timeline Comparison
+                --------------------------------------------------------------- */}
                 <div className="gen-section" style={{ animationDelay: "0.1s" }}>
                     <div className="gen-section-header">
                         <div className="gen-section-title">
@@ -735,7 +741,7 @@ export default function Mvar() {
                                     {checked1 && (
                                         <div className="modern-cal-wrapper">
                                             <Calendar style={{ width: "100%" }} showIcon showWeek
-                                                selectionMode="multiple" placeholder="Pick dates…" dateFormat="dd-mm-yy"
+                                                selectionMode="multiple" placeholder="Pick dates�" dateFormat="dd-mm-yy"
                                                 value={multiple_date} onChange={(e) => setMultiple_Date(e.value)}
                                                 monthNavigator yearNavigator yearRange="2015:2030" showButtonBar />
                                         </div>
@@ -743,7 +749,7 @@ export default function Mvar() {
                                     {checked2 && (
                                         <div className="modern-cal-wrapper">
                                             <Calendar style={{ width: "100%" }} showIcon showWeek
-                                                selectionMode="multiple" placeholder="Pick months…" view="month" dateFormat="MM-yy"
+                                                selectionMode="multiple" placeholder="Pick months�" view="month" dateFormat="MM-yy"
                                                 value={multiple_month} onChange={(e) => setMultiple_Month(e.value)}
                                                 monthNavigator yearNavigator yearRange="2015:2030" showButtonBar />
                                         </div>
@@ -792,9 +798,9 @@ export default function Mvar() {
                             <div className="col-12 md:col-5">
                                 <div className="mb-3">
                                     <div className="gen-field-label"><i className="pi pi-bolt" />Select Mvar(s)</div>
-                                    <MultiSelect filterPlaceholder="Search generators…" showSelectAll showClear resetFilterOnHide
+                                    <MultiSelect filterPlaceholder="Search generators�" showSelectAll showClear resetFilterOnHide
                                         maxSelectedLabels={7} selectionLimit={7} display="chip"
-                                        placeholder="pick elements…"
+                                        placeholder="pick elements�"
                                         value={multiple_Selected_mvar_states} options={multiple_mvar_states}
                                         onChange={(e) => setmultipleSelected_mvar_states(e.value)}
                                         filter className="w-full modern-multiselect"
@@ -807,7 +813,7 @@ export default function Mvar() {
                         <div className="gen-divider-row" />
                         <div className="grid gap-0">
                             <div className="col-12 md:col-6">
-                                <div className="gen-field-label mb-2"><i className="pi pi-sliders-h" />Overlay — Duration Curve</div>
+                                <div className="gen-field-label mb-2"><i className="pi pi-sliders-h" />Overlay � Duration Curve</div>
                                 <div className="gen-overlay-group">
                                     {["Mvar", "Frequency"].map(v => (
                                         <label key={v} className="gen-checkbox-item">
@@ -818,7 +824,7 @@ export default function Mvar() {
                                 </div>
                             </div>
                             <div className="col-12 md:col-6">
-                                <div className="gen-field-label mb-2"><i className="pi pi-wave-pulse" />Overlay — Frequency Stations</div>
+                                <div className="gen-field-label mb-2"><i className="pi pi-wave-pulse" />Overlay � Frequency Stations</div>
                                 <div className="gen-overlay-group">
                                     {[
                                         { val: "Durgapur", color: "#ef4444" },
@@ -859,7 +865,7 @@ export default function Mvar() {
                     </div>
                 </div>
 
-                {/* Chart Output — Multi */}
+                {/* Chart Output � Multi */}
                 {!graphenable2 && (
                     <div className="gen-chart-wrapper">
                         <div className="gen-chart-header">
@@ -868,7 +874,7 @@ export default function Mvar() {
                                 <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>Comparison Chart</span>
                                 <Tag value={checked1 ? "Day-wise" : "Month-wise"} severity="help" rounded style={{ fontSize: 10 }} />
                             </div>
-                            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Scroll to zoom · Drag to pan</div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Scroll to zoom � Drag to pan</div>
                         </div>
                         <div style={{ padding: "16px 20px" }}>
                             <Mvargraph

@@ -1483,6 +1483,7 @@ function MonthlyReports() {
 										value={date_range}
 										onChange={(e) => setdate_range(e.value || [])}
 										selectionMode="range"
+                                    hideOnRangeSelection
 										readOnlyInput
 										className="w-full"
 									/>

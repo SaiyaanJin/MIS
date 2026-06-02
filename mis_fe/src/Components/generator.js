@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { exportGraphToExcel } from "../graphs/_chartUtils";
 import { Calendar } from "primereact/calendar";
 import "../cssFiles/PasswordDemo.css";
@@ -422,6 +422,7 @@ export default function Generator() {
     const [freq_region1, setfreq_region1] = useState([]);
     const [blocked, setBlocked]           = useState(false);
     const [loading_show, setloading_show] = useState(false);
+    const calendarRef = useRef(null);
 
     // ── Data Fetch ────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -588,6 +589,7 @@ export default function Generator() {
                                 <div className="gen-field-label"><i className="pi pi-calendar-plus" />Date Range</div>
                                 <div className="modern-cal-wrapper">
                                     <Calendar
+                                        ref={calendarRef}
                                         style={{ width: "100%" }}
                                         showIcon
                                         selectionMode="range"
@@ -608,6 +610,10 @@ export default function Generator() {
                                                 newRange[1].setHours(23, 59, 0, 0);
                                             }
                                             setDate_range(newRange);
+                                            // Auto-hide once both start and end dates are picked
+                                            if (newRange[0] && newRange[1] && calendarRef.current) {
+                                                calendarRef.current.hide();
+                                            }
                                         }}
                                         monthNavigator
                                         yearNavigator
