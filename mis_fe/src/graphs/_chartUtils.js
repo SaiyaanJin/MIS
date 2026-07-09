@@ -670,13 +670,19 @@ export const exportGraphToExcel = (data, label, prefix = "Graph") => {
 			const stNames = entries.map((e) => e["stationName"] || "Unknown");
 			const slotCount = Math.max(...entries.map((e) => getDataValue(e).length));
 
+			// Each month/date has its own timestamp array — never fall back to
+			// another group's array, only to the global one if this group lacks it.
+			const groupTimeArr =
+				entries.find((e) => Array.isArray(e["Date_TimeArr"]))?.["Date_TimeArr"] ||
+				sharedTimeArr;
+
 			// Check if any station has dual bus data
 			const hasBusData = entries.some((e) => hasDualBus(e));
 
 			if (hasBusData) {
 				// Create rows with BUS-1 and BUS-2 columns
 				const rows = Array.from({ length: slotCount }, (_, ri) => {
-					const row = { Time: fmtT(sharedTimeArr[ri]) || `Slot ${ri + 1}` };
+					const row = { Time: fmtT(groupTimeArr[ri]) || `Slot ${ri + 1}` };
 					entries.forEach((e, di) => {
 						if (hasDualBus(e)) {
 							const bus1Val = (e["voltageBus1"] || [])[ri] ?? "";
@@ -706,7 +712,7 @@ export const exportGraphToExcel = (data, label, prefix = "Graph") => {
 			} else {
 				// Original logic for non-voltage data
 				const rows = Array.from({ length: slotCount }, (_, ri) => {
-					const row = { Time: fmtT(sharedTimeArr[ri]) || `Slot ${ri + 1}` };
+					const row = { Time: fmtT(groupTimeArr[ri]) || `Slot ${ri + 1}` };
 					entries.forEach((e, di) => {
 						row[stNames[di]] = getDataValue(e)[ri] ?? "";
 					});

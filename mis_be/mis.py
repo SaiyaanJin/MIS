@@ -392,13 +392,13 @@ def GetMultiVoltageData():
 
                 if time1 == 1:
                     reply.append({'stationName': station, 'voltageBus1': voltageBus1,
-                                  'voltageBus2': voltageBus2, 'Date_Time': startDateObj})
+                                  'voltageBus2': voltageBus2, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
                 else:
                     temp_voltageBus1 = [my_max_min_function(chunk)[2] for chunk in divide_chunks(voltageBus1, time1)]
                     temp_voltageBus2 = [my_max_min_function(chunk)[2] for chunk in divide_chunks(voltageBus2, time1)]
 
                     reply.append({'stationName': station, 'voltageBus1': temp_voltageBus1,
-                                  'voltageBus2': temp_voltageBus2, 'Date_Time': startDateObj})
+                                  'voltageBus2': temp_voltageBus2, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
 
         reply.append({'Date_Time': allDateTime})
 
@@ -889,10 +889,10 @@ def GetMultiDemandData():
                 demand = [0 if math.isnan(float(v)) else float(v) for v in demand]
 
                 if time1 == 1:
-                    reply.append({'stationName': station, 'output': demand, 'Date_Time': startDateObj})
+                    reply.append({'stationName': station, 'output': demand, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
                 else:
                     averaged = [my_max_min_function(chunk)[2] for chunk in divide_chunks(demand, time1)]
-                    reply.append({'stationName': station, 'output': averaged, 'Date_Time': startDateObj})
+                    reply.append({'stationName': station, 'output': averaged, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
 
     for item in reply:
         sorted_val = sorted(item['output'], reverse=True)
@@ -1096,10 +1096,10 @@ def GetMultiIctData():
                 ict = [0 if math.isnan(float(v)) else float(v) for v in ict]
 
                 if time1 == 1:
-                    reply.append({'stationName': station, 'line': ict, 'Date_Time': startDateObj})
+                    reply.append({'stationName': station, 'line': ict, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
                 else:
                     averaged = [my_max_min_function(chunk)[2] for chunk in divide_chunks(ict, time1)]
-                    reply.append({'stationName': station, 'line': averaged, 'Date_Time': startDateObj})
+                    reply.append({'stationName': station, 'line': averaged, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
 
     for item in reply:
         sorted_val = sorted(item['line'], reverse=True)
@@ -1233,11 +1233,11 @@ def GetMultiLinesData():
                 line = [0 if math.isnan(float(x)) else float(x) for x in line]
 
                 if time1 == 1:
-                    reply.append({'stationName': station, 'line': line, 'Date_Time': startDateObj})
+                    reply.append({'stationName': station, 'line': line, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
                 else:
                     chunked = list(divide_chunks(line, time1))
                     averaged = [my_max_min_function(chunk)[2] for chunk in chunked]
-                    reply.append({'stationName': station, 'line': averaged, 'Date_Time': startDateObj})
+                    reply.append({'stationName': station, 'line': averaged, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
 
     temp_dict = {'Date_Time': allDateTime}
 
@@ -1655,7 +1655,7 @@ def GetMultiFrequencyData():
                     chunked = divide_chunks(frequency, time1)
                     frequency = [my_max_min_function(chunk)[2] for chunk in chunked]
 
-                item = {'stationName': station}
+                item = {'stationName': station, 'Date_TimeArr': allDateTime_candidate}
                 reply.append(add_metadata(item, frequency, start_date))
 
     reply.append({'Date_Time': allDateTime})
@@ -2227,11 +2227,11 @@ def GetMultiDemandMinData():
                         output[i] = 0
 
                 if time1 == 1:
-                    data = {'stationName': station, 'output': output, 'Date_Time': startDateObj}
+                    data = {'stationName': station, 'output': output, 'Date_Time': startDateObj, 'Date_TimeArr': dts}
                 else:
                     chunked = list(divide_chunks(output, time1))
                     averaged = [my_max_min_function(chunk)[2] for chunk in chunked]
-                    data = {'stationName': station, 'output': averaged, 'Date_Time': startDateObj}
+                    data = {'stationName': station, 'output': averaged, 'Date_Time': startDateObj, 'Date_TimeArr': dts}
 
                 reply.append(data)
 
@@ -2523,13 +2523,13 @@ def GetMultiGeneratorData():
                     output[i] = 0
 
             if time1 == 1:
-                reply.append({'stationName': station, 'output': output, 'Date_Time': startDateObj})
+                reply.append({'stationName': station, 'output': output, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
             else:
                 temp_output = []
                 for chunk in divide_chunks(output, time1):
                     _, _, avg_1 = my_max_min_function(chunk)
                     temp_output.append(avg_1)
-                reply.append({'stationName': station, 'output': temp_output, 'Date_Time': startDateObj})
+                reply.append({'stationName': station, 'output': temp_output, 'Date_Time': startDateObj, 'Date_TimeArr': dts})
 
     reply.append({'Date_Time': allDateTime})
 
@@ -2881,11 +2881,11 @@ def GetMultiThGeneratorData():
                         output[i] = 0
 
                 if time_interval == 1:
-                    reply.append({'stationName': station, 'output': output, 'Date_Time': start_date_obj})
+                    reply.append({'stationName': station, 'output': output, 'Date_Time': start_date_obj, 'Date_TimeArr': dts})
                 else:
                     chunks = list(divide_chunks(output, time_interval))
                     averaged = [my_max_min_function(chunk)[2] for chunk in chunks]
-                    reply.append({'stationName': station, 'output': averaged, 'Date_Time': start_date_obj})
+                    reply.append({'stationName': station, 'output': averaged, 'Date_Time': start_date_obj, 'Date_TimeArr': dts})
 
         reply.append({'Date_Time': allDateTime})
 
@@ -3198,14 +3198,17 @@ def GetMultiISGSData():
                 raw_output[i] = 0
         return raw_output
 
-    def process_output(station, output, date_obj):
+    def process_output(station, output, date_obj, date_time_arr=None):
         """Aggregate and compute stats for the output"""
         if time_interval == 1:
-            return {'stationName': station, 'output': output, 'Date_Time': date_obj}
+            entry = {'stationName': station, 'output': output, 'Date_Time': date_obj}
         else:
             chunks = list(divide_chunks(output, time_interval))
             avg_output = [my_max_min_function(chunk)[2] for chunk in chunks]
-            return {'stationName': station, 'output': avg_output, 'Date_Time': date_obj}
+            entry = {'stationName': station, 'output': avg_output, 'Date_Time': date_obj}
+        if date_time_arr is not None:
+            entry['Date_TimeArr'] = date_time_arr
+        return entry
 
     if query_type == "Date":
         startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
@@ -3234,7 +3237,7 @@ def GetMultiISGSData():
                 result = fetch_data(station, startDateObj, endDateObj)
                 output = [val for entry in result for val in entry['p']]
                 output = clean_output(output)
-                reply.append(process_output(station, output, startDateObj))
+                reply.append(process_output(station, output, startDateObj, dts))
 
     # Append Date_Time metadata
     reply.append({'Date_Time': allDateTime})
@@ -3506,14 +3509,17 @@ def GetMultiExchangeData():
                 raw_output[i] = 0
         return raw_output
 
-    def process_output(station, output, date_obj):
+    def process_output(station, output, date_obj, date_time_arr=None):
         """Aggregate and compute stats for the output"""
         if time_interval == 1:
-            return {'stationName': station, 'output': output, 'Date_Time': date_obj}
+            entry = {'stationName': station, 'output': output, 'Date_Time': date_obj}
         else:
             chunks = list(divide_chunks(output, time_interval))
             avg_output = [my_max_min_function(chunk)[2] for chunk in chunks]
-            return {'stationName': station, 'output': avg_output, 'Date_Time': date_obj}
+            entry = {'stationName': station, 'output': avg_output, 'Date_Time': date_obj}
+        if date_time_arr is not None:
+            entry['Date_TimeArr'] = date_time_arr
+        return entry
 
     if query_type == "Date":
         startDateObj = datetime.strptime(MultistartDate[0], "%Y-%m-%d")
@@ -3542,7 +3548,7 @@ def GetMultiExchangeData():
                 result = fetch_data(station, startDateObj, endDateObj)
                 output = [val for entry in result for val in entry['p']]
                 output = clean_output(output)
-                reply.append(process_output(station, output, startDateObj))
+                reply.append(process_output(station, output, startDateObj, dts))
 
     # Append Date_Time metadata
     reply.append({'Date_Time': allDateTime})
