@@ -451,7 +451,7 @@ export default function Generator() {
         const t = checked3 && minutes ? minutes : 1;
         const sd = moment(start_date).format("YYYY-MM-DD HH:mm");
         const ed = moment(end_date).format("YYYY-MM-DD HH:mm");
-        axios.post(baseUrl + `/GetGeneratorData?startDate=${sd}&endDate=${ed}&stationName=${Selected_generator_states}&time=${t}`, {})
+        axios.post(baseUrl + `/GetGeneratorData?startDate=${sd}&endDate=${ed}&stationName=${(Selected_generator_states || []).map(s => String(s).replace(/&/g, "%26")).join(",")}&time=${t}`, {})
             .then(r => { setgenerator_data(r.data); setenable(false); setgraphenable(false); setBlocked(false); setloading_show(false); });
         axios.post(baseUrl + `/GetFrequencyData?startDate=${sd}&endDate=${ed}&stationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North&time=${t}`, {})
             .then(r => setfrequency(r.data));
@@ -462,7 +462,7 @@ export default function Generator() {
             const dates = multiple_date.map(d => moment(d).format("YYYY-MM-DD"));
             const t = checked4 && multiminutes ? multiminutes : 1;
             if (dates.length && multiple_Selected_generator_states) {
-                axios.post(baseUrl + `/GetMultiGeneratorData?MultistartDate=${dates}&MultistationName=${multiple_Selected_generator_states}&Type=Date&time=${t}`, {})
+                axios.post(baseUrl + `/GetMultiGeneratorData?MultistartDate=${dates}&MultistationName=${(multiple_Selected_generator_states || []).map(s => String(s).replace(/&/g, "%26")).join(",")}&Type=Date&time=${t}`, {})
                     .then(r => { setmultiplegenerator_data(r.data); setgraphenable2(false); setBlocked(false); setloading_show(false); });
                 axios.post(baseUrl + `/GetMultiFrequencyData?MultistartDate=${dates[0]}&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North&Type=Date&time=${t}`, {})
                     .then(r => setmultifrequency(r.data));
@@ -472,7 +472,7 @@ export default function Generator() {
             const months = multiple_month.map(d => moment(d).format("YYYY-MM-DD"));
             const t = checked4 && multiminutes ? multiminutes : 1;
             if (months.length && multiple_Selected_generator_states) {
-                axios.post(baseUrl + `/GetMultiGeneratorData?MultistartDate=${months}&MultistationName=${multiple_Selected_generator_states}&Type=Month&time=${t}`, {})
+                axios.post(baseUrl + `/GetMultiGeneratorData?MultistartDate=${months}&MultistationName=${(multiple_Selected_generator_states || []).map(s => String(s).replace(/&/g, "%26")).join(",")}&Type=Month&time=${t}`, {})
                     .then(r => { setmultiplegenerator_data(r.data); setgraphenable2(false); setBlocked(false); setloading_show(false); });
                 axios.post(baseUrl + `/GetMultiFrequencyData?MultistartDate=${months}&MultistationName=400 kV Durgapur_A,400 kV Jeypore,400 kV Sasaram_North&Type=Month&time=${t}`, {})
                     .then(r => setmultifrequency(r.data));
