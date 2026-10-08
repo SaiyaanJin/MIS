@@ -146,7 +146,8 @@ def VoltageFileInsert():
 
     res= Voltage(startDateObj,endDateObj,PATH)
 
-    return jsonify({'status': "success", 'dates': res})
+    cache.delete('UploadedDates')
+    return res
 
 @app.route('/VoltageNames', methods=['GET', 'POST'])
 def VoltageNames():
@@ -509,6 +510,7 @@ def LinesFileInsert():
     path = "http://10.3.95.200/DAILY_DUMP_FILES_SCADA/"
     res = Lines(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 
@@ -1344,6 +1346,7 @@ def MVARFileInsert():
 
     res= LinesMVARFileInsert(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 
@@ -1365,6 +1368,7 @@ def ICTFileInsert():
 
     res= ICT(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 
@@ -1404,6 +1408,7 @@ def FrequencyFileInsert():
 
     res= Frequency(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 
@@ -1983,6 +1988,7 @@ def DemandFileInsert():
 
     res = Demand(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 @app.route('/DemandMinNames', methods=['GET', 'POST'])
@@ -2329,6 +2335,7 @@ def GeneratorFileInsert():
 
     res= Generator(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 
@@ -2627,6 +2634,7 @@ def ThGeneratorFileInsert():
 
     res= Thermal_Generator(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 
@@ -2984,6 +2992,7 @@ def ISGSFileInsert():
 
     res= ISGS(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 
@@ -3318,6 +3327,7 @@ def ExchangeFileInsert():
 
     res= Exchange(startDateObj,endDateObj,path)
 
+    cache.delete('UploadedDates')
     return res
 
 
@@ -3715,6 +3725,38 @@ def Report_Meter_Data2():
     response= ReportMeterData2(startDate,endDate,time,folder)
 
     return (response)
+
+
+@app.route('/GetUploadedDates', methods=['GET'])
+def GetUploadedDates():
+    cached = cache.get('UploadedDates')
+    if cached:
+        return jsonify(cached)
+    
+    collections = {
+        "Voltage": voltage_data_collection,
+        "Lines": line_mw_data_collection,
+        "ICT": ICT_data1,
+        "Demand": demand_collection,
+        "Generator": Generator_DB,
+        "Thermal Generator": Th_Gen_DB,
+        "ISGS": ISGS_DB,
+        "Frequency": frequency_data_collection,
+        "Exchange": Exchange_DB
+    }
+    
+    res = {}
+    for key, col in collections.items():
+        try:
+            dates = col.distinct('d')
+            # convert to YYYY-MM-DD
+            res[key] = [pd.to_datetime(d).strftime('%Y-%m-%d') for d in dates if d is not None]
+        except Exception as e:
+            print(f"Error fetching dates for {key}: {e}")
+            res[key] = []
+            
+    cache.set('UploadedDates', res, timeout=60)
+    return jsonify(res)
 
 
 @app.route('/outage', methods=['GET', 'POST'])

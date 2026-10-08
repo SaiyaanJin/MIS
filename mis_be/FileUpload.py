@@ -1,8 +1,18 @@
 import os
 import zipfile
 import pandas as pd
-from pymongo import MongoClient, errors, ASCENDING, DESCENDING
-from flask import jsonify
+from pymongo import MongoClient, ReplaceOne, errors, ASCENDING, DESCENDING
+from flask import jsonify, g
+
+def log_msg(msg):
+    log_msg(msg)
+    try:
+        if "upload_messages" not in g:
+            g.upload_messages = []
+        g.upload_messages.append(msg)
+    except:
+        pass
+
 from datetime import date, timedelta
 
 # //////////////////////////////////////////////////////////////////////////////////////////Diagnostics/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +97,69 @@ def diagnose_db_error(exc, collection_name, for_date=None, label=None):
         return f"{tag}DATABASE ERROR{date_str} inserting into '{collection_name}': {type(exc).__name__}: {_short(exc)}"
     return f"{tag}UNEXPECTED ERROR{date_str} inserting into '{collection_name}': {type(exc).__name__}: {_short(exc)}"
 
+
+def ensure_indexes(collection):
+    """
+    Every document is uniquely identified by (station/line name 'n', day 'd').
+    A unique index on (n, d) both rejects duplicate entries at the database
+    layer and serves the point-lookup query pattern ({'n': x, 'd': y}) used
+    everywhere in mis.py. A single-field index on 'd' backs the date-range-only
+    queries used by Names()/MultiNames() (names.py). 'ym' is written but never
+    queried anywhere in the codebase, so it is deliberately NOT indexed.
+
+    Several of these collections already carry a manually-created unique
+    (n, d) index under a different name (e.g. 'Name_Date') - we check for an
+    index with equivalent fields/options before creating anything, so we
+    never build a second, redundant copy of a multi-GB index.
+    """
+    try:
+        existing = list(collection.list_indexes())
+    except errors.PyMongoError as e:
+        log_msg(f"[Startup] COULD NOT READ INDEXES on '{collection.name}': {type(e).__name__}: {_short(e)}")
+        return
+
+    def has_equivalent(fields, unique_required):
+        for idx in existing:
+            if set(idx['key'].keys()) == set(fields) and (not unique_required or idx.get('unique', False)):
+                return True
+        return False
+
+    if not has_equivalent(['n', 'd'], unique_required=True):
+        try:
+            collection.create_index([('n', DESCENDING), ('d', DESCENDING)], unique=True, name='n_d_unique')
+        except errors.PyMongoError as e:
+            if getattr(e, 'code', None) == 11000:
+                log_msg(f"[Startup] INDEX NOT CREATED on '{collection.name}': duplicate (n, d) pairs already exist "
+                      f"from earlier uploads, so the unique index cannot be built until those are de-duplicated. "
+                      f"Uploads to this collection will NOT be protected from duplicates until this is fixed.")
+            else:
+                log_msg(f"[Startup] INDEX CREATION FAILED on '{collection.name}': {type(e).__name__}: {_short(e)}")
+
+    if not has_equivalent(['d'], unique_required=False):
+        try:
+            collection.create_index([('d', ASCENDING)], name='d_range')
+        except errors.PyMongoError as e:
+            log_msg(f"[Startup] INDEX CREATION FAILED on '{collection.name}': {type(e).__name__}: {_short(e)}")
+
+
+def bulk_upsert(collection, doc_list, label, for_date, announce_success=True):
+    """
+    Write doc_list by upserting each document on its (n, d) key instead of
+    blindly inserting. Re-running the upload for a date that is already in
+    the database corrects the existing record instead of creating a duplicate,
+    and the whole batch goes in one round trip (ordered=False so one bad
+    document can't block the rest).
+    """
+    if not doc_list:
+        return
+    ops = [ReplaceOne({'n': doc['n'], 'd': doc['d']}, doc, upsert=True) for doc in doc_list]
+    try:
+        collection.bulk_write(ops, ordered=False)
+        if announce_success:
+            log_msg(f"Successfully upserted {label} data for {for_date.strftime('%d-%m-%Y')} ({len(ops)} record(s))")
+    except Exception as e:
+        log_msg(diagnose_db_error(e, collection.name, for_date, label))
+
 # //////////////////////////////////////////////////////////////////////////////////////////Collections/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -102,9 +175,12 @@ def GetCollection():
             'frequency_data', 'Demand_minutes', 'Drawal_minutes', 'Generator_Data',
             'Thermal_Generator', 'ISGS_Data', 'Exchange_Data'
         ]
-        return [db[collection] for collection in collections]
+        selected = [db[collection] for collection in collections]
+        for col in selected:
+            ensure_indexes(col)
+        return selected
     except errors.PyMongoError as e:
-        print(f"[Startup] DATABASE CONNECTION FAILED: could not connect to MongoDB at '{CONNECTION_STRING}': {type(e).__name__}: {_short(e)}")
+        log_msg(f"[Startup] DATABASE CONNECTION FAILED: could not connect to MongoDB at '{CONNECTION_STRING}': {type(e).__name__}: {_short(e)}")
         raise
 
 
@@ -136,14 +212,7 @@ def Voltage(startDateObj, endDateObj, PATH):
                 "n": col}
             doc_list.append(a)
 
-        res = None
-        try:
-            res = voltage_data_collection.insert_many(doc_list)
-            print(f"Successfully inserted Voltage data ({label}) for {for_date.strftime('%d-%m-%Y')}")
-        except Exception as e:
-            print(diagnose_db_error(e, 'voltage_data_collection', for_date, label))
-
-        return res
+        bulk_upsert(voltage_data_collection, doc_list, label, for_date)
 
     def getDf220P1(file, for_date):
 
@@ -168,7 +237,7 @@ def Voltage(startDateObj, endDateObj, PATH):
         df = df.loc[pd.to_datetime(for_date):pd.to_datetime(
             for_date)+timedelta(hours=23, minutes=59)]
         if len(df) != 1440:
-            print(f"[Voltage-220P2] DATA LENGTH MISMATCH for {for_date.strftime('%d-%m-%Y')}: "
+            log_msg(f"[Voltage-220P2] DATA LENGTH MISMATCH for {for_date.strftime('%d-%m-%Y')}: "
                   f"expected 1440 rows, found {len(df)} (file: '{file}').")
         return df
 
@@ -181,7 +250,7 @@ def Voltage(startDateObj, endDateObj, PATH):
         df.index = pd.date_range(
             for_date, for_date + timedelta(days=1), freq='1min')[:-1]
         if len(df) != 1440:
-            print(f"[Voltage-400] DATA LENGTH MISMATCH for {for_date.strftime('%d-%m-%Y')}: "
+            log_msg(f"[Voltage-400] DATA LENGTH MISMATCH for {for_date.strftime('%d-%m-%Y')}: "
                   f"expected 1440 rows, found {len(df)} (file: '{file}').")
         return df
 
@@ -211,9 +280,9 @@ def Voltage(startDateObj, endDateObj, PATH):
             res.append(for_date)
 
         except Exception as e:
-            print(diagnose_excel_error(e, current_file, for_date, "Voltage"))
+            log_msg(diagnose_excel_error(e, current_file, for_date, "Voltage"))
 
-    return jsonify(res)
+    return jsonify({'dates': res, 'messages': getattr(g, 'upload_messages', [])})
 
 # /////////////////////////////////////////////////////////////////////////////Frequency////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -236,15 +305,9 @@ def Frequency(startDateObj, endDateObj, PATH):
                     "n": col}
                 doc_list.append(a)
         except Exception as e:
-            print(f"[Frequency] COLUMN FORMAT ISSUE for {for_date.strftime('%d-%m-%Y')}: {type(e).__name__}: {_short(e)}")
+            log_msg(f"[Frequency] COLUMN FORMAT ISSUE for {for_date.strftime('%d-%m-%Y')}: {type(e).__name__}: {_short(e)}")
 
-        try:
-            frequency_data_collection.insert_many(doc_list)
-            print("Successfully inserted Frequency Files", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'frequency_data_collection', for_date, "Frequency"))
-
-        return 'res'
+        bulk_upsert(frequency_data_collection, doc_list, "Frequency", for_date)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -263,9 +326,9 @@ def Frequency(startDateObj, endDateObj, PATH):
             op.append(for_date1)
 
         except Exception as e:
-            print(diagnose_excel_error(e, FILE, for_date1, "Frequency"))
+            log_msg(diagnose_excel_error(e, FILE, for_date1, "Frequency"))
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
 # /////////////////////////////////////////////////////////////////////////////Lines////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -285,7 +348,7 @@ def Lines(startDateObj, endDateObj, PATH):
                 require_row_count(d, 1440, label, for_date)
                 return d
             except Exception as e:
-                print(f"[{label}] {_short(e)}")
+                log_msg(f"[{label}] {_short(e)}")
                 return None
 
         df = prep(df, "Lines-P1")
@@ -327,35 +390,10 @@ def Lines(startDateObj, endDateObj, PATH):
                     "ym": for_date.strftime("%Y%m"),
                     "n": col3})
 
-        if doc_list:
-            try:
-                line_mw_data_collection.insert_many(doc_list)
-                print("Successfully inserted Lines data P1 for ", for_date)
-            except Exception as e:
-                print(diagnose_db_error(e, 'line_mw_data_collection', for_date, "Lines-P1"))
-
-        if doc_list1:
-            try:
-                line_mw_data_collection1.insert_many(doc_list1)
-                print("Successfully inserted Voltage data P2 for ", for_date)
-            except Exception as e:
-                print(diagnose_db_error(e, 'line_mw_data_collection1', for_date, "Lines-P2"))
-
-        if doc_list2:
-            try:
-                line_mw_data_collection2.insert_many(doc_list2)
-                print("Successfully inserted Voltage data 400 KV for ", for_date)
-            except Exception as e:
-                print(diagnose_db_error(e, 'line_mw_data_collection2', for_date, "Lines-400kV"))
-
-        if doc_list3:
-            try:
-                line_mw_data_collection2.insert_many(doc_list3)
-                print("Successfully inserted Voltage data 765 KV for ", for_date)
-            except Exception as e:
-                print(diagnose_db_error(e, 'line_mw_data_collection2', for_date, "Lines-765kV"))
-
-        return 'res'
+        bulk_upsert(line_mw_data_collection, doc_list, "Lines-P1", for_date)
+        bulk_upsert(line_mw_data_collection1, doc_list1, "Lines-P2", for_date)
+        bulk_upsert(line_mw_data_collection2, doc_list2, "Lines-400kV", for_date)
+        bulk_upsert(line_mw_data_collection2, doc_list3, "Lines-765kV", for_date)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -380,7 +418,7 @@ def Lines(startDateObj, endDateObj, PATH):
                     lambda x: x[0]+": " + x[1] if 'Unnamed' not in x[1] else x[0]+': '+((x[0].split('-'))[0].split(' '))[-1] + ' end')
 
             except Exception as e:
-                print(diagnose_excel_error(e, FILE, for_date1, "Lines-P1"))
+                log_msg(diagnose_excel_error(e, FILE, for_date1, "Lines-P1"))
 
             try:
                 FILE1 = PATH+"220_LINES_MW_P2_{}.xlsm".format(
@@ -394,7 +432,7 @@ def Lines(startDateObj, endDateObj, PATH):
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
             except Exception as e:
-                print(diagnose_excel_error(e, FILE1, for_date1, "Lines-P2"))
+                log_msg(diagnose_excel_error(e, FILE1, for_date1, "Lines-P2"))
 
             try:
 
@@ -413,7 +451,7 @@ def Lines(startDateObj, endDateObj, PATH):
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
             except Exception as e:
-                print(diagnose_excel_error(e, FILE2, for_date1, "Lines-400kV(.xlsm)"))
+                log_msg(diagnose_excel_error(e, FILE2, for_date1, "Lines-400kV(.xlsm)"))
 
             try:
                 FILE2 = PATH+"400_LINES_MW_{}.xlsx".format(
@@ -430,7 +468,7 @@ def Lines(startDateObj, endDateObj, PATH):
                 df2.columns = df2.columns.map(
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
             except Exception as e:
-                print(diagnose_excel_error(e, FILE2, for_date1, "Lines-400kV(.xlsx)"))
+                log_msg(diagnose_excel_error(e, FILE2, for_date1, "Lines-400kV(.xlsx)"))
 
             try:
                 FILE3 = PATH+"765_LINES_MW_{}.xlsm".format(
@@ -447,7 +485,7 @@ def Lines(startDateObj, endDateObj, PATH):
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
             except Exception as e:
-                print(diagnose_excel_error(e, FILE3, for_date1, "Lines-765kV(.xlsm)"))
+                log_msg(diagnose_excel_error(e, FILE3, for_date1, "Lines-765kV(.xlsm)"))
 
             try:
                 FILE3 = PATH+"765_LINES_MW_{}.xlsx".format(
@@ -463,16 +501,16 @@ def Lines(startDateObj, endDateObj, PATH):
                     lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
             except Exception as e:
-                print(diagnose_excel_error(e, FILE3, for_date1, "Lines-765kV(.xlsx)"))
+                log_msg(diagnose_excel_error(e, FILE3, for_date1, "Lines-765kV(.xlsx)"))
 
             insertFlowDfIntoDB(df, df1, df2, df3, for_date1)
 
             op.append(for_date1)
 
         except Exception as e:
-            print(f"[Lines] UNEXPECTED ERROR processing {for_date1.strftime('%d-%m-%Y')}: {type(e).__name__}: {_short(e)}")
+            log_msg(f"[Lines] UNEXPECTED ERROR processing {for_date1.strftime('%d-%m-%Y')}: {type(e).__name__}: {_short(e)}")
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
 # /////////////////////////////////////////////////////////////////////////////LinesMVAR////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -531,7 +569,7 @@ def LinesMVARFileInsert(startDateObj, endDateObj, PATH):
                 doc_list2.append(c)
 
         except Exception as e:
-            print(f"[LinesMVAR-400kV] COLUMN FORMAT ISSUE for {for_date.strftime('%d-%m-%Y')}: {type(e).__name__}: {_short(e)}")
+            log_msg(f"[LinesMVAR-400kV] COLUMN FORMAT ISSUE for {for_date.strftime('%d-%m-%Y')}: {type(e).__name__}: {_short(e)}")
 
         doc_list3 = []
         try:
@@ -545,33 +583,12 @@ def LinesMVARFileInsert(startDateObj, endDateObj, PATH):
                     "n": col3}
                 doc_list3.append(d)
         except Exception as e:
-            print(f"[LinesMVAR-765kV] COLUMN FORMAT ISSUE for {for_date.strftime('%d-%m-%Y')}: {type(e).__name__}: {_short(e)}")
+            log_msg(f"[LinesMVAR-765kV] COLUMN FORMAT ISSUE for {for_date.strftime('%d-%m-%Y')}: {type(e).__name__}: {_short(e)}")
 
-        try:
-            MVAR_P1.insert_many(doc_list)
-            print("Successfully inserted P1 Lines Files", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'MVAR_P1', for_date, "LinesMVAR-P1"))
-
-        try:
-            MVAR_P2.insert_many(doc_list1)
-            print("Successfully inserted P2 Lines Files", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'MVAR_P2', for_date, "LinesMVAR-P2"))
-
-        try:
-            Lines_MVAR_400_above.insert_many(doc_list2)
-            print("Successfully inserted 400 KV Lines Files", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'Lines_MVAR_400_above', for_date, "LinesMVAR-400kV"))
-
-        try:
-            Lines_MVAR_400_above.insert_many(doc_list3)
-            print("Successfully inserted 765 KV Lines Files", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'Lines_MVAR_400_above', for_date, "LinesMVAR-765kV"))
-
-        return 'res'
+        bulk_upsert(MVAR_P1, doc_list, "LinesMVAR-P1", for_date)
+        bulk_upsert(MVAR_P2, doc_list1, "LinesMVAR-P2", for_date)
+        bulk_upsert(Lines_MVAR_400_above, doc_list2, "LinesMVAR-400kV", for_date)
+        bulk_upsert(Lines_MVAR_400_above, doc_list3, "LinesMVAR-765kV", for_date)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -629,9 +646,9 @@ def LinesMVARFileInsert(startDateObj, endDateObj, PATH):
             op.append(for_date1)
 
         except Exception as e:
-            print(diagnose_excel_error(e, current_file, for_date1, "LinesMVAR"))
+            log_msg(diagnose_excel_error(e, current_file, for_date1, "LinesMVAR"))
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
 # /////////////////////////////////////////////////////////////////////////////ICT////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -659,14 +676,7 @@ def ICT(startDateObj, endDateObj, PATH):
 
             data_list1.append(a)
 
-        try:
-            ICT_data.insert_many(data_list1)
-            # print("Successfully inserted ICT Files (MVAR)", for_date)
-
-        except Exception as e:
-            print(diagnose_db_error(e, 'ICT_data1', for_date, "ICT-MVAR"))
-
-        return 'res'
+        bulk_upsert(ICT_data, data_list1, "ICT-MVAR", for_date, announce_success=False)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -706,12 +716,13 @@ def ICT(startDateObj, endDateObj, PATH):
             op.append(for_date1)
 
         except Exception as e:
-            print(diagnose_excel_error(e, FILE, for_date1, "ICT-MVAR"))
+            log_msg(diagnose_excel_error(e, FILE, for_date1, "ICT-MVAR"))
 
     def ICTFileInsertMW(startDateObj, endDateObj, PATH):
 
         def insertFlowDfIntoDB(ICT_data, df, for_date):
 
+            valid_docs = []
             for item in df:
 
                 try:
@@ -726,24 +737,17 @@ def ICT(startDateObj, endDateObj, PATH):
                             f"ICT MW column '{name}': expected 1440 rows but found {len(data)} "
                             f"for {for_date.strftime('%d-%m-%Y')}.")
 
-                    a = {
+                    valid_docs.append({
                         "p": data,
                         "d": pd.to_datetime(for_date),
                         "ym": for_date.strftime("%Y%m"),
-                        "n": name}
-
-                    try:
-
-                        res = ICT_data.insert_one(a)
-
-                    except Exception as e:
-                        print(diagnose_db_error(e, 'ICT_data2', for_date, f"ICT-MW:{name}"))
-                        continue
+                        "n": name})
 
                 except Exception as e:
-                    print(f"[ICT-MW] {_short(e)}")
+                    log_msg(f"[ICT-MW] {_short(e)}")
                     continue
 
+            bulk_upsert(ICT_data, valid_docs, "ICT-MW", for_date, announce_success=False)
             return 'res'
 
         op = []
@@ -780,9 +784,9 @@ def ICT(startDateObj, endDateObj, PATH):
                 op.append(for_date1)
 
             except Exception as e:
-                print(diagnose_excel_error(e, FILE, for_date1, "ICT-MW"))
+                log_msg(diagnose_excel_error(e, FILE, for_date1, "ICT-MW"))
 
-        return jsonify(op)
+        return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
     def ICTFileInsertMW_132_220(startDateObj, endDateObj, PATH):
 
@@ -804,25 +808,21 @@ def ICT(startDateObj, endDateObj, PATH):
 
                 df.columns = col_list
 
-                for item in col_list:
-                    a = {
-                        "p": list(df[item]),
-                        "d": pd.to_datetime(for_date1),
-                        "ym": for_date1.strftime("%Y%m"),
-                        "n": item}
+                valid_docs = [{
+                    "p": list(df[item]),
+                    "d": pd.to_datetime(for_date1),
+                    "ym": for_date1.strftime("%Y%m"),
+                    "n": item} for item in col_list]
 
-                    try:
-                        ICT_data2.insert_one(a)
-                    except Exception as e:
-                        print(diagnose_db_error(e, 'ICT_data2', for_date1, f"ICT-MW-132/220:{item}"))
+                bulk_upsert(ICT_data2, valid_docs, "ICT-MW-132/220", for_date1, announce_success=False)
 
             except Exception as e:
-                print(diagnose_excel_error(e, FILE, for_date1, "ICT-MW-132/220"))
+                log_msg(diagnose_excel_error(e, FILE, for_date1, "ICT-MW-132/220"))
 
     ICTFileInsertMW(startDateObj, endDateObj, PATH)
     ICTFileInsertMW_132_220(startDateObj, endDateObj, PATH)
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
 
 # /////////////////////////////////////////////////////////////////////////////Demand////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -858,19 +858,8 @@ def Demand(startDateObj, endDateObj, PATH):
                 "n": col1}
             doc_list1.append(b)
 
-        try:
-            drawal_collection.insert_many(doc_list1)
-            # print("Successfully inserted Demand drawal Files", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'drawal_collection', for_date, "Demand-Drawal"))
-
-        try:
-            demand_collection.insert_many(doc_list)
-            # print("Successfully inserted Demand rest Files", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'demand_collection', for_date, "Demand"))
-
-        return 'res'
+        bulk_upsert(drawal_collection, doc_list1, "Demand-Drawal", for_date, announce_success=False)
+        bulk_upsert(demand_collection, doc_list, "Demand", for_date, announce_success=False)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -906,9 +895,9 @@ def Demand(startDateObj, endDateObj, PATH):
             op.append(for_date1)
 
         except Exception as e:
-            print(diagnose_excel_error(e, current_file, for_date1, "Demand"))
+            log_msg(diagnose_excel_error(e, current_file, for_date1, "Demand"))
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
 # /////////////////////////////////////////////////////////////////////////////Generator////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -930,13 +919,7 @@ def Generator(startDateObj, endDateObj, PATH):
                 "n": col}
             doc_list.append(a)
 
-        try:
-            Generator_DB.insert_many(doc_list)
-            # print("Successfully inserted Generator Data for ", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'Generator_DB', for_date, "Generator"))
-
-        return 'res'
+        bulk_upsert(Generator_DB, doc_list, "Generator", for_date, announce_success=False)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -975,9 +958,9 @@ def Generator(startDateObj, endDateObj, PATH):
             op.append(for_date1)
 
         except Exception as e:
-            print(diagnose_excel_error(e, FILE, for_date1, "Generator"))
+            log_msg(diagnose_excel_error(e, FILE, for_date1, "Generator"))
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
 
 def Thermal_Generator(startDateObj, endDateObj, PATH):
@@ -997,13 +980,7 @@ def Thermal_Generator(startDateObj, endDateObj, PATH):
                 "n": col}
             doc_list.append(a)
 
-        try:
-            Th_Gen_DB.insert_many(doc_list)
-            # print("Successfully inserted Generator Data for ", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'Th_Gen_DB', for_date, "Thermal-Generator"))
-
-        return 'res'
+        bulk_upsert(Th_Gen_DB, doc_list, "Thermal-Generator", for_date, announce_success=False)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -1032,9 +1009,9 @@ def Thermal_Generator(startDateObj, endDateObj, PATH):
             op.append(for_date1)
 
         except Exception as e:
-            print(diagnose_excel_error(e, FILE, for_date1, "Thermal-Generator"))
+            log_msg(diagnose_excel_error(e, FILE, for_date1, "Thermal-Generator"))
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
 
 # /////////////////////////////////////////////////////////////////////////////ISGS////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1057,13 +1034,7 @@ def ISGS(startDateObj, endDateObj, PATH):
                 "n": col}
             doc_list.append(a)
 
-        try:
-            ISGS_DB.insert_many(doc_list)
-            print("Successfully inserted ISGS Data for ", for_date)
-        except Exception as e:
-            print(diagnose_db_error(e, 'ISGS_DB', for_date, "ISGS"))
-
-        return 'res'
+        bulk_upsert(ISGS_DB, doc_list, "ISGS", for_date)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -1083,9 +1054,9 @@ def ISGS(startDateObj, endDateObj, PATH):
             op.append(for_date1)
 
         except Exception as e:
-            print(diagnose_excel_error(e, FILE, for_date1, "ISGS"))
+            log_msg(diagnose_excel_error(e, FILE, for_date1, "ISGS"))
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})
 
 # //////////////////////////////////////////////////////////////////////Exchange////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1123,7 +1094,7 @@ def Exchange(startDateObj, endDateObj, PATH):
                     "n": name_dict[col]}
                 doc_list.append(a)
         except Exception as e:
-            print(f"[Exchange] COLUMN MAPPING ISSUE for {for_date.strftime('%d-%m-%Y')}: "
+            log_msg(f"[Exchange] COLUMN MAPPING ISSUE for {for_date.strftime('%d-%m-%Y')}: "
                   f"unexpected column {_short(e)} in sheet - the Exchange file's column headers may have changed.")
 
         for item in checklist:
@@ -1134,16 +1105,7 @@ def Exchange(startDateObj, endDateObj, PATH):
                 "n": item
             })
 
-        try:
-
-            Exchange_DB.insert_many(doc_list)
-
-            print("Successfully inserted Exchange Files", for_date)
-
-        except Exception as e:
-            print(diagnose_db_error(e, 'Exchange_DB', for_date, "Exchange"))
-
-        return 'res'
+        bulk_upsert(Exchange_DB, doc_list, "Exchange", for_date)
 
     op = []
     for for_date1 in pd.date_range(date(startDateObj.year, startDateObj.month, startDateObj.day), date(endDateObj.year, endDateObj.month, endDateObj.day)):
@@ -1162,6 +1124,6 @@ def Exchange(startDateObj, endDateObj, PATH):
             op.append(for_date1)
 
         except Exception as e:
-            print(diagnose_excel_error(e, FILE, for_date1, "Exchange"))
+            log_msg(diagnose_excel_error(e, FILE, for_date1, "Exchange"))
 
-    return jsonify(op)
+    return jsonify({'dates': op, 'messages': getattr(g, 'upload_messages', [])})

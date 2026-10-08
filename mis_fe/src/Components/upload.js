@@ -1,4 +1,5 @@
-﻿import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { TabView, TabPanel } from 'primereact/tabview';
 import { Calendar } from "primereact/calendar";
 import axios from "axios";
 import moment from "moment";
@@ -254,6 +255,152 @@ const uploadStyles = `
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.2);
 }
+
+/* ── Custom Tabs ────────────────────────────────────────────────── */
+.up-custom-tabs .p-tabview-nav {
+  background: transparent;
+  border-bottom: 2px solid var(--border-subtle, #e2e8f0);
+}
+.up-custom-tabs .p-tabview-nav li .p-tabview-nav-link {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  padding: 12px 16px;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  box-shadow: none !important;
+}
+.up-custom-tabs .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  color: #ff6347;
+  border-bottom-color: #ff6347;
+}
+.up-custom-tabs .p-tabview-nav li:not(.p-highlight):not(.p-disabled):hover .p-tabview-nav-link {
+  color: var(--text-primary, #1e293b);
+  border-bottom-color: rgba(255,99,71,0.3);
+}
+.up-custom-tabs .p-tabview-panels {
+  background: transparent;
+  padding: 0;
+}
+
+/* ── Full Screen Calendar ────────────────────────────────────────── */
+.full-calendar-container {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+  margin-top: 10px;
+}
+.fc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+  background: var(--bg-surface, #f8fafc);
+}
+.fc-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fc-btn {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary, #475569);
+  transition: all 0.2s;
+}
+.fc-btn:hover {
+  background: var(--bg-surface, #f8fafc);
+  color: #ff6347;
+  border-color: #ff6347;
+}
+.fc-btn-today {
+  width: auto;
+  padding: 0 16px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.fc-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary, #1e293b);
+  min-width: 160px;
+  text-align: center;
+}
+.fc-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--border-subtle, #e2e8f0);
+  gap: 1px;
+}
+.fc-day-name {
+  background: var(--bg-surface, #f8fafc);
+  text-align: center;
+  padding: 12px 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+}
+.fc-day {
+  background: var(--bg-card, #fff);
+  min-height: 120px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.2s;
+}
+.fc-day-other {
+  background: var(--bg-surface, #f8fafc);
+  opacity: 0.6;
+}
+.fc-day-num {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 8px;
+}
+.fc-status-avail {
+  background: rgba(34, 197, 94, 0.05);
+}
+.fc-status-avail .fc-badge {
+  background: rgba(34, 197, 94, 0.15);
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+.fc-status-miss {
+  background: rgba(239, 68, 68, 0.05);
+}
+.fc-status-miss .fc-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: #991b1b;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.fc-day-content {
+  margin-top: auto;
+}
+.fc-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  width: 100%;
+  text-align: center;
+}
+.dark-mode .fc-status-avail .fc-badge { color: #4ade80; }
+.dark-mode .fc-status-miss .fc-badge { color: #f87171; }
 `;
 
 /* ── Stream metadata ─────────────────────────────────────────── */
@@ -287,8 +434,65 @@ export default function Upload() {
     const { isDarkMode } = useTheme();
     const [date_range, set_date_range]             = useState(null);
     const [selected, setSelected]                  = useState([]);
+    const [currentMonth, setCurrentMonth]          = useState(moment().startOf('month'));
     const [blocked, setBlocked]                    = useState(false);
     const [loading_show, setloading_show]          = useState(false);
+    const [uploadedDates, setUploadedDates]        = useState({});
+    const [timeToNextUpload, setTimeToNextUpload]  = useState("");
+
+    useEffect(() => {
+        const fetchUploadedDates = () => {
+            axios.get(`${baseUrl}/GetUploadedDates?t=${new Date().getTime()}`)
+                .then(res => {
+                    setUploadedDates(res.data || {});
+                })
+                .catch(err => console.error("Error fetching uploaded dates:", err));
+        };
+
+        fetchUploadedDates();
+        
+        // Fetch every 60 seconds for real-time updates
+        const intervalId = setInterval(fetchUploadedDates, 60000);
+        return () => clearInterval(intervalId);
+    }, [baseUrl]);
+
+    useEffect(() => {
+        // Countdown timer for next upload (13:00 / 1:00 PM)
+        const updateTimer = () => {
+            const now = moment();
+            let nextUpload = moment().hours(13).minutes(0).seconds(0).milliseconds(0);
+            if (now.isAfter(nextUpload)) {
+                // If it's past 13:00, next upload is tomorrow at 13:00
+                nextUpload.add(1, 'days');
+            }
+            const diff = moment.duration(nextUpload.diff(now));
+            const hours = String(diff.hours()).padStart(2, '0');
+            const minutes = String(diff.minutes()).padStart(2, '0');
+            const seconds = String(diff.seconds()).padStart(2, '0');
+            setTimeToNextUpload(`${hours}:${minutes}:${seconds}`);
+        };
+
+        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+        return () => clearInterval(timerInterval);
+    }, []);
+
+    const generateCalendarDays = () => {
+        const startDay = currentMonth.clone().startOf('month').startOf('week');
+        const endDay = currentMonth.clone().endOf('month').endOf('week');
+        
+        const days = [];
+        let day = startDay.clone();
+        
+        while (day.isBefore(endDay) || day.isSame(endDay, 'day')) {
+            days.push(day.clone());
+            day.add(1, 'day');
+        }
+        
+        return days;
+    };
+    
+    const calendarDays = generateCalendarDays();
 
     const toggleStream = (key) => {
         setSelected(prev =>
@@ -322,22 +526,43 @@ export default function Upload() {
             // Lines also needs MVAr insert
             if (stream === "Lines") {
                 return Promise.all([
-                    axios.post(url, "Lines MW").catch(() => {}),
-                    axios.post(baseUrl + "/MVARFileInsert" + dateParams).catch(() => {})
-                ]);
+                    axios.post(url, "Lines MW").catch(() => null),
+                    axios.post(baseUrl + "/MVARFileInsert" + dateParams).catch(() => null)
+                ]).then(results => {
+                    const messages = [];
+                    results.forEach(r => {
+                        if (r && r.data && r.data.messages) {
+                            messages.push(...r.data.messages);
+                        }
+                    });
+                    return { stream, messages };
+                });
             }
             return axios.post(url, stream === "ICT" ? {} : undefined)
                 .then(r => {
                     const data = r.data;
                     console.info(`${stream} inserted:`, data?.dates ?? data);
+                    return { stream, messages: data?.messages || [] };
                 })
-                .catch(() => {});
+                .catch(() => { return { stream, messages: [`Failed to connect or upload ${stream}`] }; });
         });
 
-        Promise.allSettled(promises).then(() => {
+        Promise.allSettled(promises).then((results) => {
             setloading_show(false);
             setBlocked(false);
-            alert(`✅ Synchronization complete for ${selected.length} stream(s).`);
+            
+            const allMessages = [];
+            results.forEach(res => {
+                if (res.status === 'fulfilled' && res.value && res.value.messages) {
+                    allMessages.push(...res.value.messages);
+                }
+            });
+            
+            if (allMessages.length > 0) {
+                alert(`✅ Synchronization complete for ${selected.length} stream(s).\n\n📄 Backend Logs:\n` + allMessages.join('\n'));
+            } else {
+                alert(`✅ Synchronization complete for ${selected.length} stream(s).`);
+            }
         });
     };
 
@@ -489,6 +714,91 @@ export default function Upload() {
                                     ? "Pick a date range to continue."
                                     : "Select at least one data stream to continue."
                         }
+                    </div>
+                </div>
+            </div>
+
+            {/* ── STATUS DASHBOARD ─────────────────────────────────── */}
+            <div className="up-ctrl-card" style={{ marginTop: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+                    <p className="up-section-label" style={{ margin: 0 }}>
+                        <i className="pi pi-chart-bar" style={{ color: "#ff6347" }} />
+                        Availability Status
+                    </p>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-secondary)", background: "var(--bg-surface, #f8fafc)", padding: "6px 14px", borderRadius: 8, border: "1px solid var(--border-subtle, #e2e8f0)" }}>
+                        <i className="pi pi-clock" style={{ marginRight: 6, color: "#ff6347" }} />
+                        Next Auto-Upload In: <span style={{ color: "#ff6347", fontFamily: "monospace", fontSize: 15, marginLeft: 4 }}>{timeToNextUpload}</span>
+                    </div>
+                </div>
+
+                <div className="full-calendar-container">
+                    <div className="fc-header">
+                        <div className="fc-header-left">
+                            <button className="fc-btn" onClick={() => setCurrentMonth(currentMonth.clone().subtract(1, 'month'))}><i className="pi pi-chevron-left"></i></button>
+                            <div className="fc-title"><i className="pi pi-calendar mr-2" style={{color: '#ff6347'}}></i> {currentMonth.format("MMMM YYYY")}</div>
+                            <button className="fc-btn" onClick={() => setCurrentMonth(currentMonth.clone().add(1, 'month'))}><i className="pi pi-chevron-right"></i></button>
+                            <button className="fc-btn fc-btn-today" onClick={() => setCurrentMonth(moment().startOf('month'))}>Today</button>
+                        </div>
+                    </div>
+                    
+                    <div className="fc-grid">
+                        {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(dayName => (
+                            <div key={dayName} className="fc-day-name">{dayName}</div>
+                        ))}
+                        {calendarDays.map(date => {
+                            const formattedDate = date.format("YYYY-MM-DD");
+                            const isFuture = date.isAfter(moment(), 'day');
+                            const isCurrentMonth = date.month() === currentMonth.month();
+                            
+                            return (
+                                <div key={formattedDate} className={`fc-day ${!isCurrentMonth ? 'fc-day-other' : ''}`}>
+                                    <div className="fc-day-num">{date.date()}</div>
+                                    {!isFuture && (
+                                        <div className="fc-day-content" style={{ display: 'flex', flexWrap: 'wrap', gap: '2px', alignContent: 'flex-start' }}>
+                                            {STREAMS.map(stream => {
+                                                const isUploaded = (uploadedDates[stream.key] || []).includes(formattedDate);
+                                                const bg = isUploaded ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)";
+                                                const color = isUploaded ? (isDarkMode ? "#4ade80" : "#166534") : (isDarkMode ? "#f87171" : "#991b1b");
+                                                const border = isUploaded ? "1px solid rgba(34, 197, 94, 0.4)" : "1px solid rgba(239, 68, 68, 0.4)";
+                                                
+                                                return (
+                                                    <div 
+                                                        key={stream.key}
+                                                        title={stream.label}
+                                                        style={{
+                                                            fontSize: "9px",
+                                                            fontWeight: 600,
+                                                            padding: "2px 4px",
+                                                            borderRadius: "4px",
+                                                            background: bg,
+                                                            color: color,
+                                                            border: border,
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            flex: "1 1 calc(50% - 2px)"
+                                                        }}
+                                                    >
+                                                        {stream.label}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                        <div style={{ width: 14, height: 14, borderRadius: 4, background: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.4)' }} />
+                        Available
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                        <div style={{ width: 14, height: 14, borderRadius: 4, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)' }} />
+                        Missing
                     </div>
                 </div>
             </div>
