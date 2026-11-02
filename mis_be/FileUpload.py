@@ -5,12 +5,12 @@ from pymongo import MongoClient, ReplaceOne, errors, ASCENDING, DESCENDING
 from flask import jsonify, g
 
 def log_msg(msg):
-    log_msg(msg)
+    print(msg)
     try:
         if "upload_messages" not in g:
             g.upload_messages = []
         g.upload_messages.append(msg)
-    except:
+    except RuntimeError:
         pass
 
 from datetime import date, timedelta
@@ -453,22 +453,23 @@ def Lines(startDateObj, endDateObj, PATH):
             except Exception as e:
                 log_msg(diagnose_excel_error(e, FILE2, for_date1, "Lines-400kV(.xlsm)"))
 
-            try:
-                FILE2 = PATH+"400_LINES_MW_{}.xlsx".format(
-                    for_date1.strftime("%d%m%Y"))
+            if not isinstance(df2, pd.DataFrame):
+                try:
+                    FILE2 = PATH+"400_LINES_MW_{}.xlsx".format(
+                        for_date1.strftime("%d%m%Y"))
 
-                df2 = pd.read_excel(
-                    FILE2, sheet_name='Data', header=[2, 3])
+                    df2 = pd.read_excel(
+                        FILE2, sheet_name='Data', header=[2, 3])
 
-                df2 = df2.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
+                    df2 = df2.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
-                df2.index = pd.date_range(
-                    for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
+                    df2.index = pd.date_range(
+                        for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
 
-                df2.columns = df2.columns.map(
-                    lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
-            except Exception as e:
-                log_msg(diagnose_excel_error(e, FILE2, for_date1, "Lines-400kV(.xlsx)"))
+                    df2.columns = df2.columns.map(
+                        lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
+                except Exception as e:
+                    log_msg(diagnose_excel_error(e, FILE2, for_date1, "Lines-400kV(.xlsx)"))
 
             try:
                 FILE3 = PATH+"765_LINES_MW_{}.xlsm".format(
@@ -487,21 +488,22 @@ def Lines(startDateObj, endDateObj, PATH):
             except Exception as e:
                 log_msg(diagnose_excel_error(e, FILE3, for_date1, "Lines-765kV(.xlsm)"))
 
-            try:
-                FILE3 = PATH+"765_LINES_MW_{}.xlsx".format(
-                    for_date1.strftime("%d%m%Y"))
-                df3 = pd.read_excel(
-                    FILE3, sheet_name='Data', header=[2, 3])[:1440]
+            if not isinstance(df3, pd.DataFrame):
+                try:
+                    FILE3 = PATH+"765_LINES_MW_{}.xlsx".format(
+                        for_date1.strftime("%d%m%Y"))
+                    df3 = pd.read_excel(
+                        FILE3, sheet_name='Data', header=[2, 3])[:1440]
 
-                df3 = df3.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
+                    df3 = df3.drop(columns=['Unnamed: 0_level_0', 'Date'], level=0)
 
-                df3.index = pd.date_range(
-                    for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
-                df3.columns = df3.columns.map(
-                    lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
+                    df3.index = pd.date_range(
+                        for_date1, for_date1 + timedelta(days=1), freq='1min')[:-1]
+                    df3.columns = df3.columns.map(
+                        lambda x1: x1[0]+": " + x1[1] if 'Unnamed' not in x1[1] else x1[0]+': '+((x1[0].split('-'))[0].split(' '))[-1] + ' end')
 
-            except Exception as e:
-                log_msg(diagnose_excel_error(e, FILE3, for_date1, "Lines-765kV(.xlsx)"))
+                except Exception as e:
+                    log_msg(diagnose_excel_error(e, FILE3, for_date1, "Lines-765kV(.xlsx)"))
 
             insertFlowDfIntoDB(df, df1, df2, df3, for_date1)
 

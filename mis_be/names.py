@@ -77,11 +77,11 @@ def Names(startDate, endDate, type_):
     if type_ == "Voltage":
         data = voltage_data_collection.find(filter=filter_, projection={'n': 1}).distinct('n')
 
-    elif type_ == "Lines":
-        data = fetch_distinct_names(
-            [line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2],
-            filter_, suffix="MW"
-        )
+    # elif type_ == "Lines":
+    #     data = fetch_distinct_names(
+    #         [line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2],
+    #         filter_, suffix="MW"
+    #     )
 
     elif type_ == "ICT":
         data = fetch_distinct_names([ICT_data1, ICT_data2], filter_)
@@ -89,7 +89,7 @@ def Names(startDate, endDate, type_):
     elif type_ == "Frequency":
         data = frequency_data_collection.find(filter=filter_, projection={'n': 1}).distinct('n')
 
-    elif type_ == "LinesMWMVAR":
+    elif type_ == "LinesMWMVAR" or "Lines":
         mvar_data = fetch_distinct_names([MVAR_P1, MVAR_P2, Lines_MVAR_400_above], filter_, suffix="MVAR")
         mw_data   = fetch_distinct_names(
             [line_mw_data_collection, line_mw_data_collection1, line_mw_data_collection2],
